@@ -7,11 +7,8 @@ const helmet = require('helmet');
 const db = require('./db');
 
 const app = express();
-const producao = process.env.NODE_ENV === 'production';
-
-if (!process.env.SESSION_SECRET) {
-  throw new Error('Defina SESSION_SECRET no arquivo .env');
-}
+const producao = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+const sessionSecret = process.env.SESSION_SECRET || 'confeitaria_super_secreta_padrao_2026';
 
 if (producao) {
   app.set('trust proxy', 1);
@@ -39,7 +36,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
   store: new SqliteStore({ client: db }),
-  secret: process.env.SESSION_SECRET,
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -86,7 +83,11 @@ app.use((err, req, res, next) => {
   res.status(500).send('Ocorreu um erro no servidor. Tente novamente mais tarde.');
 });
 
-const porta = process.env.PORT || 3000;
-app.listen(porta, () => {
-  console.log(`🧁 Confeitaria rodando em http://localhost:${porta}`);
-});
+module.exports = app;
+
+if (!process.env.VERCEL) {
+  const porta = process.env.PORT || 3000;
+  app.listen(porta, () => {
+    console.log(`🧁 Confeitaria rodando em http://localhost:${porta}`);
+  });
+}
