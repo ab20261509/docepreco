@@ -1201,6 +1201,36 @@ footer.rodape {
   color: #ffffff;
 }
 
+/* Pílulas de Filtro de Período */
+.btn-periodo-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.65rem;
+  border-radius: 14px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+  background: #ffffff;
+  border: 1px solid var(--cor-borda);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-periodo-pill:hover {
+  background-color: #fdf2f6;
+  color: var(--cor-primaria);
+  border-color: #fbcfe8;
+}
+
+.btn-periodo-pill.ativo {
+  background-color: var(--cor-primaria);
+  color: #ffffff;
+  border-color: var(--cor-primaria);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(214, 51, 108, 0.2);
+}
+
 /* Card de Totais do Pedido */
 .card-totais-pedido {
   background: #fdfbf7;

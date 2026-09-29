@@ -1,4 +1,4 @@
-﻿const assert = require('assert');
+const assert = require('assert');
 const db = require('../db');
 const { gerarTextoWhatsApp, buscarProdutosComPreco } = require('../routes/pedidos');
 
@@ -122,7 +122,15 @@ assert.strictEqual(pedidosClara.length, 1, 'Clara deve ver seu 1 pedido');
 assert.strictEqual(pedidosDenise.length, 0, 'Denise não deve ver pedidos de Clara');
 console.log('✅ Isolamento multi-tenant de pedidos validado com sucesso');
 
-// 10. Testar exclusão com integridade referencial
+// 10. Testar filtros de período de entrega
+const pedidosOutubro = db.prepare('SELECT * FROM pedidos WHERE usuario_id = ? AND data_entrega BETWEEN ? AND ?').all(uid1, '2026-10-01', '2026-10-31');
+assert.strictEqual(pedidosOutubro.length, 1, 'Deve encontrar o pedido em Outubro/2026');
+
+const pedidosNovembro = db.prepare('SELECT * FROM pedidos WHERE usuario_id = ? AND data_entrega BETWEEN ? AND ?').all(uid1, '2026-11-01', '2026-11-30');
+assert.strictEqual(pedidosNovembro.length, 0, 'Não deve encontrar pedidos em Novembro/2026');
+console.log('✅ Filtros de período e datas de entrega validados com sucesso');
+
+// 11. Testar exclusão com integridade referencial
 db.prepare('DELETE FROM pedidos WHERE id = ?').run(pedidoId);
 const itensAposExclusao = db.prepare('SELECT * FROM pedido_itens WHERE pedido_id = ?').all(pedidoId);
 assert.strictEqual(itensAposExclusao.length, 0, 'Itens do pedido devem ser excluídos em cascata');

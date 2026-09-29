@@ -18,6 +18,24 @@ function formatarDataBR(dataIso) {
   return dataIso;
 }
 
+function obterHojeLocal() {
+  const agora = new Date();
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, '0');
+  const dia = String(agora.getDate()).padStart(2, '0');
+  return ano + '-' + mes + '-' + dia;
+}
+
+function adicionarDias(dataIso, dias) {
+  const partes = dataIso.split('-').map(Number);
+  const d = new Date(partes[0], partes[1] - 1, partes[2]);
+  d.setDate(d.getDate() + dias);
+  const resAno = d.getFullYear();
+  const resMes = String(d.getMonth() + 1).padStart(2, '0');
+  const resDia = String(d.getDate()).padStart(2, '0');
+  return resAno + '-' + resMes + '-' + resDia;
+}
+
 function buscarProdutosComPreco(usuarioId) {
   const totalFixosRow = db.prepare('SELECT COALESCE(SUM(valor_mensal), 0) AS t FROM custos_fixos WHERE usuario_id = ?').get(usuarioId);
   const totalFixos = totalFixosRow ? totalFixosRow.t : 0;
@@ -98,6 +116,27 @@ function gerarTextoWhatsApp(pedido, itens) {
 router.get('/', exigirLogin, (req, res) => {
   const uid = req.session.usuario.id;
   const statusFiltro = (req.query.status || 'todos').toLowerCase();
+  const periodoFiltro = (req.query.periodo || 'todos').toLowerCase();
+  let dataDe = (req.query.data_de || '').trim();
+  let dataAte = (req.query.data_ate || '').trim();
+
+  const hoje = obterHojeLocal();
+
+  if (periodoFiltro === 'hoje') {
+    dataDe = hoje;
+    dataAte = hoje;
+  } else if (periodoFiltro === 'amanha') {
+    dataDe = adicionarDias(hoje, 1);
+    dataAte = dataDe;
+  } else if (periodoFiltro === 'semana') {
+    dataDe = hoje;
+    dataAte = adicionarDias(hoje, 7);
+  } else if (periodoFiltro === 'mes') {
+    const partesHoje = hoje.split('-');
+    dataDe = partesHoje[0] + '-' + partesHoje[1] + '-01';
+    const ultimoDia = new Date(Number(partesHoje[0]), Number(partesHoje[1]), 0).getDate();
+    dataAte = partesHoje[0] + '-' + partesHoje[1] + '-' + String(ultimoDia).padStart(2, '0');
+  }
 
   let querySql = `
     SELECT 
@@ -116,6 +155,17 @@ router.get('/', exigirLogin, (req, res) => {
   if (statusFiltro && statusFiltro !== 'todos') {
     querySql += ' AND p.status = ?';
     params.push(statusFiltro);
+  }
+
+  if (dataDe && dataAte) {
+    querySql += ' AND p.data_entrega BETWEEN ? AND ?';
+    params.push(dataDe, dataAte);
+  } else if (dataDe) {
+    querySql += ' AND p.data_entrega >= ?';
+    params.push(dataDe);
+  } else if (dataAte) {
+    querySql += ' AND p.data_entrega <= ?';
+    params.push(dataAte);
   }
 
   querySql += ' ORDER BY p.data_entrega ASC, p.horario_entrega ASC, p.id DESC';
@@ -151,6 +201,9 @@ router.get('/', exigirLogin, (req, res) => {
   res.render('pedidos', {
     pedidos: listaFormatada,
     statusFiltro,
+    periodoFiltro,
+    dataDe: req.query.data_de || (periodoFiltro === 'personalizado' ? dataDe : ''),
+    dataAte: req.query.data_ate || (periodoFiltro === 'personalizado' ? dataAte : ''),
     kpis: {
       total: kpis.total_pedidos || 0,
       abertos: kpis.total_abertos || 0,

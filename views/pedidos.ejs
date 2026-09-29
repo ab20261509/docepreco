@@ -1,4 +1,4 @@
-﻿<%- include('partials/topo') %>
+<%- include('partials/topo') %>
 
 <!-- KPIs Comerciais Modernizados com Ícones e Destaque -->
 <div class="grid-kpis">
@@ -72,27 +72,72 @@
     </div>
   </div>
 
-  <!-- Abas de Filtros de Status -->
-  <div class="filtro-abas">
-    <a href="/pedidos" class="aba-item <%= statusFiltro === 'todos' ? 'ativa' : '' %>">
-      <span>Todos</span>
-      <span class="badge-aba"><%= kpis.total %></span>
-    </a>
-    <a href="/pedidos?status=orcamento" class="aba-item <%= statusFiltro === 'orcamento' ? 'ativa' : '' %>">
-      <span>📋 Orçamentos</span>
-    </a>
-    <a href="/pedidos?status=confirmado" class="aba-item <%= statusFiltro === 'confirmado' ? 'ativa' : '' %>">
-      <span>🟡 Confirmados</span>
-    </a>
-    <a href="/pedidos?status=producao" class="aba-item <%= statusFiltro === 'producao' ? 'ativa' : '' %>">
-      <span>🟠 Em Produção</span>
-    </a>
-    <a href="/pedidos?status=entregue" class="aba-item <%= statusFiltro === 'entregue' ? 'ativa' : '' %>">
-      <span>🟢 Entregues</span>
-    </a>
-    <a href="/pedidos?status=cancelado" class="aba-item <%= statusFiltro === 'cancelado' ? 'ativa' : '' %>">
-      <span>🔴 Cancelados</span>
-    </a>
+  <!-- Barra de Filtros: Status e Período de Entrega -->
+  <div style="display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 1.15rem;">
+    <!-- Linha 1: Status -->
+    <div class="filtro-abas" style="margin-bottom: 0;">
+      <a href="/pedidos?status=todos<%= periodoFiltro !== 'todos' ? '&periodo=' + periodoFiltro : '' %><%= dataDe ? '&data_de=' + dataDe : '' %><%= dataAte ? '&data_ate=' + dataAte : '' %>" class="aba-item <%= statusFiltro === 'todos' ? 'ativa' : '' %>">
+        <span>Todos</span>
+        <span class="badge-aba"><%= kpis.total %></span>
+      </a>
+      <a href="/pedidos?status=orcamento<%= periodoFiltro !== 'todos' ? '&periodo=' + periodoFiltro : '' %><%= dataDe ? '&data_de=' + dataDe : '' %><%= dataAte ? '&data_ate=' + dataAte : '' %>" class="aba-item <%= statusFiltro === 'orcamento' ? 'ativa' : '' %>">
+        <span>📋 Orçamentos</span>
+      </a>
+      <a href="/pedidos?status=confirmado<%= periodoFiltro !== 'todos' ? '&periodo=' + periodoFiltro : '' %><%= dataDe ? '&data_de=' + dataDe : '' %><%= dataAte ? '&data_ate=' + dataAte : '' %>" class="aba-item <%= statusFiltro === 'confirmado' ? 'ativa' : '' %>">
+        <span>🟡 Confirmados</span>
+      </a>
+      <a href="/pedidos?status=producao<%= periodoFiltro !== 'todos' ? '&periodo=' + periodoFiltro : '' %><%= dataDe ? '&data_de=' + dataDe : '' %><%= dataAte ? '&data_ate=' + dataAte : '' %>" class="aba-item <%= statusFiltro === 'producao' ? 'ativa' : '' %>">
+        <span>🟠 Em Produção</span>
+      </a>
+      <a href="/pedidos?status=entregue<%= periodoFiltro !== 'todos' ? '&periodo=' + periodoFiltro : '' %><%= dataDe ? '&data_de=' + dataDe : '' %><%= dataAte ? '&data_ate=' + dataAte : '' %>" class="aba-item <%= statusFiltro === 'entregue' ? 'ativa' : '' %>">
+        <span>🟢 Entregues</span>
+      </a>
+      <a href="/pedidos?status=cancelado<%= periodoFiltro !== 'todos' ? '&periodo=' + periodoFiltro : '' %><%= dataDe ? '&data_de=' + dataDe : '' %><%= dataAte ? '&data_ate=' + dataAte : '' %>" class="aba-item <%= statusFiltro === 'cancelado' ? 'ativa' : '' %>">
+        <span>🔴 Cancelados</span>
+      </a>
+    </div>
+
+    <!-- Linha 2: Período de Entrega -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.65rem; background: #faf7f8; border: 1px solid #ebd9c3; border-radius: 10px; padding: 0.5rem 0.85rem;">
+      <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+        <span style="font-size: 0.76rem; font-weight: 700; color: var(--cor-texto-suave); text-transform: uppercase; margin-right: 0.2rem;">
+          📅 Entrega:
+        </span>
+        <a href="/pedidos?status=<%= statusFiltro %>&periodo=todos" class="btn-periodo-pill <%= periodoFiltro === 'todos' && !dataDe && !dataAte ? 'ativo' : '' %>">
+          Todos os Períodos
+        </a>
+        <a href="/pedidos?status=<%= statusFiltro %>&periodo=hoje" class="btn-periodo-pill <%= periodoFiltro === 'hoje' ? 'ativo' : '' %>">
+          Hoje
+        </a>
+        <a href="/pedidos?status=<%= statusFiltro %>&periodo=amanha" class="btn-periodo-pill <%= periodoFiltro === 'amanha' ? 'ativo' : '' %>">
+          Amanhã
+        </a>
+        <a href="/pedidos?status=<%= statusFiltro %>&periodo=semana" class="btn-periodo-pill <%= periodoFiltro === 'semana' ? 'ativo' : '' %>">
+          Próximos 7 Dias
+        </a>
+        <a href="/pedidos?status=<%= statusFiltro %>&periodo=mes" class="btn-periodo-pill <%= periodoFiltro === 'mes' ? 'ativo' : '' %>">
+          Este Mês
+        </a>
+      </div>
+
+      <!-- Formulário Período Personalizado (De / Até) -->
+      <form method="GET" action="/pedidos" style="margin: 0; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+        <input type="hidden" name="status" value="<%= statusFiltro %>">
+        <input type="hidden" name="periodo" value="personalizado">
+        <span style="font-size: 0.76rem; color: var(--cor-texto-suave); font-weight: 600;">De:</span>
+        <input type="date" name="data_de" value="<%= dataDe %>" class="input" style="height: 30px; font-size: 0.78rem; width: 125px; padding: 0.15rem 0.35rem;">
+        <span style="font-size: 0.76rem; color: var(--cor-texto-suave); font-weight: 600;">Até:</span>
+        <input type="date" name="data_ate" value="<%= dataAte %>" class="input" style="height: 30px; font-size: 0.78rem; width: 125px; padding: 0.15rem 0.35rem;">
+        <button type="submit" class="btn btn-primario btn-sm" style="height: 30px; padding: 0 0.65rem; font-size: 0.78rem;">
+          Filtrar
+        </button>
+        <% if (periodoFiltro !== 'todos' || dataDe || dataAte || statusFiltro !== 'todos') { %>
+          <a href="/pedidos" class="btn btn-secundario btn-sm" style="height: 30px; padding: 0 0.55rem; font-size: 0.78rem; color: #dc2626; border-color: #fca5a5;" title="Limpar todos os filtros">
+            ✕ Limpar
+          </a>
+        <% } %>
+      </form>
+    </div>
   </div>
 
   <% if (pedidos.length === 0) { %>
