@@ -19,7 +19,7 @@ if (fs.existsSync(dbPath)) {
     console.log('⚠️ Arquivo em uso, limpando tabelas via SQL...');
     const db = new Database(dbPath);
     db.pragma('foreign_keys = OFF');
-    const tabelas = ['clientes', 'ingredientes_compras', 'ingredientes_catalogo', 'complementos', 'ingredientes', 'produtos', 'custos_fixos', 'configuracoes', 'usuarios', 'sessions'];
+    const tabelas = ['pedido_itens', 'pedidos', 'clientes', 'ingredientes_compras', 'ingredientes_catalogo', 'complementos', 'ingredientes', 'produtos', 'custos_fixos', 'configuracoes', 'usuarios', 'sessions'];
     tabelas.forEach(t => {
       try { db.exec(`DROP TABLE IF EXISTS ${t}`); } catch (e) {}
     });

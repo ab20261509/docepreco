@@ -1046,5 +1046,178 @@ footer.rodape {
   transform: translateY(-1px);
 }
 
+/* ============================================================================
+   MÓDULO DE PEDIDOS E ORÇAMENTOS
+   ============================================================================ */
+
+/* Badges de Status de Pedido */
+.badge-pedido-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+  border: 1px solid transparent;
+}
+
+.status-orcamento {
+  background-color: #f0f9ff;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+.status-confirmado {
+  background-color: #fefce8;
+  color: #a16207;
+  border-color: #fef08a;
+}
+
+.status-producao {
+  background-color: #fff7ed;
+  color: #c2410c;
+  border-color: #ffedd5;
+}
+
+.status-entregue {
+  background-color: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.status-cancelado {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+/* Abas de Filtros de Pedidos */
+.filtro-abas {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.15rem;
+}
+
+.aba-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+  background: #ffffff;
+  border: 1px solid var(--cor-borda);
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.aba-item:hover {
+  background-color: #fdf2f6;
+  color: var(--cor-primaria);
+  border-color: #fbcfe8;
+}
+
+.aba-item.ativa {
+  background-color: var(--cor-primaria);
+  color: #ffffff;
+  border-color: var(--cor-primaria);
+  box-shadow: 0 2px 6px rgba(214, 51, 108, 0.25);
+}
+
+.aba-item .badge-aba {
+  background: rgba(0, 0, 0, 0.08);
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  font-size: 0.72rem;
+}
+
+.aba-item.ativa .badge-aba {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* Card de Totais do Pedido */
+.card-totais-pedido {
+  background: #fdfbf7;
+  border: 1px solid #f1e6d0;
+  border-radius: 10px;
+  padding: 1.15rem;
+}
+
+.linha-total-pedido {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave);
+}
+
+.linha-total-destaque {
+  border-top: 2px dashed #e2d7c0;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--cor-texto);
+}
+
+.linha-total-destaque .valor-grande {
+  color: var(--cor-primaria);
+  font-size: 1.35rem;
+}
+
+.linha-saldo-restante {
+  background: #fff;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  margin-top: 0.65rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  color: #c2410c;
+}
+
+.btn-chip {
+  background: #f1eaed;
+  border: 1px solid #dfd3d8;
+  color: var(--cor-primaria);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-chip:hover {
+  background: var(--cor-primaria);
+  color: #fff;
+  border-color: var(--cor-primaria);
+}
+
+/* Resumo WhatsApp */
+.caixa-resumo-whatsapp {
+  background-color: #f7faf7;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  color: #1e3a1e;
+  max-height: 400px;
+  overflow-y: auto;
+  line-height: 1.45;
+}
+
 
 

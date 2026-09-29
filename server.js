@@ -68,6 +68,7 @@ app.use('/custos', require('./routes/custos'));
 app.use('/produtos', require('./routes/produtos'));
 app.use('/ingredientes', require('./routes/ingredientes'));
 app.use('/clientes', require('./routes/clientes'));
+app.use('/pedidos', require('./routes/pedidos'));
 
 // Rota 404
 app.use((req, res) => {

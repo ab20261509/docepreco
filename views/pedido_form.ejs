@@ -1,0 +1,471 @@
+﻿<%- include('partials/topo') %>
+
+<div style="max-width: 1000px; margin: 0 auto;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem;">
+    <div>
+      <h2><%= pedido ? ('✏️ Editar Pedido #' + pedido.id) : '➕ Novo Pedido / Orçamento' %></h2>
+      <p class="subtitulo" style="margin-bottom: 0;">Conecte as receitas da fábrica ao seu cliente com cálculo automático</p>
+    </div>
+    <a href="/pedidos" class="btn btn-secundario btn-sm">← Voltar para Pedidos</a>
+  </div>
+
+  <form method="POST" action="<%= pedido ? ('/pedidos/' + pedido.id + '/editar') : '/pedidos' %>" id="formPedido">
+    
+    <!-- 1. Dados do Cliente -->
+    <div class="cartao" style="margin-bottom: 1.15rem;">
+      <h3 style="font-size: 1.05rem; margin-bottom: 0.85rem; color: var(--cor-primaria); display: flex; align-items: center; gap: 0.4rem;">
+        <span>👤</span> <span>Identificação do Cliente</span>
+      </h3>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+        <div>
+          <label class="rotulo" for="selectCliente">Cliente Cadastrado</label>
+          <select id="selectCliente" name="cliente_id" class="input">
+            <option value="">-- Cliente Avulso / Não Cadastrado --</option>
+            <% clientes.forEach(c => { %>
+              <option 
+                value="<%= c.id %>" 
+                data-telefone="<%= c.telefone || '' %>"
+                data-endereco="<%= c.endereco || '' %>"
+                data-bairro="<%= c.bairro || '' %>"
+                data-cidade="<%= c.cidade || '' %>"
+                <%= ((pedido && pedido.cliente_id === c.id) || (!pedido && clientePreSelecionado === c.id)) ? 'selected' : '' %>
+              >
+                <%= c.nome %> <%= c.telefone ? ('(' + c.telefone + ')') : '' %> <%= c.bairro ? ('- ' + c.bairro) : '' %>
+              </option>
+            <% }); %>
+          </select>
+          <div style="font-size: 0.76rem; color: var(--cor-texto-suave); margin-top: 4px;">
+            Dica: Se o cliente já foi cadastrado, o endereço e telefone serão preenchidos automaticamente.
+          </div>
+        </div>
+
+        <div id="blocoClienteAvulso" style="display: <%= (pedido && pedido.cliente_id) ? 'none' : 'grid' %>; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div>
+            <label class="rotulo" for="cliente_nome_avulso">Nome do Cliente Avulso</label>
+            <input 
+              type="text" 
+              id="cliente_nome_avulso" 
+              name="cliente_nome_avulso" 
+              class="input" 
+              placeholder="Ex: Mariana Silva"
+              value="<%= pedido ? (pedido.cliente_nome_avulso || '') : '' %>"
+            >
+          </div>
+          <div>
+            <label class="rotulo" for="cliente_telefone_avulso">WhatsApp / Telefone</label>
+            <input 
+              type="text" 
+              id="cliente_telefone_avulso" 
+              name="cliente_telefone_avulso" 
+              class="input" 
+              placeholder="(XX) 99999-9999"
+              value="<%= pedido ? (pedido.cliente_telefone_avulso || '') : '' %>"
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Data, Horário e Entrega -->
+    <div class="cartao" style="margin-bottom: 1.15rem;">
+      <h3 style="font-size: 1.05rem; margin-bottom: 0.85rem; color: var(--cor-primaria); display: flex; align-items: center; gap: 0.4rem;">
+        <span>📅</span> <span>Data de Entrega & Logística</span>
+      </h3>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 0.85rem;">
+        <div>
+          <label class="rotulo" for="data_entrega">Data de Entrega *</label>
+          <input 
+            type="date" 
+            id="data_entrega" 
+            name="data_entrega" 
+            class="input" 
+            required
+            value="<%= pedido ? pedido.data_entrega : new Date().toISOString().split('T')[0] %>"
+          >
+        </div>
+        <div>
+          <label class="rotulo" for="horario_entrega">Horário Previsto</label>
+          <input 
+            type="time" 
+            id="horario_entrega" 
+            name="horario_entrega" 
+            class="input" 
+            value="<%= pedido ? (pedido.horario_entrega || '') : '14:00' %>"
+          >
+        </div>
+        <div>
+          <label class="rotulo" for="tipo_entrega">Tipo de Recebimento</label>
+          <select id="tipo_entrega" name="tipo_entrega" class="input">
+            <option value="retirada" <%= (pedido && pedido.tipo_entrega === 'retirada') ? 'selected' : '' %>>🏬 Retirada no Local</option>
+            <option value="entrega" <%= (pedido && pedido.tipo_entrega === 'entrega') ? 'selected' : '' %>>🚗 Entrega no Endereço</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="blocoEnderecoEntrega" style="display: <%= (pedido && pedido.tipo_entrega === 'entrega') ? 'block' : 'none' %>;">
+        <label class="rotulo" for="endereco_entrega">Endereço Completo de Entrega</label>
+        <input 
+          type="text" 
+          id="endereco_entrega" 
+          name="endereco_entrega" 
+          class="input" 
+          placeholder="Rua, número, complemento, bairro e ponto de referência"
+          value="<%= pedido ? (pedido.endereco_entrega || '') : '' %>"
+        >
+      </div>
+    </div>
+
+    <!-- 3. Itens do Pedido -->
+    <div class="cartao" style="margin-bottom: 1.15rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+        <h3 style="font-size: 1.05rem; margin: 0; color: var(--cor-primaria); display: flex; align-items: center; gap: 0.4rem;">
+          <span>🎂</span> <span>Itens do Pedido</span>
+        </h3>
+        <div style="display: flex; gap: 0.45rem;">
+          <button type="button" class="btn btn-secundario btn-sm" id="btnAdicionarProduto">
+            ➕ Produto da Fábrica
+          </button>
+          <button type="button" class="btn btn-secundario btn-sm" id="btnAdicionarItemAvulso">
+            ➕ Item Avulso / Topo
+          </button>
+        </div>
+      </div>
+
+      <div class="tabela-responsiva">
+        <table class="tabela" id="tabelaItensPedido">
+          <thead>
+            <tr>
+              <th>Descrição do Item</th>
+              <th style="width: 80px; text-align: center;">Qtd</th>
+              <th style="width: 110px; text-align: right;">Preço Un (R$)</th>
+              <th style="width: 110px; text-align: right;">Subtotal</th>
+              <th style="width: 200px;">Observação / Tema</th>
+              <th style="width: 45px; text-align: center;"></th>
+            </tr>
+          </thead>
+          <tbody id="corpoItens">
+            <!-- Linhas dinâmicas -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 4. Totais e Condições Financeiras -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.15rem; margin-bottom: 1.15rem;">
+      <!-- Coluna Pagamento -->
+      <div class="cartao">
+        <h3 style="font-size: 1.05rem; margin-bottom: 0.85rem; color: var(--cor-primaria); display: flex; align-items: center; gap: 0.4rem;">
+          <span>💳</span> <span>Condições de Pagamento</span>
+        </h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.85rem;">
+          <div>
+            <label class="rotulo" for="status_pagamento">Status Pagamento</label>
+            <select id="status_pagamento" name="status_pagamento" class="input">
+              <option value="pendente" <%= (pedido && pedido.status_pagamento === 'pendente') ? 'selected' : '' %>>⏳ Pendente</option>
+              <option value="sinal_pago" <%= (pedido && pedido.status_pagamento === 'sinal_pago') ? 'selected' : '' %>>💵 Sinal Pago</option>
+              <option value="pago" <%= (pedido && pedido.status_pagamento === 'pago') ? 'selected' : '' %>>✅ 100% Pago</option>
+            </select>
+          </div>
+          <div>
+            <label class="rotulo" for="forma_pagamento">Forma de Pagamento</label>
+            <select id="forma_pagamento" name="forma_pagamento" class="input">
+              <option value="Pix" <%= (pedido && pedido.forma_pagamento === 'Pix') ? 'selected' : '' %>>Pix</option>
+              <option value="Dinheiro" <%= (pedido && pedido.forma_pagamento === 'Dinheiro') ? 'selected' : '' %>>Dinheiro</option>
+              <option value="Cartão de Crédito" <%= (pedido && pedido.forma_pagamento === 'Cartão de Crédito') ? 'selected' : '' %>>Cartão de Crédito</option>
+              <option value="Cartão de Débito" <%= (pedido && pedido.forma_pagamento === 'Cartão de Débito') ? 'selected' : '' %>>Cartão de Débito</option>
+              <option value="A Combinar" <%= (pedido && pedido.forma_pagamento === 'A Combinar') ? 'selected' : '' %>>A Combinar</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 0.85rem;">
+          <label class="rotulo" for="status">Situação do Pedido</label>
+          <select id="status" name="status" class="input" style="font-weight: 700;">
+            <option value="orcamento" <%= (pedido && pedido.status === 'orcamento') ? 'selected' : '' %>>📋 Orçamento (Em Negociação)</option>
+            <option value="confirmado" <%= (pedido && pedido.status === 'confirmado') ? 'selected' : '' %>>🟡 Confirmado (Entrada Recebida)</option>
+            <option value="producao" <%= (pedido && pedido.status === 'producao') ? 'selected' : '' %>>🟠 Em Produção na Cozinha</option>
+            <option value="entregue" <%= (pedido && pedido.status === 'entregue') ? 'selected' : '' %>>🟢 Entregue ao Cliente</option>
+            <option value="cancelado" <%= (pedido && pedido.status === 'cancelado') ? 'selected' : '' %>>🔴 Cancelado</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="rotulo" for="observacoes">Observações Gerais / Instruções</label>
+          <textarea 
+            id="observacoes" 
+            name="observacoes" 
+            class="input" 
+            rows="3" 
+            placeholder="Ex: Recheio de ninho com morangos frescos. Escrever na placa: Feliz Aniversário Marina!"
+          ><%= pedido ? (pedido.observacoes || '') : '' %></textarea>
+        </div>
+      </div>
+
+      <!-- Coluna Totais -->
+      <div class="card-totais-pedido">
+        <h3 style="font-size: 1.05rem; margin-bottom: 0.85rem; color: #7c2d12; display: flex; align-items: center; gap: 0.4rem;">
+          <span>💰</span> <span>Fechamento Financeiro</span>
+        </h3>
+
+        <div class="linha-total-pedido">
+          <span>Subtotal dos Produtos</span>
+          <strong id="labelSubtotalProdutos">R$ 0,00</strong>
+        </div>
+
+        <div class="linha-total-pedido" style="gap: 0.5rem;">
+          <label for="taxa_entrega" style="margin: 0; cursor: pointer;">Taxa de Entrega (+)</label>
+          <input 
+            type="number" 
+            step="0.01" 
+            min="0" 
+            id="taxa_entrega" 
+            name="taxa_entrega" 
+            class="input" 
+            style="width: 100px; height: 32px; text-align: right; padding: 0.2rem 0.5rem;"
+            value="<%= pedido ? pedido.taxa_entrega : 0 %>"
+          >
+        </div>
+
+        <div class="linha-total-pedido" style="gap: 0.5rem;">
+          <label for="desconto" style="margin: 0; cursor: pointer;">Desconto (-)</label>
+          <input 
+            type="number" 
+            step="0.01" 
+            min="0" 
+            id="desconto" 
+            name="desconto" 
+            class="input" 
+            style="width: 100px; height: 32px; text-align: right; padding: 0.2rem 0.5rem;"
+            value="<%= pedido ? pedido.desconto : 0 %>"
+          >
+        </div>
+
+        <div class="linha-total-pedido linha-total-destaque">
+          <span>VALOR TOTAL</span>
+          <span class="valor-grande" id="labelValorTotal">R$ 0,00</span>
+        </div>
+
+        <div style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid #ebd9c3;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <label for="valor_sinal" style="font-size: 0.85rem; font-weight: 700; margin: 0;">
+              Sinal / Entrada (R$)
+            </label>
+            <button type="button" class="btn-chip" id="btnCalcular50Sinal" title="Preencher automaticamente com 50% do total">
+              ⚡ 50% Sinal
+            </button>
+          </div>
+          <input 
+            type="number" 
+            step="0.01" 
+            min="0" 
+            id="valor_sinal" 
+            name="valor_sinal" 
+            class="input" 
+            style="height: 34px; font-weight: 700; text-align: right;"
+            value="<%= pedido ? pedido.valor_sinal : 0 %>"
+          >
+        </div>
+
+        <div class="linha-saldo-restante">
+          <span>Saldo Restante na Entrega:</span>
+          <span id="labelSaldoRestante" style="font-size: 1.1rem;">R$ 0,00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botões de Ação -->
+    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+      <a href="/pedidos" class="btn btn-secundario">Cancelar</a>
+      <button type="submit" class="btn btn-primario" style="padding: 0.65rem 1.75rem; font-size: 0.95rem;">
+        💾 Salvar Pedido / Orçamento
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<!-- Dados JSON dos Produtos da Fábrica para o Script -->
+<script>
+  const PRODUTOS_FABRICA = <%- JSON.stringify(produtos) %>;
+  const ITENS_EXISTENTES = <%- JSON.stringify(itens) %>;
+
+  const selectCliente = document.getElementById('selectCliente');
+  const blocoClienteAvulso = document.getElementById('blocoClienteAvulso');
+  const tipoEntrega = document.getElementById('tipo_entrega');
+  const blocoEndereco = document.getElementById('blocoEnderecoEntrega');
+  const inputEndereco = document.getElementById('endereco_entrega');
+  const corpoItens = document.getElementById('corpoItens');
+
+  const taxaEntregaInput = document.getElementById('taxa_entrega');
+  const descontoInput = document.getElementById('desconto');
+  const valorSinalInput = document.getElementById('valor_sinal');
+
+  const labelSubtotal = document.getElementById('labelSubtotalProdutos');
+  const labelTotal = document.getElementById('labelValorTotal');
+  const labelSaldo = document.getElementById('labelSaldoRestante');
+
+  // Alternar Cliente Cadastrado vs Avulso
+  selectCliente.addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    if (this.value) {
+      blocoClienteAvulso.style.display = 'none';
+      const end = opt.getAttribute('data-endereco') || '';
+      const bairro = opt.getAttribute('data-bairro') || '';
+      const cid = opt.getAttribute('data-cidade') || '';
+      let enderecoCompleto = end;
+      if (bairro) enderecoCompleto += (enderecoCompleto ? ', ' : '') + bairro;
+      if (cid) enderecoCompleto += (enderecoCompleto ? ' - ' : '') + cid;
+      
+      if (enderecoCompleto && !inputEndereco.value) {
+        inputEndereco.value = enderecoCompleto;
+      }
+    } else {
+      blocoClienteAvulso.style.display = 'grid';
+    }
+  });
+
+  // Alternar Tipo de Entrega (Retirada vs Entrega)
+  tipoEntrega.addEventListener('change', function() {
+    blocoEndereco.style.display = this.value === 'entrega' ? 'block' : 'none';
+  });
+
+  // Função para criar linha de item
+  function adicionarLinha(dados = {}) {
+    const tr = document.createElement('tr');
+    tr.className = 'linha-item-pedido';
+
+    const isProdutoFabrica = dados.produto_id !== undefined ? Boolean(dados.produto_id) : true;
+
+    let opcoesProdutosHtml = '<option value="">-- Selecione a Receita da Fábrica --</option>';
+    PRODUTOS_FABRICA.forEach(p => {
+      const selected = dados.produto_id == p.id ? 'selected' : '';
+      opcoesProdutosHtml += `<option value="${p.id}" data-preco="${p.precoSugerido}" ${selected}>${p.nome} (Sugerido: R$ ${p.precoSugerido.toFixed(2)})</option>`;
+    });
+
+    tr.innerHTML = `
+      <td>
+        <input type="hidden" name="item_produto_id" class="item-produto-id" value="${dados.produto_id || ''}">
+        ${isProdutoFabrica ? `
+          <select class="input select-produto-fabrica" style="height: 32px; font-size: 0.85rem; padding: 0.2rem 0.5rem;">
+            ${opcoesProdutosHtml}
+          </select>
+          <input type="hidden" name="item_descricao" class="item-descricao" value="${dados.descricao || ''}">
+        ` : `
+          <input type="text" name="item_descricao" class="input item-descricao" placeholder="Ex: Topo de Bolo Personalizado / Vela" style="height: 32px; font-size: 0.85rem; padding: 0.2rem 0.5rem;" value="${dados.descricao || ''}" required>
+        `}
+      </td>
+      <td>
+        <input type="number" step="0.01" min="0.01" name="item_quantidade" class="input item-qtd" style="height: 32px; font-size: 0.85rem; text-align: center; padding: 0.2rem 0.2rem;" value="${dados.quantidade || 1}" required>
+      </td>
+      <td>
+        <input type="number" step="0.01" min="0" name="item_preco" class="input item-preco" style="height: 32px; font-size: 0.85rem; text-align: right; padding: 0.2rem 0.4rem;" value="${dados.preco_unitario !== undefined ? dados.preco_unitario : 0}" required>
+      </td>
+      <td style="text-align: right; font-weight: 700; font-size: 0.88rem; vertical-align: middle;">
+        <span class="item-subtotal-texto">R$ 0,00</span>
+      </td>
+      <td>
+        <input type="text" name="item_observacao" class="input" placeholder="Detalhes / Sabor..." style="height: 32px; font-size: 0.82rem; padding: 0.2rem 0.5rem;" value="${dados.observacao || ''}">
+      </td>
+      <td style="text-align: center; vertical-align: middle;">
+        <button type="button" class="btn-icone-tabela btn-remover-item" title="Remover item">✕</button>
+      </td>
+    `;
+
+    corpoItens.appendChild(tr);
+
+    // Eventos da linha
+    const selectProd = tr.querySelector('.select-produto-fabrica');
+    const inputDesc = tr.querySelector('.item-descricao');
+    const inputId = tr.querySelector('.item-produto-id');
+    const inputQtd = tr.querySelector('.item-qtd');
+    const inputPreco = tr.querySelector('.item-preco');
+    const btnRemover = tr.querySelector('.btn-remover-item');
+
+    if (selectProd) {
+      selectProd.addEventListener('change', function() {
+        const opt = this.options[this.selectedIndex];
+        if (this.value) {
+          inputId.value = this.value;
+          inputDesc.value = opt.text.split(' (Sugerido')[0];
+          const precoSug = parseFloat(opt.getAttribute('data-preco')) || 0;
+          inputPreco.value = precoSug.toFixed(2);
+        } else {
+          inputId.value = '';
+          inputDesc.value = '';
+        }
+        recalcularTotais();
+      });
+    }
+
+    inputQtd.addEventListener('input', recalcularTotais);
+    inputPreco.addEventListener('input', recalcularTotais);
+
+    btnRemover.addEventListener('click', function() {
+      tr.remove();
+      recalcularTotais();
+    });
+
+    recalcularTotais();
+  }
+
+  // Recalcular Subtotais e Totais do Pedido
+  function recalcularTotais() {
+    let subtotalProdutos = 0;
+    const linhas = document.querySelectorAll('.linha-item-pedido');
+
+    linhas.forEach(linha => {
+      const qtd = parseFloat(linha.querySelector('.item-qtd').value) || 0;
+      const preco = parseFloat(linha.querySelector('.item-preco').value) || 0;
+      const subtotal = qtd * preco;
+      linha.querySelector('.item-subtotal-texto').textContent = 'R$ ' + subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      subtotalProdutos += subtotal;
+    });
+
+    const taxa = parseFloat(taxaEntregaInput.value) || 0;
+    const desc = parseFloat(descontoInput.value) || 0;
+    const total = Math.max(0, subtotalProdutos + taxa - desc);
+    const sinal = parseFloat(valorSinalInput.value) || 0;
+    const saldo = Math.max(0, total - sinal);
+
+    labelSubtotal.textContent = 'R$ ' + subtotalProdutos.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    labelTotal.textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    labelSaldo.textContent = 'R$ ' + saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // Botão 50% de Sinal
+  document.getElementById('btnCalcular50Sinal').addEventListener('click', function() {
+    let subtotalProdutos = 0;
+    document.querySelectorAll('.linha-item-pedido').forEach(l => {
+      const q = parseFloat(l.querySelector('.item-qtd').value) || 0;
+      const p = parseFloat(l.querySelector('.item-preco').value) || 0;
+      subtotalProdutos += (q * p);
+    });
+    const taxa = parseFloat(taxaEntregaInput.value) || 0;
+    const desc = parseFloat(descontoInput.value) || 0;
+    const total = Math.max(0, subtotalProdutos + taxa - desc);
+
+    const metade = Number((total / 2).toFixed(2));
+    valorSinalInput.value = metade;
+    recalcularTotais();
+  });
+
+  // Ouvintes de taxa, desconto e sinal
+  taxaEntregaInput.addEventListener('input', recalcularTotais);
+  descontoInput.addEventListener('input', recalcularTotais);
+  valorSinalInput.addEventListener('input', recalcularTotais);
+
+  document.getElementById('btnAdicionarProduto').addEventListener('click', () => adicionarLinha({ produto_id: '', quantidade: 1, preco_unitario: 0 }));
+  document.getElementById('btnAdicionarItemAvulso').addEventListener('click', () => adicionarLinha({ produto_id: null, quantidade: 1, preco_unitario: 0 }));
+
+  // Inicialização com itens existentes ou linha inicial padrão
+  if (ITENS_EXISTENTES && ITENS_EXISTENTES.length > 0) {
+    ITENS_EXISTENTES.forEach(item => adicionarLinha(item));
+  } else {
+    adicionarLinha({ produto_id: '', quantidade: 1, preco_unitario: 0 });
+  }
+</script>
+
+<%- include('partials/rodape') %>
