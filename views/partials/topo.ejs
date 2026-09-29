@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Precificação para Confeitaria 🧁</title>
+  <link rel="stylesheet" href="/estilo.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <a href="/" class="logo">
+        <span class="icone">🧁</span>
+        <span>Doce Preço</span>
+      </a>
+
+      <% if (usuario) { %>
+        <nav class="menu">
+          <!-- Módulo Fábrica -->
+          <div class="menu-grupo">
+            <span class="menu-modulo-rotulo">🏭 Fábrica</span>
+            <a href="/" class="<%= (typeof activeNav !== 'undefined' && activeNav === 'painel') ? 'ativo' : '' %>" title="Painel de Precificação e Produtos">📊 Painel</a>
+            <a href="/ingredientes" class="<%= (typeof activeNav !== 'undefined' && activeNav === 'ingredientes') ? 'ativo' : '' %>" title="Catálogo de Insumos e Estoque">🥣 Insumos</a>
+            <a href="/custos" class="<%= (typeof activeNav !== 'undefined' && activeNav === 'custos') ? 'ativo' : '' %>" title="Despesas Fixas da Cozinha">🏢 Custos</a>
+            <a href="/produtos/novo" class="<%= (typeof activeNav !== 'undefined' && activeNav === 'novo_produto') ? 'ativo' : '' %>" title="Criar Nova Receita">➕ Receita</a>
+          </div>
+
+          <span class="menu-divisor"></span>
+
+          <!-- Módulo Comercial -->
+          <div class="menu-grupo">
+            <span class="menu-modulo-rotulo">🛍️ Comercial</span>
+            <a href="/clientes" class="<%= (typeof activeNav !== 'undefined' && activeNav === 'clientes') ? 'ativo' : '' %>" title="Base de Clientes e WhatsApp">👥 Clientes</a>
+          </div>
+        </nav>
+
+        <div class="usuario-info">
+          <span>Olá, <strong class="usuario-nome"><%= usuario.nome %></strong></span>
+          <form method="POST" action="/logout" style="margin: 0;">
+            <button type="submit" class="btn btn-secundario btn-sm">Sair</button>
+          </form>
+        </div>
+      <% } else { %>
+        <nav class="menu">
+          <a href="/login">Entrar</a>
+          <a href="/cadastro" class="btn btn-primario btn-sm" style="color: #fff;">Criar Conta</a>
+        </nav>
+      <% } %>
+    </div>
+  </header>
+
+  <main class="container">

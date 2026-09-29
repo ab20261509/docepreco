@@ -1,0 +1,31 @@
+{
+  "name": "precificacao-confeitaria",
+  "version": "1.0.0",
+  "description": "Sistema de precificação para confeitaria com banco SQL e login",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node test/calculo.test.js && node test/integration.test.js && node test/excel.test.js && node test/estoque.test.js && node test/validade.test.js && node test/edicao_compras.test.js && node test/clientes.test.js"
+  },
+  "keywords": [
+    "precificacao",
+    "confeitaria",
+    "express",
+    "sqlite"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.8.1",
+    "better-sqlite3-session-store": "^0.1.0",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "xlsx": "^0.18.5"
+  }
+}

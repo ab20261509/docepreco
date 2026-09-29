@@ -1,0 +1,611 @@
+<%- include('partials/topo') %>
+
+<% if (typeof sucesso !== 'undefined' && sucesso) { %>
+  <div class="alerta alerta-sucesso">
+    <span>✅</span>
+    <span>Operação realizada com sucesso!</span>
+  </div>
+<% } %>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem; flex-wrap: wrap; gap: 0.75rem;">
+  <div>
+    <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--cor-texto);">Ingredientes e Estoque 🥣📦</h1>
+    <p style="color: var(--cor-texto-suave); font-size: 0.85rem;">Catálogo de insumos, histórico de compras, validades e controle de estoque</p>
+  </div>
+  <div>
+    <button type="button" class="btn btn-primario btn-sm" id="btn-abrir-modal">
+      ➕ Novo Ingrediente
+    </button>
+  </div>
+</div>
+
+<!-- Painel de Alerta de Lotes Vencidos / Vencendo -->
+<% if ((typeof lotesVencidos !== 'undefined' && lotesVencidos.length > 0) || (typeof lotesVencendo !== 'undefined' && lotesVencendo.length > 0)) { %>
+  <div style="background-color: #fff3e0; border-left: 4px solid <%= lotesVencidos.length > 0 ? 'var(--cor-alerta)' : '#f57c00' %>; border-radius: 8px; padding: 0.85rem 1.15rem; margin-bottom: 1.15rem; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+      <div>
+        <h3 style="margin: 0; color: <%= lotesVencidos.length > 0 ? 'var(--cor-alerta)' : '#e65100' %>; font-size: 1.1rem; display: flex; align-items: center; gap: 0.4rem;">
+          <span>⚠️</span>
+          <span>Atenção à Validade dos Insumos!</span>
+        </h3>
+        <p style="margin-top: 0.25rem; font-size: 0.9rem; color: var(--cor-texto);">
+          <% if (lotesVencidos.length > 0) { %>
+            Você possui <strong style="color: var(--cor-alerta);"><%= lotesVencidos.length %> lote(s) VENCIDO(S)</strong> necessitando descarte ou baixa.
+          <% } %>
+          <% if (lotesVencendo.length > 0) { %>
+            <% if (lotesVencidos.length > 0) { %> e <% } %>
+            <strong><%= lotesVencendo.length %> lote(s) vencendo nos próximos 7 dias</strong> (priorize o uso em receitas!).
+          <% } %>
+        </p>
+      </div>
+      <div>
+        <button type="button" class="btn btn-sm btn-secundario" onclick="const p = document.getElementById('detalhes-alerta-validade'); p.style.display = p.style.display === 'none' ? 'block' : 'none';">
+          🔍 Ver Lotes em Risco
+        </button>
+      </div>
+    </div>
+
+    <!-- Painel Retrátil de Lotes -->
+    <div id="detalhes-alerta-validade" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #ffe0b2;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem;">
+        <% lotesVencidos.forEach(lv => { %>
+          <div style="background-color: #fff; border: 1px solid #ffcdd2; border-radius: 6px; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="color: var(--cor-texto);"><%= lv.ingrediente_nome %></strong>
+              <div style="font-size: 0.8rem; color: var(--cor-alerta); font-weight: 700;">
+                <%= lv.valInfo.rotulo %> &bull; <%= lv.qtd_embalagens * lv.qtd_por_embalagem %> <%= lv.ingrediente_unidade %>
+              </div>
+            </div>
+            <div>
+              <a href="/ingredientes/<%= lv.ingrediente_id %>" class="btn btn-sm btn-perigo">Descartar / Baixa</a>
+            </div>
+          </div>
+        <% }); %>
+        <% lotesVencendo.forEach(lve => { %>
+          <div style="background-color: #fff; border: 1px solid #ffe082; border-radius: 6px; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="color: var(--cor-texto);"><%= lve.ingrediente_nome %></strong>
+              <div style="font-size: 0.8rem; color: #b78103; font-weight: 700;">
+                <%= lve.valInfo.rotulo %> &bull; <%= lve.qtd_embalagens * lve.qtd_por_embalagem %> <%= lve.ingrediente_unidade %>
+              </div>
+            </div>
+            <div>
+              <a href="/ingredientes/<%= lve.ingrediente_id %>" class="btn btn-sm btn-secundario">Ver Receitas</a>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+<% } %>
+
+<!-- KPIs de Estoque -->
+<div class="grid-kpis">
+  <div class="kpi-card">
+    <span class="kpi-rotulo">Insumos Cadastrados</span>
+    <span class="kpi-valor"><%= totalItens %></span>
+    <span class="kpi-subtexto">Ingredientes no seu catálogo</span>
+  </div>
+
+  <div class="kpi-card">
+    <span class="kpi-rotulo">Valor em Estoque</span>
+    <span class="kpi-valor"><%= formatMoney(valorTotalEstoque) %></span>
+    <span class="kpi-subtexto">Capital investido em insumos</span>
+  </div>
+
+  <div class="kpi-card">
+    <span class="kpi-rotulo">Atenção ao Estoque</span>
+    <span class="kpi-valor" style="color: <%= itensEstoqueBaixo > 0 ? 'var(--cor-alerta)' : 'var(--cor-verde)' %>;">
+      <%= itensEstoqueBaixo %>
+    </span>
+    <span class="kpi-subtexto">Itens abaixo do estoque mínimo</span>
+  </div>
+</div>
+
+<!-- Grade de Ingredientes Cadastrados -->
+<div class="cartao">
+  <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-weight: 700;">📋 Insumos em Estoque e Custo de Reposição</span>
+        <span class="badge-contador" id="contador-ingredientes"><%= ingredientes.length %></span>
+      </div>
+      <div style="font-size: 0.82rem; font-weight: normal; color: var(--cor-texto-suave); margin-top: 0.2rem;">
+        Clique em "🛒 + Compra" para registrar novas entradas ou gerencie cadastros e histórico
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 0.6rem;">
+      <div class="busca-input-wrapper">
+        <span class="busca-icone">🔍</span>
+        <input type="text" id="filtro-ingredientes" placeholder="Buscar insumo..." class="input-busca-tabela" autocomplete="off">
+      </div>
+    </div>
+  </div>
+
+  <% if (ingredientes.length === 0) { %>
+    <div style="text-align: center; padding: 3rem 1rem;">
+      <span style="font-size: 3rem; display: block; margin-bottom: 0.75rem;">🥣</span>
+      <h3 style="margin-bottom: 0.5rem;">Nenhum ingrediente cadastrado no catálogo</h3>
+      <p style="color: var(--cor-texto-suave); margin-bottom: 1.5rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+        Cadastre os insumos que você usa com frequência (leite condensado, chocolate, farinha, ovos) para alimentar seu estoque e agilizar a criação de receitas.
+      </p>
+      <button type="button" class="btn btn-primario" onclick="abrirModal()">
+        ➕ Cadastrar Meu Primeiro Ingrediente
+      </button>
+    </div>
+  <% } else { %>
+    <div class="tabela-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width: 170px;">Ingrediente</th>
+            <th style="text-align: center; white-space: nowrap;">Embalagem Padrão</th>
+            <th style="text-align: right; white-space: nowrap;">Preço Pacote</th>
+            <th style="text-align: right; white-space: nowrap;">Custo Unitário</th>
+            <th style="text-align: center; white-space: nowrap;">Saldo em Estoque</th>
+            <th style="text-align: center; white-space: nowrap;">Validade Mais Próxima</th>
+            <th style="text-align: center; white-space: nowrap;">Status</th>
+            <th style="text-align: center; white-space: nowrap; min-width: 195px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-ingredientes-corpo">
+          <% ingredientes.forEach((item) => { %>
+            <tr class="linha-ingrediente" data-nome="<%= item.nome.toLowerCase() %>">
+              <td>
+                <a href="/ingredientes/<%= item.id %>" style="font-weight: 700; color: var(--cor-primaria); text-decoration: none; font-size: 0.95rem;" title="Ver detalhes e compras">
+                  <%= item.nome %>
+                </a>
+              </td>
+              <td style="text-align: center; white-space: nowrap;">
+                <%= item.qtd_embalagem_padrao %> <%= item.unidade %>
+              </td>
+              <td style="text-align: right; font-weight: 600; white-space: nowrap;">
+                <%= formatMoney(item.preco_atual) %>
+              </td>
+              <td style="text-align: right; color: var(--cor-texto-suave); font-size: 0.85rem; white-space: nowrap;">
+                <%= formatMoney(item.custoGramaOuUnidade) %> / <%= item.unidade %>
+              </td>
+              <td style="text-align: center; white-space: nowrap;">
+                <span style="font-weight: 700; color: <%= item.estaZerado ? 'var(--cor-alerta)' : (item.estaBaixo ? '#b78103' : 'var(--cor-texto)') %>;">
+                  <%= item.estoque_atual %> <%= item.unidade %>
+                </span>
+                <% if (item.qtd_embalagem_padrao > 1) { %>
+                  <div style="font-size: 0.72rem; color: var(--cor-texto-suave); font-weight: normal;">
+                    (~<%= (item.estoque_atual / item.qtd_embalagem_padrao).toFixed(1) %> pct)
+                  </div>
+                <% } %>
+              </td>
+              <td style="text-align: center; white-space: nowrap;">
+                <% if (item.infoValidadeProxima) { %>
+                  <span class="badge-validade <%= item.infoValidadeProxima.classe %>">
+                    <%= item.infoValidadeProxima.rotulo %>
+                  </span>
+                <% } else { %>
+                  <span class="badge-validade badge-neutro">Sem validade</span>
+                <% } %>
+              </td>
+              <td style="text-align: center; white-space: nowrap;">
+                <% if (item.estaZerado) { %>
+                  <span class="badge-status-estoque zerado" title="Estoque esgotado">
+                    ⛔ ZERADO
+                  </span>
+                <% } else if (item.estaBaixo) { %>
+                  <span class="badge-status-estoque baixo" title="Abaixo do estoque mínimo (<%= item.estoque_minimo %> <%= item.unidade %>)">
+                    ⚠️ BAIXO
+                  </span>
+                <% } else { %>
+                  <span class="badge-status-estoque em-dia" title="Estoque em nível saudável">
+                    ✓ EM DIA
+                  </span>
+                <% } %>
+              </td>
+              <td style="text-align: center; white-space: nowrap;">
+                <div class="tabela-acoes-container">
+                  <button type="button" class="btn btn-primario btn-sm btn-lancar-compra-modal"
+                    data-id="<%= item.id %>"
+                    data-nome="<%= item.nome %>"
+                    data-unidade="<%= item.unidade %>"
+                    data-embalagem="<%= item.qtd_embalagem_padrao %>"
+                    data-preco="<%= item.preco_atual %>"
+                    title="Lançar nova compra e entrada de estoque via popup"
+                    style="white-space: nowrap; padding: 0.35rem 0.65rem; font-weight: 700; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                    🛒 + Compra
+                  </button>
+                  <button type="button" class="btn-icone btn-editar-ing"
+                    data-id="<%= item.id %>"
+                    data-nome="<%= item.nome %>"
+                    data-unidade="<%= item.unidade %>"
+                    data-embalagem="<%= item.qtd_embalagem_padrao %>"
+                    data-minimo="<%= item.estoque_minimo %>"
+                    data-preco="<%= item.preco_atual %>"
+                    title="Editar dados cadastrais deste ingrediente">
+                    ✏️
+                  </button>
+                  <a href="/ingredientes/<%= item.id %>" class="btn-icone" title="Ver Histórico de Compras e Detalhes">
+                    📜
+                  </a>
+                  <form method="POST" action="/ingredientes/<%= item.id %>/excluir" style="margin: 0;" onsubmit="return confirm('Deseja realmente remover este ingrediente e todo o seu histórico de compras?');">
+                    <button type="submit" class="btn-icone btn-icone-perigo" title="Excluir ingrediente">✕</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<!-- Modal Popup: Cadastrar Novo Ingrediente -->
+<div id="modal-novo-ingrediente" class="modal-overlay" style="display: none;">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3 style="margin: 0; color: var(--cor-texto); font-size: 1.25rem; font-weight: 700;">
+        ➕ Cadastrar Novo Ingrediente
+      </h3>
+      <button type="button" class="btn-fechar-modal" id="btn-fechar-modal-x" aria-label="Fechar">&times;</button>
+    </div>
+
+    <form method="POST" action="/ingredientes" id="form-modal-ingrediente">
+      <input type="hidden" name="redirect" value="/ingredientes?sucesso=1">
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-grupo" style="grid-column: 1 / -1;">
+            <label for="input-nome-ingrediente">Nome do Ingrediente / Insumo *</label>
+            <input type="text" id="input-nome-ingrediente" name="nome" required placeholder="Ex: Leite Condensado Moça, Farinha Suprema...">
+          </div>
+
+          <div class="form-grupo">
+            <label for="unidade">Unidade de Uso *</label>
+            <select id="unidade" name="unidade" required>
+              <option value="g">Gramas (g) — para pesáveis</option>
+              <option value="ml">Mililitros (ml) — para líquidos</option>
+              <option value="un">Unidades (un) — ovos, embalagens</option>
+            </select>
+          </div>
+
+          <div class="form-grupo">
+            <label for="qtd_embalagem_padrao">Tamanho da Embalagem *</label>
+            <input type="number" id="qtd_embalagem_padrao" name="qtd_embalagem_padrao" step="any" min="0.001" value="395" required placeholder="Ex: 395, 1000, 200...">
+            <span class="ajuda-texto">Quantidade no pacote/lata</span>
+          </div>
+
+          <div class="form-grupo">
+            <label for="estoque_minimo">Estoque Mínimo</label>
+            <input type="number" id="estoque_minimo" name="estoque_minimo" step="any" min="0" value="0" placeholder="Ex: 500">
+            <span class="ajuda-texto">Alerta quando o saldo estiver baixo</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secundario" id="btn-cancelar-modal">Cancelar</button>
+        <button type="submit" class="btn btn-primario" style="padding: 0.65rem 1.75rem;">💾 Salvar Ingrediente</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Popup: Editar Ingrediente -->
+<div id="modal-editar-ingrediente" class="modal-overlay" style="display: none;">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3 style="margin: 0; color: var(--cor-texto); font-size: 1.25rem; font-weight: 700;">
+        ✏️ Editar Ingrediente
+      </h3>
+      <button type="button" class="btn-fechar-modal" id="btn-fechar-modal-edit-x" aria-label="Fechar">&times;</button>
+    </div>
+
+    <form method="POST" id="form-editar-ingrediente" action="">
+      <input type="hidden" name="redirect" value="/ingredientes">
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-grupo" style="grid-column: 1 / -1;">
+            <label for="edit_ing_nome">Nome do Ingrediente / Insumo *</label>
+            <input type="text" id="edit_ing_nome" name="nome" required>
+          </div>
+
+          <div class="form-grupo">
+            <label for="edit_ing_unidade">Unidade de Uso *</label>
+            <select id="edit_ing_unidade" name="unidade" required>
+              <option value="g">Gramas (g) — para pesáveis</option>
+              <option value="ml">Mililitros (ml) — para líquidos</option>
+              <option value="un">Unidades (un) — ovos, embalagens</option>
+            </select>
+          </div>
+
+          <div class="form-grupo">
+            <label for="edit_ing_embalagem">Tamanho Embalagem Padrão *</label>
+            <input type="number" id="edit_ing_embalagem" name="qtd_embalagem_padrao" step="any" min="0.001" required>
+            <span class="ajuda-texto">Quantidade no pacote (g/ml/un)</span>
+          </div>
+
+          <div class="form-grupo">
+            <label for="edit_ing_preco">Preço do Pacote (R$)</label>
+            <input type="number" id="edit_ing_preco" name="preco_atual" step="0.01" min="0">
+            <span class="ajuda-texto">Preço de compra padrão</span>
+          </div>
+
+          <div class="form-grupo">
+            <label for="edit_ing_minimo">Estoque Mínimo</label>
+            <input type="number" id="edit_ing_minimo" name="estoque_minimo" step="any" min="0">
+            <span class="ajuda-texto">Alerta quando o saldo estiver baixo</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secundario" id="btn-cancelar-modal-edit">Cancelar</button>
+        <button type="submit" class="btn btn-primario" style="padding: 0.65rem 1.75rem;">💾 Salvar Alterações</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Popup: Lançar Compra para o Ingrediente -->
+<div id="modal-lancar-compra" class="modal-overlay" style="display: none;">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3 style="margin: 0; color: var(--cor-texto); font-size: 1.25rem; font-weight: 700;">
+        🛒 Lançar Compra: <span id="modal-compra-nome-ing" style="color: var(--cor-primaria);"></span>
+      </h3>
+      <button type="button" class="btn-fechar-modal" id="btn-fechar-modal-compra-x" aria-label="Fechar">&times;</button>
+    </div>
+
+    <form method="POST" id="form-lancar-compra-modal" action="">
+      <input type="hidden" name="redirect" value="/ingredientes?compra_sucesso=1">
+      <div class="modal-body">
+        <p class="ajuda-texto" style="margin-bottom: 1rem;">
+          Registre a compra para <strong>alimentar o saldo em estoque</strong> e <strong>atualizar o preço de reposição</strong> para as receitas.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-grupo">
+            <label for="modal_compra_data">Data da Compra *</label>
+            <input type="date" id="modal_compra_data" name="data_compra" value="<%= new Date().toISOString().split('T')[0] %>" required>
+          </div>
+
+          <div class="form-grupo">
+            <label for="modal_compra_validade">Data de Validade</label>
+            <input type="date" id="modal_compra_validade" name="data_validade">
+            <span class="ajuda-texto">Vencimento do lote</span>
+          </div>
+
+          <div class="form-grupo">
+            <label for="modal_compra_qtd">Qtd Comprada (Pacotes/Un) *</label>
+            <input type="number" id="modal_compra_qtd" name="qtd_embalagens" step="any" min="0.001" value="1" required class="modal-compra-calc">
+            <span class="ajuda-texto">Ex: 5 caixas ou unidades</span>
+          </div>
+
+          <div class="form-grupo">
+            <label for="modal_compra_qtd_por">Tamanho Pacote (<span class="modal-compra-unidade-txt">g</span>) *</label>
+            <input type="number" id="modal_compra_qtd_por" name="qtd_por_embalagem" step="any" min="0.001" required class="modal-compra-calc">
+            <span class="ajuda-texto">Quantidade por embalagem</span>
+          </div>
+
+          <div class="form-grupo" style="grid-column: 1 / -1;">
+            <label for="modal_compra_preco">Preço Unitário do Pacote (R$) *</label>
+            <input type="number" id="modal_compra_preco" name="valor_unitario_embalagem" step="0.01" min="0" required placeholder="Ex: 6.50" class="modal-compra-calc">
+            <span class="ajuda-texto">Preço pago por pacote/lata</span>
+          </div>
+        </div>
+
+        <!-- Resumo visual em tempo real -->
+        <div style="background-color: var(--cor-fundo); border: 1px solid var(--cor-borda); border-radius: 8px; padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <div style="font-size: 0.8rem; color: var(--cor-texto-suave);">Volume no Estoque:</div>
+            <strong id="modal-compra-volume-resumo" style="font-size: 1.05rem; color: var(--cor-verde);">+ 0</strong>
+          </div>
+          <div>
+            <div style="font-size: 0.8rem; color: var(--cor-texto-suave);">Total da Compra:</div>
+            <strong id="modal-compra-total-resumo" style="font-size: 1.15rem; color: var(--cor-primaria);">R$ 0,00</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secundario" id="btn-cancelar-modal-compra">Cancelar</button>
+        <button type="submit" class="btn btn-primario" style="padding: 0.65rem 1.75rem;">➕ Registrar Entrada no Estoque</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function formatarMoeda(val) {
+    return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  // Modal Novo Ingrediente
+  const modalNovo = document.getElementById('modal-novo-ingrediente');
+  const btnAbrir = document.getElementById('btn-abrir-modal');
+  const btnFecharX = document.getElementById('btn-fechar-modal-x');
+  const btnCancelar = document.getElementById('btn-cancelar-modal');
+  const inputNome = document.getElementById('input-nome-ingrediente');
+
+  function abrirModalNovo() {
+    modalNovo.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+      if (inputNome) inputNome.focus();
+    }, 50);
+  }
+
+  function fecharModalNovo() {
+    modalNovo.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  if (btnAbrir) btnAbrir.addEventListener('click', abrirModalNovo);
+  if (btnFecharX) btnFecharX.addEventListener('click', fecharModalNovo);
+  if (btnCancelar) btnCancelar.addEventListener('click', fecharModalNovo);
+
+  modalNovo.addEventListener('click', (e) => {
+    if (e.target === modalNovo) fecharModalNovo();
+  });
+
+  // Modal Editar Ingrediente
+  const modalEdit = document.getElementById('modal-editar-ingrediente');
+  const formEdit = document.getElementById('form-editar-ingrediente');
+  const btnFecharEditX = document.getElementById('btn-fechar-modal-edit-x');
+  const btnCancelarEdit = document.getElementById('btn-cancelar-modal-edit');
+  const editNome = document.getElementById('edit_ing_nome');
+  const editUnidade = document.getElementById('edit_ing_unidade');
+  const editEmbalagem = document.getElementById('edit_ing_embalagem');
+  const editPreco = document.getElementById('edit_ing_preco');
+  const editMinimo = document.getElementById('edit_ing_minimo');
+
+  function abrirModalEdit(dados) {
+    formEdit.action = `/ingredientes/${dados.id}/editar`;
+    editNome.value = dados.nome || '';
+    editUnidade.value = dados.unidade || 'g';
+    editEmbalagem.value = dados.embalagem || '';
+    editPreco.value = dados.preco !== undefined ? dados.preco : '';
+    editMinimo.value = dados.minimo !== undefined ? dados.minimo : '0';
+
+    modalEdit.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+      editNome.focus();
+    }, 50);
+  }
+
+  function fecharModalEdit() {
+    modalEdit.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.btn-editar-ing').forEach(btn => {
+    btn.addEventListener('click', () => {
+      abrirModalEdit({
+        id: btn.dataset.id,
+        nome: btn.dataset.nome,
+        unidade: btn.dataset.unidade,
+        embalagem: btn.dataset.embalagem,
+        minimo: btn.dataset.minimo,
+        preco: btn.dataset.preco
+      });
+    });
+  });
+
+  if (btnFecharEditX) btnFecharEditX.addEventListener('click', fecharModalEdit);
+  if (btnCancelarEdit) btnCancelarEdit.addEventListener('click', fecharModalEdit);
+
+  modalEdit.addEventListener('click', (e) => {
+    if (e.target === modalEdit) fecharModalEdit();
+  });
+
+  // Modal Lançar Compra
+  const modalCompra = document.getElementById('modal-lancar-compra');
+  const formCompra = document.getElementById('form-lancar-compra-modal');
+  const btnFecharCompraX = document.getElementById('btn-fechar-modal-compra-x');
+  const btnCancelarCompra = document.getElementById('btn-cancelar-modal-compra');
+  const modalCompraNomeIng = document.getElementById('modal-compra-nome-ing');
+  const modalCompraQtd = document.getElementById('modal_compra_qtd');
+  const modalCompraQtdPor = document.getElementById('modal_compra_qtd_por');
+  const modalCompraPreco = document.getElementById('modal_compra_preco');
+  const modalCompraData = document.getElementById('modal_compra_data');
+  const modalCompraValidade = document.getElementById('modal_compra_validade');
+  const modalCompraVolumeResumo = document.getElementById('modal-compra-volume-resumo');
+  const modalCompraTotalResumo = document.getElementById('modal-compra-total-resumo');
+  let unidadeAtualModal = 'g';
+
+  function recalcularPreviaCompraModal() {
+    const qtd = parseFloat(modalCompraQtd.value) || 0;
+    const qtdPor = parseFloat(modalCompraQtdPor.value) || 0;
+    const preco = parseFloat(modalCompraPreco.value) || 0;
+
+    const volume = qtd * qtdPor;
+    const total = qtd * preco;
+
+    modalCompraVolumeResumo.textContent = '+ ' + volume.toLocaleString('pt-BR') + ' ' + unidadeAtualModal;
+    modalCompraTotalResumo.textContent = formatarMoeda(total);
+  }
+
+  document.querySelectorAll('.modal-compra-calc').forEach(inp => {
+    inp.addEventListener('input', recalcularPreviaCompraModal);
+  });
+
+  function abrirModalCompra(dados) {
+    formCompra.action = `/ingredientes/${dados.id}/compras`;
+    modalCompraNomeIng.textContent = dados.nome || '';
+    unidadeAtualModal = dados.unidade || 'g';
+    document.querySelectorAll('.modal-compra-unidade-txt').forEach(el => el.textContent = unidadeAtualModal);
+
+    modalCompraQtd.value = 1;
+    modalCompraQtdPor.value = dados.embalagem || '';
+    modalCompraPreco.value = dados.preco !== undefined && dados.preco > 0 ? dados.preco : '';
+    modalCompraData.value = new Date().toISOString().split('T')[0];
+    modalCompraValidade.value = '';
+
+    recalcularPreviaCompraModal();
+
+    modalCompra.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+      modalCompraQtd.focus();
+      modalCompraQtd.select();
+    }, 50);
+  }
+
+  function fecharModalCompra() {
+    modalCompra.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.btn-lancar-compra-modal').forEach(btn => {
+    btn.addEventListener('click', () => {
+      abrirModalCompra({
+        id: btn.dataset.id,
+        nome: btn.dataset.nome,
+        unidade: btn.dataset.unidade,
+        embalagem: btn.dataset.embalagem,
+        preco: btn.dataset.preco
+      });
+    });
+  });
+
+  if (btnFecharCompraX) btnFecharCompraX.addEventListener('click', fecharModalCompra);
+  if (btnCancelarCompra) btnCancelarCompra.addEventListener('click', fecharModalCompra);
+
+  modalCompra.addEventListener('click', (e) => {
+    if (e.target === modalCompra) fecharModalCompra();
+  });
+
+  // Filtro de Busca Instantânea na Tabela de Ingredientes
+  const inputFiltro = document.getElementById('filtro-ingredientes');
+  const linhasIngredientes = document.querySelectorAll('.linha-ingrediente');
+  const contadorEl = document.getElementById('contador-ingredientes');
+
+  if (inputFiltro) {
+    inputFiltro.addEventListener('input', () => {
+      const termo = inputFiltro.value.trim().toLowerCase();
+      let visiveis = 0;
+      linhasIngredientes.forEach(linha => {
+        const nome = linha.dataset.nome || '';
+        if (!termo || nome.includes(termo)) {
+          linha.style.display = '';
+          visiveis++;
+        } else {
+          linha.style.display = 'none';
+        }
+      });
+      if (contadorEl) {
+        contadorEl.textContent = visiveis;
+      }
+    });
+  }
+
+  // Tecla ESC para todos os modais
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (modalNovo.style.display === 'flex') fecharModalNovo();
+      if (modalEdit.style.display === 'flex') fecharModalEdit();
+      if (modalCompra.style.display === 'flex') fecharModalCompra();
+    }
+  });
+</script>
+
+<%- include('partials/rodape') %>

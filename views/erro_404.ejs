@@ -1,0 +1,10 @@
+<%- include('partials/topo') %>
+
+<div class="cartao" style="text-align: center; max-width: 500px; margin: 4rem auto; padding: 3rem 2rem;">
+  <span style="font-size: 3.5rem; display: block; margin-bottom: 1rem;">🔍🍰</span>
+  <h1 style="margin-bottom: 0.5rem; color: var(--cor-primaria);">Ops! Página não encontrada</h1>
+  <p style="color: var(--cor-texto-suave); margin-bottom: 1.5rem;"><%= mensagem || 'A página solicitada não existe ou foi removida.' %></p>
+  <a href="/" class="btn btn-primario">Voltar para o Painel</a>
+</div>
+
+<%- include('partials/rodape') %>

@@ -1,0 +1,44 @@
+<%- include('partials/topo') %>
+
+<div class="auth-wrapper">
+  <div class="auth-header">
+    <div class="logo-icone">🧁</div>
+    <h1>Comece a Precificar Certo</h1>
+    <p style="color: var(--cor-texto-suave);">Cadastre-se para calcular seus custos, margens e lucros</p>
+  </div>
+
+  <div class="cartao">
+    <% if (erro) { %>
+      <div class="alerta alerta-erro">
+        <span>⚠️</span>
+        <span><%= erro %></span>
+      </div>
+    <% } %>
+
+    <form method="POST" action="/cadastro">
+      <div class="form-grupo">
+        <label for="nome">Seu Nome ou Confeitaria</label>
+        <input type="text" id="nome" name="nome" value="<%= nome || '' %>" required autocomplete="name" placeholder="Ex: Maria Bolos Caseiros">
+      </div>
+
+      <div class="form-grupo">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" value="<%= email || '' %>" required autocomplete="email" placeholder="seu@email.com">
+      </div>
+
+      <div class="form-grupo">
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="senha" required minlength="8" autocomplete="new-password" placeholder="Mínimo de 8 caracteres">
+        <span class="ajuda-texto">Mínimo de 8 caracteres</span>
+      </div>
+
+      <button type="submit" class="btn btn-primario btn-block" style="margin-top: 0.85rem; padding: 0.55rem; font-size: 0.9rem;">Criar Minha Conta</button>
+    </form>
+  </div>
+
+  <div class="auth-footer">
+    <p>Já possui cadastro? <a href="/login">Fazer login</a></p>
+  </div>
+</div>
+
+<%- include('partials/rodape') %>

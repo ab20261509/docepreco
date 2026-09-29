@@ -1,0 +1,86 @@
+const express = require('express');
+const db = require('../db');
+const { exigirLogin } = require('../middleware/auth');
+const { custoFixoHora } = require('../calculo');
+
+const router = express.Router();
+
+router.get('/', exigirLogin, (req, res) => {
+  const uid = req.session.usuario.id;
+
+  const configRow = db.prepare('SELECT horas_mes FROM configuracoes WHERE usuario_id = ?').get(uid);
+  const horasMes = configRow && configRow.horas_mes > 0 ? configRow.horas_mes : 160;
+
+  const custos = db.prepare('SELECT * FROM custos_fixos WHERE usuario_id = ? ORDER BY id ASC').all(uid);
+  const totalFixos = custos.reduce((acc, c) => acc + (Number(c.valor_mensal) || 0), 0);
+  const cfHora = custoFixoHora(totalFixos, horasMes);
+
+  res.render('custos', {
+    custos,
+    horasMes,
+    totalFixos,
+    cfHora,
+    sucesso: req.query.salvo === '1',
+    erro: null,
+    activeNav: 'custos'
+  });
+});
+
+router.post('/', exigirLogin, (req, res) => {
+  const uid = req.session.usuario.id;
+  const horasMes = parseFloat(req.body.horas_mes) || 160;
+
+  if (horasMes <= 0) {
+    return res.status(400).send('Horas trabalhadas por mês deve ser maior que zero.');
+  }
+
+  const ids = Array.isArray(req.body.custo_id) ? req.body.custo_id : (req.body.custo_id ? [req.body.custo_id] : []);
+  const itens = Array.isArray(req.body.custo_item) ? req.body.custo_item : (req.body.custo_item ? [req.body.custo_item] : []);
+  const valores = Array.isArray(req.body.custo_valor) ? req.body.custo_valor : (req.body.custo_valor ? [req.body.custo_valor] : []);
+
+  const salvarCustosTx = db.transaction(() => {
+    // 1. Atualizar horas/mês
+    db.prepare(`
+      INSERT INTO configuracoes (usuario_id, horas_mes) VALUES (?, ?)
+      ON CONFLICT(usuario_id) DO UPDATE SET horas_mes = excluded.horas_mes
+    `).run(uid, horasMes);
+
+    // 2. Atualizar custos existentes pertencentes ao usuário
+    const updateStmt = db.prepare('UPDATE custos_fixos SET item = ?, valor_mensal = ? WHERE id = ? AND usuario_id = ?');
+    for (let i = 0; i < ids.length; i++) {
+      const id = parseInt(ids[i], 10);
+      const item = (itens[i] || '').trim();
+      const valor = Math.max(0, parseFloat(valores[i]) || 0);
+      if (id && item) {
+        updateStmt.run(item, valor, id, uid);
+      }
+    }
+
+    // 3. Adicionar novo item se fornecido
+    const novoItem = (req.body.novo_item || '').trim();
+    const novoValor = parseFloat(req.body.novo_valor);
+    if (novoItem && !isNaN(novoValor)) {
+      db.prepare('INSERT INTO custos_fixos (usuario_id, item, valor_mensal) VALUES (?, ?, ?)')
+        .run(uid, novoItem, Math.max(0, novoValor));
+    }
+  });
+
+  try {
+    salvarCustosTx();
+    res.redirect('/custos?salvo=1');
+  } catch (err) {
+    console.error('Erro ao salvar custos fixos:', err);
+    res.status(500).send('Erro ao salvar custos fixos.');
+  }
+});
+
+// Excluir um item de custo fixo
+router.post('/excluir/:id', exigirLogin, (req, res) => {
+  const uid = req.session.usuario.id;
+  const id = parseInt(req.params.id, 10);
+
+  db.prepare('DELETE FROM custos_fixos WHERE id = ? AND usuario_id = ?').run(id, uid);
+  res.redirect('/custos');
+});
+
+module.exports = router;

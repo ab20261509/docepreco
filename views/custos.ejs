@@ -1,0 +1,150 @@
+<%- include('partials/topo') %>
+
+<% if (sucesso) { %>
+  <div class="alerta alerta-sucesso">
+    <span>✅</span>
+    <span>Custos fixos e horas trabalhadas atualizados com sucesso!</span>
+  </div>
+<% } %>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem; flex-wrap: wrap; gap: 0.75rem;">
+  <div>
+    <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--cor-texto);">Custos Fixos Mensais</h1>
+    <p style="color: var(--cor-texto-suave); font-size: 0.85rem;">Parte 1 da planilha &bull; Calcule o custo da sua hora de produção para precificar com precisão</p>
+  </div>
+  <div>
+    <a href="/" class="btn btn-secundario btn-sm">← Voltar ao Painel</a>
+  </div>
+</div>
+
+<form method="POST" action="/custos" id="form-custos">
+  <!-- Cartão de Horas e Custo Hora -->
+  <div class="cartao">
+    <div class="cartao-titulo">
+      <span>⏰ Base de Trabalho e Custo por Hora</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; align-items: center;">
+      <div class="form-grupo" style="margin-bottom: 0;">
+        <label for="horas_mes">Horas Trabalhadas no Mês</label>
+        <input type="number" id="horas_mes" name="horas_mes" value="<%= horasMes %>" step="1" min="1" required style="font-weight: 600;">
+        <span class="ajuda-texto">Padrão comercial: 160h (40h/semana) ou sua carga horária real</span>
+      </div>
+
+      <div style="background-color: var(--cor-fundo); border: 1px solid var(--cor-borda); border-radius: 8px; padding: 0.75rem 1rem; text-align: center;">
+        <div style="font-size: 0.75rem; color: var(--cor-texto-suave); font-weight: 700; text-transform: uppercase;">Custo Fixo por Hora Calculado</div>
+        <div id="display-cf-hora" style="font-size: 1.45rem; font-weight: 800; color: var(--cor-primaria); margin-top: 0.15rem;">
+          <%= formatMoney(cfHora) %>/h
+        </div>
+        <div id="display-total-resumo" style="font-size: 0.75rem; color: var(--cor-texto-suave); margin-top: 0.15rem;">
+          Total Fixos: <%= formatMoney(totalFixos) %> &divide; <%= horasMes %>h
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cartão de Itens de Custos Fixos -->
+  <div class="cartao">
+    <div class="cartao-titulo">
+      <span>🏢 Despesas Fixas Mensais</span>
+      <span style="font-size: 0.82rem; font-weight: normal; color: var(--cor-texto-suave);">Aluguel, contas, pró-labore e depreciação</span>
+    </div>
+
+    <div class="tabela-container" style="margin-bottom: 1.15rem;">
+      <table id="tabela-custos">
+        <thead>
+          <tr>
+            <th style="width: 65%;">Item / Descrição da Despesa</th>
+            <th style="width: 25%; text-align: right;">Valor Mensal (R$)</th>
+            <th style="width: 45px; text-align: center;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% custos.forEach((c) => { %>
+            <tr>
+              <td>
+                <input type="hidden" name="custo_id" value="<%= c.id %>">
+                <input type="text" name="custo_item" value="<%= c.item %>" required style="font-weight: 500; height: 32px !important; padding: 0.25rem 0.5rem !important;">
+              </td>
+              <td style="text-align: right;">
+                <input type="number" name="custo_valor" class="input-valor-custo" value="<%= c.valor_mensal %>" step="0.01" min="0" required style="text-align: right; font-weight: 600; height: 32px !important; padding: 0.25rem 0.5rem !important;">
+              </td>
+              <td style="text-align: center;">
+                <button type="button" class="btn-icone-tabela" onclick="removerLinhaCusto(this, <%= c.id %>)" title="Excluir custo fixo">🗑️</button>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+        <tfoot>
+          <tr style="background-color: #faf5f3; font-weight: 700;">
+            <td style="text-align: right; font-size: 0.85rem;">TOTAL DE CUSTOS FIXOS:</td>
+            <td style="text-align: right; font-size: 1rem; color: var(--cor-primaria);" id="display-total-tabela">
+              <%= formatMoney(totalFixos) %>
+            </td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Adicionar Novo Custo -->
+    <div style="background-color: #fdfaf8; border: 1px dashed var(--cor-borda); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.15rem;">
+      <h4 style="margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--cor-texto);">➕ Adicionar Nova Despesa Fixa</h4>
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 0.75rem;">
+        <div>
+          <input type="text" name="novo_item" placeholder="Ex: Sistema de Gestão, Empréstimo..." style="height: 34px;">
+        </div>
+        <div>
+          <input type="number" name="novo_valor" step="0.01" min="0" placeholder="R$ 0,00" style="height: 34px;">
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 0.6rem;">
+      <a href="/" class="btn btn-secundario btn-sm">Cancelar</a>
+      <button type="submit" class="btn btn-primario btn-sm" style="padding: 0.5rem 1.5rem;">💾 Salvar Alterações</button>
+    </div>
+  </div>
+</form>
+  </div>
+</form>
+
+<!-- Formulário oculto para exclusão segura via POST -->
+<form id="form-delete-custo" method="POST" style="display: none;"></form>
+
+<script>
+  function formatarMoeda(val) {
+    return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  function recalcularTotais() {
+    const inputs = document.querySelectorAll('.input-valor-custo');
+    let total = 0;
+    inputs.forEach(input => {
+      total += parseFloat(input.value) || 0;
+    });
+
+    const horasInput = document.getElementById('horas_mes');
+    const horas = parseFloat(horasInput.value) || 160;
+    const cfHora = horas > 0 ? (total / horas) : 0;
+
+    document.getElementById('display-total-tabela').textContent = formatarMoeda(total);
+    document.getElementById('display-cf-hora').textContent = formatarMoeda(cfHora) + '/h';
+    document.getElementById('display-total-resumo').textContent = 'Total Fixos: ' + formatarMoeda(total) + ' ÷ ' + horas + 'h';
+  }
+
+  document.querySelectorAll('.input-valor-custo').forEach(input => {
+    input.addEventListener('input', recalcularTotais);
+  });
+
+  document.getElementById('horas_mes').addEventListener('input', recalcularTotais);
+
+  function removerLinhaCusto(btn, id) {
+    if (confirm('Deseja realmente remover este custo fixo?')) {
+      const form = document.getElementById('form-delete-custo');
+      form.action = '/custos/excluir/' + id;
+      form.submit();
+    }
+  }
+</script>
+
+<%- include('partials/rodape') %>

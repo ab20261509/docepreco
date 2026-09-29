@@ -1,0 +1,293 @@
+<%- include('partials/topo') %>
+
+<% if (typeof sucesso !== 'undefined' && sucesso) { %>
+  <div class="alerta alerta-sucesso">
+    <span>✅</span>
+    <span>Cliente salvo com sucesso!</span>
+  </div>
+<% } %>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem; flex-wrap: wrap; gap: 0.75rem;">
+  <div>
+    <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--cor-texto);">Gestão de Clientes 👥</h1>
+    <p style="color: var(--cor-texto-suave); font-size: 0.85rem;">Base de clientes, WhatsApp direto, endereços de entrega e preferências</p>
+  </div>
+  <div>
+    <button type="button" class="btn btn-primario btn-sm" id="btn-novo-cliente">
+      ➕ Novo Cliente
+    </button>
+  </div>
+</div>
+
+<!-- KPI do Comercial -->
+<div class="grid-kpis" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+  <div class="kpi-card">
+    <span class="kpi-rotulo">Clientes Cadastrados</span>
+    <span class="kpi-valor" id="total-clientes-kpi"><%= totalClientes %></span>
+    <span class="kpi-subtexto">Contatos prontos para pedidos e orçamentos</span>
+  </div>
+</div>
+
+<!-- Cartão Principal: Lista de Clientes -->
+<div class="cartao">
+  <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <span style="font-weight: 700;">📋 Lista de Clientes</span>
+      <span class="badge-contador" id="contador-clientes"><%= clientes.length %></span>
+    </div>
+
+    <% if (clientes.length > 0) { %>
+      <div class="busca-input-wrapper">
+        <span class="busca-icone">🔍</span>
+        <input type="text" id="filtro-clientes" placeholder="Buscar por nome, telefone ou bairro..." class="input-busca-tabela" autocomplete="off" style="width: 250px !important;">
+      </div>
+    <% } %>
+  </div>
+
+  <% if (clientes.length === 0) { %>
+    <div style="text-align: center; padding: 3rem 1rem;">
+      <span style="font-size: 3rem; display: block; margin-bottom: 0.75rem;">👥</span>
+      <h3 style="margin-bottom: 0.5rem; font-size: 1.15rem;">Nenhum cliente cadastrado ainda</h3>
+      <p style="color: var(--cor-texto-suave); margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto; font-size: 0.88rem;">
+        Cadastre seus clientes com WhatsApp e endereço para agilizar orçamentos e planejar entregas no módulo comercial.
+      </p>
+      <button type="button" class="btn btn-primario btn-sm" onclick="abrirModalCliente()">
+        ➕ Cadastrar Meu Primeiro Cliente
+      </button>
+    </div>
+  <% } else { %>
+    <div class="tabela-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width: 170px;">Cliente</th>
+            <th style="min-width: 150px;">WhatsApp / Contato</th>
+            <th>Localização / Endereço</th>
+            <th>Preferências / Anotações</th>
+            <th style="text-align: center; width: 85px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-clientes-corpo">
+          <% clientes.forEach(c => { %>
+            <tr class="linha-cliente" data-busca="<%= (c.nome + ' ' + (c.telefone || '') + ' ' + (c.bairro || '') + ' ' + (c.cidade || '')).toLowerCase() %>">
+              <td>
+                <strong style="color: var(--cor-texto); font-size: 0.92rem;"><%= c.nome %></strong>
+                <% if (c.email) { %>
+                  <div style="font-size: 0.75rem; color: var(--cor-texto-suave);"><%= c.email %></div>
+                <% } %>
+              </td>
+              <td>
+                <% if (c.waLink) { %>
+                  <a href="<%= c.waLink %>" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="background-color: #25D366; color: #fff; font-weight: 700; font-size: 0.78rem; padding: 0.25rem 0.55rem; text-decoration: none;" title="Abrir conversa no WhatsApp">
+                    💬 <%= c.telefoneFormatado %>
+                  </a>
+                <% } else if (c.telefone) { %>
+                  <span style="font-size: 0.85rem;"><%= c.telefoneFormatado %></span>
+                <% } else { %>
+                  <span style="font-size: 0.8rem; color: var(--cor-texto-suave);">Não informado</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (c.endereco || c.bairro || c.cidade) { %>
+                  <div style="font-size: 0.85rem; color: var(--cor-texto);">
+                    <%= c.endereco || '' %>
+                    <% if (c.bairro) { %> <%= c.endereco ? '•' : '' %> <%= c.bairro %> <% } %>
+                    <% if (c.cidade) { %> (<%= c.cidade %>) <% } %>
+                  </div>
+                <% } else { %>
+                  <span style="font-size: 0.8rem; color: var(--cor-texto-suave);">Retirada / Sem endereço</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (c.observacoes) { %>
+                  <div style="font-size: 0.82rem; color: #555; max-width: 280px; white-space: normal;">
+                    <%= c.observacoes %>
+                  </div>
+                <% } else { %>
+                  <span style="font-size: 0.8rem; color: var(--cor-texto-suave);">-</span>
+                <% } %>
+              </td>
+              <td style="text-align: center; white-space: nowrap;">
+                <div class="tabela-acoes-container">
+                  <button type="button" class="btn-icone btn-editar-cliente"
+                    data-id="<%= c.id %>"
+                    data-nome="<%= c.nome %>"
+                    data-telefone="<%= c.telefone || '' %>"
+                    data-email="<%= c.email || '' %>"
+                    data-endereco="<%= c.endereco || '' %>"
+                    data-bairro="<%= c.bairro || '' %>"
+                    data-cidade="<%= c.cidade || '' %>"
+                    data-observacoes="<%= c.observacoes || '' %>"
+                    title="Editar dados deste cliente">
+                    ✏️
+                  </button>
+                  <form method="POST" action="/clientes/<%= c.id %>/excluir" style="margin: 0;" onsubmit="return confirm('Deseja realmente excluir este cliente?');">
+                    <button type="submit" class="btn-icone btn-icone-perigo" title="Excluir cliente">🗑️</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<!-- Modal: Cadastrar / Editar Cliente -->
+<div id="modal-cliente" class="modal-overlay" style="display: none;">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3 id="modal-cliente-titulo" style="margin: 0; color: var(--cor-texto); font-size: 1.05rem; font-weight: 700;">
+        ➕ Cadastrar Novo Cliente
+      </h3>
+      <button type="button" class="btn-fechar-modal" id="btn-fechar-cliente-x" aria-label="Fechar">&times;</button>
+    </div>
+
+    <form method="POST" action="/clientes" id="form-modal-cliente">
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.85rem;">
+          <div class="form-grupo" style="grid-column: 1 / -1;">
+            <label for="cliente_nome">Nome Completo *</label>
+            <input type="text" id="cliente_nome" name="nome" required placeholder="Ex: Juliana Silva, Rafael Santos...">
+          </div>
+
+          <div class="form-grupo">
+            <label for="cliente_telefone">WhatsApp / Telefone</label>
+            <input type="text" id="cliente_telefone" name="telefone" placeholder="Ex: (11) 98765-4321">
+            <span class="ajuda-texto">Permite abrir conversa direta no WhatsApp</span>
+          </div>
+
+          <div class="form-grupo">
+            <label for="cliente_email">E-mail</label>
+            <input type="email" id="cliente_email" name="email" placeholder="cliente@exemplo.com">
+          </div>
+
+          <div class="form-grupo" style="grid-column: 1 / -1;">
+            <label for="cliente_endereco">Endereço de Entrega (Rua, Número, Apto)</label>
+            <input type="text" id="cliente_endereco" name="endereco" placeholder="Ex: Rua das Flores, 120 - Apto 34">
+          </div>
+
+          <div class="form-grupo">
+            <label for="cliente_bairro">Bairro</label>
+            <input type="text" id="cliente_bairro" name="bairro" placeholder="Ex: Moema, Centro...">
+          </div>
+
+          <div class="form-grupo">
+            <label for="cliente_cidade">Cidade</label>
+            <input type="text" id="cliente_cidade" name="cidade" placeholder="Ex: São Paulo">
+          </div>
+
+          <div class="form-grupo" style="grid-column: 1 / -1;">
+            <label for="cliente_observacoes">Preferências / Observações Especiais</label>
+            <textarea id="cliente_observacoes" name="observacoes" rows="2" placeholder="Ex: Prefere doces com chocolate amargo; alérgica a amendoim; aniversário em 15/Out..."></textarea>
+            <span class="ajuda-texto">Anotações importantes para o atendimento personalizado</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secundario btn-sm" id="btn-cancelar-cliente">Cancelar</button>
+        <button type="submit" class="btn btn-primario btn-sm" style="padding: 0.5rem 1.4rem;">💾 Salvar Cliente</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Controle do Modal de Clientes
+  const modalCliente = document.getElementById('modal-cliente');
+  const formCliente = document.getElementById('form-modal-cliente');
+  const modalTitulo = document.getElementById('modal-cliente-titulo');
+  const btnNovoCliente = document.getElementById('btn-novo-cliente');
+  const btnFecharX = document.getElementById('btn-fechar-cliente-x');
+  const btnCancelar = document.getElementById('btn-cancelar-cliente');
+
+  const inputNome = document.getElementById('cliente_nome');
+  const inputTelefone = document.getElementById('cliente_telefone');
+  const inputEmail = document.getElementById('cliente_email');
+  const inputEndereco = document.getElementById('cliente_endereco');
+  const inputBairro = document.getElementById('cliente_bairro');
+  const inputCidade = document.getElementById('cliente_cidade');
+  const inputObs = document.getElementById('cliente_observacoes');
+
+  function abrirModalCliente(dados = null) {
+    if (dados) {
+      modalTitulo.textContent = '✏️ Editar Cliente';
+      formCliente.action = `/clientes/${dados.id}/editar`;
+      inputNome.value = dados.nome || '';
+      inputTelefone.value = dados.telefone || '';
+      inputEmail.value = dados.email || '';
+      inputEndereco.value = dados.endereco || '';
+      inputBairro.value = dados.bairro || '';
+      inputCidade.value = dados.cidade || '';
+      inputObs.value = dados.observacoes || '';
+    } else {
+      modalTitulo.textContent = '➕ Cadastrar Novo Cliente';
+      formCliente.action = '/clientes';
+      formCliente.reset();
+    }
+    modalCliente.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => inputNome.focus(), 50);
+  }
+
+  function fecharModalCliente() {
+    modalCliente.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  if (btnNovoCliente) btnNovoCliente.addEventListener('click', () => abrirModalCliente());
+  if (btnFecharX) btnFecharX.addEventListener('click', fecharModalCliente);
+  if (btnCancelar) btnCancelar.addEventListener('click', fecharModalCliente);
+
+  modalCliente.addEventListener('click', (e) => {
+    if (e.target === modalCliente) fecharModalCliente();
+  });
+
+  document.querySelectorAll('.btn-editar-cliente').forEach(btn => {
+    btn.addEventListener('click', () => {
+      abrirModalCliente({
+        id: btn.dataset.id,
+        nome: btn.dataset.nome,
+        telefone: btn.dataset.telefone,
+        email: btn.dataset.email,
+        endereco: btn.dataset.endereco,
+        bairro: btn.dataset.bairro,
+        cidade: btn.dataset.cidade,
+        observacoes: btn.dataset.observacoes
+      });
+    });
+  });
+
+  // Filtro de Busca Instantânea
+  const filtroInput = document.getElementById('filtro-clientes');
+  const linhasClientes = document.querySelectorAll('.linha-cliente');
+  const contadorClientes = document.getElementById('contador-clientes');
+
+  if (filtroInput) {
+    filtroInput.addEventListener('input', () => {
+      const termo = filtroInput.value.trim().toLowerCase();
+      let visiveis = 0;
+      linhasClientes.forEach(linha => {
+        const busca = linha.dataset.busca || '';
+        if (!termo || busca.includes(termo)) {
+          linha.style.display = '';
+          visiveis++;
+        } else {
+          linha.style.display = 'none';
+        }
+      });
+      if (contadorClientes) contadorClientes.textContent = visiveis;
+    });
+  }
+
+  // Tecla ESC para fechar modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalCliente.style.display === 'flex') {
+      fecharModalCliente();
+    }
+  });
+</script>
+
+<%- include('partials/rodape') %>

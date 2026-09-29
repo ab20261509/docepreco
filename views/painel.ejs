@@ -1,0 +1,150 @@
+<%- include('partials/topo') %>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem; flex-wrap: wrap; gap: 0.75rem;">
+  <div>
+    <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--cor-texto);">Painel de Precificação</h1>
+    <p style="color: var(--cor-texto-suave); font-size: 0.85rem;">Visão geral das suas receitas, custos alocados e lucros projetados</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem;">
+    <a href="/custos" class="btn btn-secundario btn-sm">🏢 Custos Fixos</a>
+    <a href="/produtos/novo" class="btn btn-primario btn-sm">➕ Novo Produto</a>
+  </div>
+</div>
+
+<!-- KPIs no topo -->
+<div class="grid-kpis">
+  <div class="kpi-card">
+    <span class="kpi-rotulo">Custos Fixos Mensais</span>
+    <span class="kpi-valor"><%= formatMoney(totalFixos) %></span>
+    <span class="kpi-subtexto">Soma das despesas da estrutura</span>
+  </div>
+
+  <div class="kpi-card">
+    <span class="kpi-rotulo">Horas Trabalhadas</span>
+    <span class="kpi-valor"><%= horasMes %> h/mês</span>
+    <span class="kpi-subtexto">Base mensal de produção</span>
+  </div>
+
+  <div class="kpi-card">
+    <span class="kpi-rotulo">Custo Fixo por Hora</span>
+    <span class="kpi-valor"><%= formatMoney(cfHora) %>/h</span>
+    <span class="kpi-subtexto">Alocado proporcionalmente ao tempo</span>
+  </div>
+
+  <div class="kpi-card">
+    <span class="kpi-rotulo">Produtos Cadastrados</span>
+    <span class="kpi-valor" id="total-produtos-kpi"><%= resumo.length %></span>
+    <span class="kpi-subtexto">Fichas técnicas ativas</span>
+  </div>
+</div>
+
+<!-- Tabela do Resumo (Parte 4 da Planilha) -->
+<div class="cartao">
+  <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <span style="font-weight: 700;">📋 Resumo de Produtos e Lucros</span>
+      <% if (resumo.length > 0) { %>
+        <span class="badge-contador" id="contador-produtos"><%= resumo.length %></span>
+      <% } %>
+    </div>
+    <% if (resumo.length > 0) { %>
+      <div class="busca-input-wrapper">
+        <span class="busca-icone">🔍</span>
+        <input type="text" id="filtro-produtos" placeholder="Buscar receita..." class="input-busca-tabela" autocomplete="off" style="width: 190px !important;">
+      </div>
+    <% } %>
+  </div>
+
+  <% if (resumo.length === 0) { %>
+    <div style="text-align: center; padding: 3rem 1rem;">
+      <span style="font-size: 3rem; display: block; margin-bottom: 0.75rem;">🎂</span>
+      <h3 style="margin-bottom: 0.5rem;">Nenhum produto cadastrado ainda</h3>
+      <p style="color: var(--cor-texto-suave); margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
+        Comece criando a ficha técnica da sua primeira receita (ex: Brigadeiro Gourmet, Bolo no Pote) para calcular o preço de venda ideal.
+      </p>
+      <a href="/produtos/novo" class="btn btn-primario">Cadastrar Meu Primeiro Produto</a>
+    </div>
+  <% } else { %>
+    <div class="tabela-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th style="text-align: center;">Rendimento</th>
+            <th style="text-align: right;">Custo / Unid</th>
+            <th style="text-align: right;">Preço Sugerido</th>
+            <th style="text-align: right;">Lucro / Unid</th>
+            <th style="text-align: center;">% Lucro</th>
+            <th style="text-align: right;">Lucro / Lote</th>
+            <th style="text-align: center;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% resumo.forEach(item => { %>
+            <tr class="linha-produto" data-nome="<%= item.produto.nome.toLowerCase() %>">
+              <td>
+                <a href="/produtos/<%= item.produto.id %>" style="font-weight: 600; color: var(--cor-primaria); text-decoration: none;">
+                  <%= item.produto.nome %>
+                </a>
+                <div style="font-size: 0.75rem; color: var(--cor-texto-suave);">
+                  <%= item.totalIngredientes %> ingrediente(s) &bull; <%= item.produto.tempo_horas %>h de preparo
+                </div>
+              </td>
+              <td style="text-align: center;">
+                <%= item.produto.rendimento %> un
+              </td>
+              <% if (item.calculo) { %>
+                <td style="text-align: right;"><%= formatMoney(item.calculo.custoUnit) %></td>
+                <td style="text-align: right; font-weight: 700; color: var(--cor-primaria);"><%= formatMoney(item.calculo.preco) %></td>
+                <td style="text-align: right; font-weight: 600; color: var(--cor-verde);"><%= formatMoney(item.calculo.lucroUnit) %></td>
+                <td style="text-align: center;">
+                  <span style="background-color: var(--cor-verde-fundo); color: var(--cor-verde); padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
+                    <%= formatPercent(item.calculo.percLucro) %>
+                  </span>
+                </td>
+                <td style="text-align: right; font-weight: 600;"><%= formatMoney(item.calculo.lucroLote) %></td>
+              <% } else { %>
+                <td colspan="5" style="color: var(--cor-alerta); font-size: 0.85rem; text-align: center;">
+                  Erro no cálculo: <%= item.erroCalculo || 'Verifique margem e taxas' %>
+                </td>
+              <% } %>
+              <td style="text-align: center; white-space: nowrap;">
+                <div class="tabela-acoes-container">
+                  <a href="/produtos/<%= item.produto.id %>" class="btn-icone" title="Editar Ficha Técnica">✏️</a>
+                  <form method="POST" action="/produtos/<%= item.produto.id %>/excluir" style="margin: 0;" onsubmit="return confirm('Deseja realmente excluir este produto?');">
+                    <button type="submit" class="btn-icone btn-icone-perigo" title="Excluir produto">🗑️</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<script>
+  const filtroInput = document.getElementById('filtro-produtos');
+  const linhasProdutos = document.querySelectorAll('.linha-produto');
+  const contadorProd = document.getElementById('contador-produtos');
+
+  if (filtroInput) {
+    filtroInput.addEventListener('input', () => {
+      const termo = filtroInput.value.trim().toLowerCase();
+      let count = 0;
+      linhasProdutos.forEach(linha => {
+        const nome = linha.dataset.nome || '';
+        if (!termo || nome.includes(termo)) {
+          linha.style.display = '';
+          count++;
+        } else {
+          linha.style.display = 'none';
+        }
+      });
+      if (contadorProd) contadorProd.textContent = count;
+    });
+  }
+</script>
+
+<%- include('partials/rodape') %>
