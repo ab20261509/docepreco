@@ -8,6 +8,9 @@
     "dev": "node --watch server.js",
     "test": "node test/calculo.test.js && node test/integration.test.js && node test/excel.test.js && node test/estoque.test.js && node test/validade.test.js && node test/edicao_compras.test.js && node test/clientes.test.js"
   },
+  "engines": {
+    "node": "20.x"
+  },
   "keywords": [
     "precificacao",
     "confeitaria",

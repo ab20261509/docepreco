@@ -85,6 +85,18 @@ app.use((err, req, res, next) => {
 
 module.exports = app;
 
+function encerrarGracioso() {
+  try {
+    if (db && typeof db.close === 'function') {
+      db.close();
+    }
+  } catch (_) {}
+  process.exit(0);
+}
+
+process.on('SIGINT', encerrarGracioso);
+process.on('SIGTERM', encerrarGracioso);
+
 if (!process.env.VERCEL) {
   const porta = process.env.PORT || 3000;
   app.listen(porta, () => {
