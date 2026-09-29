@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const db = require('../db');
 const { exigirLogin } = require('../middleware/auth');
 const { custoFixoHora, calcularProduto } = require('../calculo');
@@ -105,7 +105,8 @@ router.get('/', exigirLogin, (req, res) => {
       c.nome AS cliente_cadastrado_nome,
       c.telefone AS cliente_cadastrado_telefone,
       c.bairro AS cliente_cadastrado_bairro,
-      (SELECT COUNT(*) FROM pedido_itens WHERE pedido_id = p.id) AS total_itens
+      (SELECT COUNT(*) FROM pedido_itens WHERE pedido_id = p.id) AS total_itens,
+      (SELECT GROUP_CONCAT(quantidade || 'x ' || descricao, ', ') FROM pedido_itens WHERE pedido_id = p.id) AS resumo_itens
     FROM pedidos p
     LEFT JOIN clientes c ON c.id = p.cliente_id
     WHERE p.usuario_id = ?

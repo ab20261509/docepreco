@@ -1,43 +1,69 @@
 ﻿<%- include('partials/topo') %>
 
-<!-- KPIs Comerciais -->
-<div class="kpis-grid">
-  <div class="kpi-card">
-    <span class="kpi-rotulo">Total de Pedidos</span>
-    <span class="kpi-valor"><%= kpis.total %></span>
-    <span class="kpi-legenda">Registrados no sistema</span>
+<!-- KPIs Comerciais Modernizados com Ícones e Destaque -->
+<div class="grid-kpis">
+  <div class="kpi-card kpi-azul">
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Total de Pedidos</span>
+      <span class="kpi-valor"><%= kpis.total %></span>
+      <span class="kpi-subtexto">Registrados no sistema</span>
+    </div>
+    <div class="kpi-icone-wrapper">📝</div>
   </div>
-  <div class="kpi-card">
-    <span class="kpi-rotulo">Em Aberto / Produção</span>
-    <span class="kpi-valor" style="color: #c2410c;"><%= kpis.abertos %></span>
-    <span class="kpi-legenda">Orçamentos e pedidos ativos</span>
+
+  <div class="kpi-card kpi-laranja">
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Em Aberto / Produção</span>
+      <span class="kpi-valor" style="color: #c2410c;"><%= kpis.abertos %></span>
+      <span class="kpi-subtexto">Orçamentos e pedidos ativos</span>
+    </div>
+    <div class="kpi-icone-wrapper">⏳</div>
   </div>
-  <div class="kpi-card">
-    <span class="kpi-rotulo">Entregues com Sucesso</span>
-    <span class="kpi-valor" style="color: #15803d;"><%= kpis.entregues %></span>
-    <span class="kpi-legenda">Encomendas finalizadas</span>
+
+  <div class="kpi-card kpi-verde">
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Entregues com Sucesso</span>
+      <span class="kpi-valor" style="color: #15803d;"><%= kpis.entregues %></span>
+      <span class="kpi-subtexto">Encomendas finalizadas</span>
+    </div>
+    <div class="kpi-icone-wrapper">🟢</div>
   </div>
-  <div class="kpi-card">
-    <span class="kpi-rotulo">Faturamento Previsto</span>
-    <span class="kpi-valor" style="color: var(--cor-primaria);"><%= formatMoney(kpis.faturamento) %></span>
-    <span class="kpi-legenda">Volume total negociado</span>
+
+  <div class="kpi-card kpi-rosa">
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Faturamento Previsto</span>
+      <span class="kpi-valor" style="color: var(--cor-primaria);"><%= formatMoney(kpis.faturamento) %></span>
+      <span class="kpi-subtexto">Volume total negociado</span>
+    </div>
+    <div class="kpi-icone-wrapper">💰</div>
   </div>
 </div>
 
 <div class="cartao">
-  <div class="cartao-cabecalho" style="flex-wrap: wrap; gap: 0.8rem;">
+  <div class="cartao-cabecalho" style="flex-wrap: wrap; gap: 0.8rem; align-items: center;">
     <div>
       <h2>📝 Pedidos & Orçamentos</h2>
       <p class="subtitulo" style="margin-bottom: 0;">Acompanhe encomendas da fábrica, datas de entrega e pagamentos</p>
     </div>
+    
     <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+      <!-- Alternador Cards vs Tabela -->
+      <div class="toggle-visualizacao">
+        <button type="button" class="btn-modo-vis ativo" id="btnVisCards" title="Visualizar em Cards">
+          <span>☷</span> <span>Cards</span>
+        </button>
+        <button type="button" class="btn-modo-vis" id="btnVisTabela" title="Visualizar em Tabela">
+          <span>☰</span> <span>Tabela</span>
+        </button>
+      </div>
+
       <div style="position: relative;">
         <input 
           type="text" 
           id="buscaPedidos" 
           placeholder="🔍 Buscar cliente ou pedido..." 
           class="input-busca-tabela"
-          style="width: 220px;"
+          style="width: 210px;"
         >
       </div>
       <a href="/pedidos/novo" class="btn btn-primario btn-sm" style="white-space: nowrap;">
@@ -77,7 +103,101 @@
       <a href="/pedidos/novo" class="btn btn-primario btn-sm">➕ Criar Primeiro Pedido</a>
     </div>
   <% } else { %>
-    <div class="tabela-responsiva">
+
+    <!-- 1. MODO CARDS DE PEDIDOS (NOVO DESIGN MODERNO) -->
+    <div class="grid-pedidos-cards" id="containerCardsPedidos">
+      <% pedidos.forEach(p => { %>
+        <div class="card-pedido-item item-filtrado" data-busca="<%= p.id %> <%= p.nomeCliente.toLowerCase() %> <%= p.telefoneFormatado %> <%= p.dataEntregaFmt %> <%= p.status %> <%= (p.resumo_itens || '').toLowerCase() %>">
+          <div>
+            <!-- Topo do Card -->
+            <div class="card-pedido-topo">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <a href="/pedidos/<%= p.id %>" class="card-pedido-id">#<%= p.id %></a>
+                <span class="badge-tipo-logistica <%= p.tipo_entrega === 'entrega' ? 'badge-logistica-entrega' : 'badge-logistica-retirada' %>">
+                  <%= p.tipo_entrega === 'entrega' ? '🚗 Entrega' : '🏬 Retirada' %>
+                </span>
+              </div>
+
+              <% if (p.status === 'orcamento') { %>
+                <span class="badge-pedido-status status-orcamento">📋 Orçamento</span>
+              <% } else if (p.status === 'confirmado') { %>
+                <span class="badge-pedido-status status-confirmado">🟡 Confirmado</span>
+              <% } else if (p.status === 'producao') { %>
+                <span class="badge-pedido-status status-producao">🟠 Em Produção</span>
+              <% } else if (p.status === 'entregue') { %>
+                <span class="badge-pedido-status status-entregue">🟢 Entregue</span>
+              <% } else { %>
+                <span class="badge-pedido-status status-cancelado">🔴 Cancelado</span>
+              <% } %>
+            </div>
+
+            <!-- Dados do Cliente & Entrega -->
+            <div class="card-pedido-cliente">
+              <div class="card-pedido-nome-cliente"><%= p.nomeCliente %></div>
+              <div class="card-pedido-entrega">
+                <span style="font-weight: 700; color: var(--cor-texto);">📅 <%= p.dataEntregaFmt %></span>
+                <% if (p.horario_entrega) { %>
+                  <span>⏰ <%= p.horario_entrega %></span>
+                <% } %>
+                <% if (p.cliente_cadastrado_bairro) { %>
+                  <span>• 📍 <%= p.cliente_cadastrado_bairro %></span>
+                <% } %>
+              </div>
+            </div>
+
+            <!-- Itens do Pedido Preview -->
+            <div class="card-pedido-itens-box">
+              <div class="card-pedido-itens-titulo">🎂 Itens do Pedido (<%= p.total_itens %>)</div>
+              <div class="card-pedido-itens-texto">
+                <%= p.resumo_itens || (p.total_itens + ' itens cadastrados') %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rodapé Financeiro e Ações -->
+          <div>
+            <div class="card-pedido-financeiro">
+              <div>
+                <div class="card-pedido-valor-total"><%= formatMoney(p.valor_total) %></div>
+                <div class="card-pedido-pag-status">
+                  <% if (p.status_pagamento === 'pago') { %>
+                    <span style="color: #15803d; font-weight: 700;">✓ Pago Integral</span>
+                  <% } else if (p.valor_sinal > 0) { %>
+                    <span style="color: #0369a1; font-weight: 600;">Sinal <%= formatMoney(p.valor_sinal) %></span>
+                    <span style="color: #c2410c; font-weight: 700;">• Saldo <%= formatMoney(p.saldoRestante) %></span>
+                  <% } else { %>
+                    <span style="color: #b45309; font-weight: 600;">Pagamento Pendente</span>
+                  <% } %>
+                </div>
+              </div>
+
+              <div class="card-pedido-acoes">
+                <% if (p.waLink) { %>
+                  <a href="<%= p.waLink %>" target="_blank" rel="noopener noreferrer" class="btn-icone-tabela" style="border-color: #86efac; background: #f0fdf4; color: #16a34a;" title="Abrir WhatsApp">
+                    💬
+                  </a>
+                <% } %>
+                <a href="/pedidos/<%= p.id %>" class="btn-icone-tabela" style="border-color: #bae6fd; background: #f0f9ff; color: #0369a1;" title="Ver Detalhes">
+                  👁️
+                </a>
+                <a href="/pedidos/<%= p.id %>/editar" class="btn-icone-tabela" style="border-color: #fed7aa; background: #fff7ed; color: #c2410c;" title="Editar">
+                  ✏️
+                </a>
+                <form method="POST" action="/pedidos/<%= p.id %>/excluir" style="margin: 0;" onsubmit="return confirm('Deseja realmente excluir o pedido #<%= p.id %>?');">
+                  <button type="submit" class="btn-icone-tabela" title="Excluir">
+                    🗑️
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      <% }); %>
+    </div>
+
+    <!-- 2. MODO TABELA COMPACTA (ALTERNATIVO) -->
+    <div class="tabela-responsiva" id="containerTabelaPedidos" style="display: none;">
       <table class="tabela" id="tabelaPedidos">
         <thead>
           <tr>
@@ -89,12 +209,12 @@
             <th style="width: 110px; text-align: right;">Total</th>
             <th style="width: 150px;">Pagamento</th>
             <th style="width: 120px; text-align: center;">Status</th>
-            <th style="width: 110px; text-align: center;">Ações</th>
+            <th style="width: 120px; text-align: center;">Ações</th>
           </tr>
         </thead>
         <tbody>
           <% pedidos.forEach(p => { %>
-            <tr class="linha-pedido" data-busca="<%= p.id %> <%= p.nomeCliente.toLowerCase() %> <%= p.telefoneFormatado %> <%= p.dataEntregaFmt %> <%= p.status %>">
+            <tr class="linha-pedido item-filtrado" data-busca="<%= p.id %> <%= p.nomeCliente.toLowerCase() %> <%= p.telefoneFormatado %> <%= p.dataEntregaFmt %> <%= p.status %> <%= (p.resumo_itens || '').toLowerCase() %>">
               <td>
                 <a href="/pedidos/<%= p.id %>" style="font-weight: 800; color: var(--cor-primaria); text-decoration: none;">
                   #<%= p.id %>
@@ -183,6 +303,11 @@
               </td>
               <td>
                 <div style="display: flex; gap: 0.25rem; justify-content: center;">
+                  <% if (p.waLink) { %>
+                    <a href="<%= p.waLink %>" target="_blank" rel="noopener noreferrer" class="btn-icone-tabela" style="border-color: #86efac; background: #f0fdf4; color: #16a34a;" title="Abrir WhatsApp">
+                      💬
+                    </a>
+                  <% } %>
                   <a href="/pedidos/<%= p.id %>" class="btn-icone-tabela" style="border-color: #bae6fd; background: #f0f9ff; color: #0369a1;" title="Ver Detalhes">
                     👁️
                   </a>
@@ -205,15 +330,46 @@
 </div>
 
 <script>
-  // Busca instantânea em tempo real na tabela de pedidos
+  // Controle de Modo de Visualização (Cards vs Tabela)
+  const btnCards = document.getElementById('btnVisCards');
+  const btnTabela = document.getElementById('btnVisTabela');
+  const containerCards = document.getElementById('containerCardsPedidos');
+  const containerTabela = document.getElementById('containerTabelaPedidos');
+
+  function aplicarModo(modo) {
+    if (!containerCards || !containerTabela) return;
+    if (modo === 'tabela') {
+      containerCards.style.display = 'none';
+      containerTabela.style.display = 'block';
+      btnTabela.classList.add('ativo');
+      btnCards.classList.remove('ativo');
+    } else {
+      containerCards.style.display = 'grid';
+      containerTabela.style.display = 'none';
+      btnCards.classList.add('ativo');
+      btnTabela.classList.remove('ativo');
+    }
+    localStorage.setItem('modo_vis_pedidos', modo);
+  }
+
+  if (btnCards && btnTabela) {
+    btnCards.addEventListener('click', () => aplicarModo('cards'));
+    btnTabela.addEventListener('click', () => aplicarModo('tabela'));
+
+    // Restaurar preferência anterior ou padrão (cards)
+    const modoSalvo = localStorage.getItem('modo_vis_pedidos') || 'cards';
+    aplicarModo(modoSalvo);
+  }
+
+  // Busca instantânea em tempo real filtrando tanto os Cards quanto as Linhas da Tabela
   const inputBusca = document.getElementById('buscaPedidos');
   if (inputBusca) {
     inputBusca.addEventListener('input', function() {
       const termo = this.value.toLowerCase().trim();
-      const linhas = document.querySelectorAll('.linha-pedido');
-      linhas.forEach(linha => {
-        const dados = linha.getAttribute('data-busca') || '';
-        linha.style.display = dados.includes(termo) ? '' : 'none';
+      const itens = document.querySelectorAll('.item-filtrado');
+      itens.forEach(item => {
+        const dados = item.getAttribute('data-busca') || '';
+        item.style.display = dados.includes(termo) ? '' : 'none';
       });
     });
   }
