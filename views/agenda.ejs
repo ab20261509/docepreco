@@ -1,0 +1,415 @@
+<%- include('partials/topo') %>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem; flex-wrap: wrap; gap: 0.75rem;">
+  <div>
+    <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--cor-texto);">📅 Agenda de Entregas & Cronograma</h1>
+    <p style="color: var(--cor-texto-suave); font-size: 0.85rem;">Controle diário de pedidos, horário de saídas, preparo antecipado e entregas</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem;">
+    <a href="/pedidos/novo" class="btn btn-primario btn-sm">➕ Novo Pedido</a>
+    <a href="/pedidos" class="btn btn-secundario btn-sm">📋 Gerenciar Pedidos</a>
+  </div>
+</div>
+
+<!-- KPIs Rápidos da Agenda -->
+<div class="grid-kpis" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1.25rem;">
+  <div class="kpi-card" style="border-left: 4px solid var(--cor-primaria);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <span class="kpi-rotulo">Entregas Hoje</span>
+        <span class="kpi-valor" style="color: var(--cor-primaria);"><%= totalHoje %></span>
+        <span class="kpi-subtexto">
+          <% if (totalHoje > 0) { %>
+            <%= concluidosHoje %> de <%= totalHoje %> concluídos
+          <% } else { %>
+            Nenhuma entrega hoje
+          <% } %>
+        </span>
+      </div>
+      <span style="font-size: 1.7rem; background: #fff5f5; padding: 0.35rem 0.5rem; border-radius: 8px;">🔥</span>
+    </div>
+  </div>
+
+  <div class="kpi-card" style="border-left: 4px solid #f59e0b;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <span class="kpi-rotulo">Saldo a Receber Hoje</span>
+        <span class="kpi-valor" style="color: #b45309;"><%= saldoReceberHoje %></span>
+        <span class="kpi-subtexto">A receber no ato da entrega</span>
+      </div>
+      <span style="font-size: 1.7rem; background: #fffbeb; padding: 0.35rem 0.5rem; border-radius: 8px;">💵</span>
+    </div>
+  </div>
+
+  <div class="kpi-card" style="border-left: 4px solid #3b82f6;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <span class="kpi-rotulo">Próximos 7 Dias</span>
+        <span class="kpi-valor" style="color: #1d4ed8;"><%= totalSemana %></span>
+        <span class="kpi-subtexto">Carga operacional da semana</span>
+      </div>
+      <span style="font-size: 1.7rem; background: #eff6ff; padding: 0.35rem 0.5rem; border-radius: 8px;">📆</span>
+    </div>
+  </div>
+</div>
+
+<!-- Barra de Seleção de Visualização (Abas) -->
+<div class="agenda-barra-abas" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; background: #fff; padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--cor-borda);">
+  <div style="display: flex; gap: 0.4rem;">
+    <a href="/agenda?aba=operacional" class="btn btn-sm <%= abaAtiva === 'operacional' ? 'btn-primario' : 'btn-secundario' %>" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+      <span>📋 Linha do Tempo</span>
+      <span style="background: rgba(0,0,0,0.08); font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 10px;"><%= totalSemana %></span>
+    </a>
+    <a href="/agenda?aba=mes&mes=<%= mesAtual %>" class="btn btn-sm <%= abaAtiva === 'mes' ? 'btn-primario' : 'btn-secundario' %>" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+      <span>🗓️ Calendário Mensal</span>
+    </a>
+  </div>
+
+  <% if (abaAtiva === 'mes') { %>
+    <!-- Navegação de Mês -->
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <a href="/agenda?aba=mes&mes=<%= mesAnterior %>" class="btn btn-secundario btn-sm" title="Mês Anterior">◀ Mês Anterior</a>
+      <span style="font-weight: 700; font-size: 0.95rem; color: var(--cor-texto); min-width: 140px; text-align: center;"><%= rotuloMesAno %></span>
+      <a href="/agenda?aba=mes&mes=<%= mesSeguinte %>" class="btn btn-secundario btn-sm" title="Próximo Mês">Próximo ▶</a>
+      <a href="/agenda?aba=mes&mes=<%= hoje.slice(0, 7) %>&data=<%= hoje %>" class="btn btn-secundario btn-sm" title="Ir para Mês Atual">Hoje</a>
+    </div>
+  <% } else { %>
+    <div style="font-size: 0.85rem; color: var(--cor-texto-suave);">
+      Hoje: <strong><%= hojeFmt %></strong>
+    </div>
+  <% } %>
+</div>
+
+<% if (abaAtiva === 'operacional') { %>
+  <!-- ========================================== -->
+  <!-- VISUALIZAÇÃO 1: LINHA DO TEMPO OPERACIONAL -->
+  <!-- ========================================== -->
+
+  <!-- SEÇÃO 1: HOJE -->
+  <div class="cartao" style="margin-bottom: 1.5rem; border-top: 4px solid var(--cor-primaria);">
+    <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.15rem;">🔥</span>
+        <span style="font-weight: 800; font-size: 1.05rem;">Entregas de Hoje</span>
+        <span style="color: var(--cor-texto-suave); font-weight: normal; font-size: 0.85rem;">— <%= hojeFmt %></span>
+      </div>
+      <span class="badge-contador" style="background: var(--cor-primaria); color: #fff;"><%= pedidosHoje.length %></span>
+    </div>
+
+    <% if (pedidosHoje.length === 0) { %>
+      <div style="text-align: center; padding: 2rem 1rem; color: var(--cor-texto-suave);">
+        <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🎉</div>
+        <p style="font-weight: 700; color: var(--cor-texto); margin-bottom: 0.25rem;">Nenhuma entrega agendada para hoje!</p>
+        <p style="font-size: 0.85rem;">A cozinha está tranquila hoje. Aproveite para preparar as produções de amanhã ou conferir o estoque.</p>
+      </div>
+    <% } else { %>
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <% pedidosHoje.forEach(p => { %>
+          <div class="agenda-card-pedido" style="background: #fafafa; border: 1px solid var(--cor-borda); border-radius: 8px; padding: 1rem; position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.65rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span style="font-size: 1.1rem; font-weight: 800; color: #111;">#<%= p.id %></span>
+                <span style="background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 0.82rem; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                  ⏰ <%= p.horario_entrega ? p.horario_entrega : 'Horário a combinar' %>
+                </span>
+                <span class="badge-tipo <%= p.tipo_entrega === 'entrega' ? 'badge-entrega' : 'badge-retirada' %>" style="font-size: 0.8rem;">
+                  <%= p.tipo_entrega === 'entrega' ? '🚗 Entrega' : '🏬 Retirada' %>
+                </span>
+                
+                <% if (p.status === 'orcamento') { %>
+                  <span class="status-pilula status-orcamento">📋 Orçamento</span>
+                <% } else if (p.status === 'confirmado') { %>
+                  <span class="status-pilula status-confirmado">🟡 Confirmado</span>
+                <% } else if (p.status === 'producao') { %>
+                  <span class="status-pilula status-producao">🟠 Em Produção</span>
+                <% } else if (p.status === 'entregue') { %>
+                  <span class="status-pilula status-entregue">🟢 Entregue</span>
+                <% } %>
+              </div>
+
+              <!-- Valor e Saldo -->
+              <div style="text-align: right;">
+                <div style="font-size: 1.1rem; font-weight: 800; color: var(--cor-texto);"><%= p.totalFormatado %></div>
+                <% if (p.saldoPendente > 0 && p.status_pagamento !== 'pago') { %>
+                  <span style="display: inline-block; background: #fef3c7; color: #92400e; font-size: 0.78rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 4px;">
+                    Cobrar saldo: <%= p.saldoFormatado %>
+                  </span>
+                <% } else { %>
+                  <span style="display: inline-block; background: #dcfce7; color: #166534; font-size: 0.78rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 4px;">
+                    ✓ Totalmente Pago
+                  </span>
+                <% } %>
+              </div>
+            </div>
+
+            <!-- Dados do Cliente e Endereço -->
+            <div style="margin-bottom: 0.75rem; font-size: 0.88rem;">
+              <strong style="color: var(--cor-texto);"><%= p.clienteNome %></strong>
+              <% if (p.clienteTelefone) { %>
+                <span style="color: var(--cor-texto-suave);"> • <%= p.clienteTelefone %></span>
+              <% } %>
+              <% if (p.tipo_entrega === 'entrega' && p.endereco_entrega) { %>
+                <div style="margin-top: 0.25rem; color: #475569; font-size: 0.84rem;">
+                  📍 <strong>Endereço:</strong> <%= p.endereco_entrega %>
+                </div>
+              <% } %>
+            </div>
+
+            <!-- Lista de Itens do Pedido -->
+            <div style="background: #fff; border: 1px dashed var(--cor-borda); border-radius: 6px; padding: 0.6rem 0.75rem; margin-bottom: 0.75rem; font-size: 0.85rem;">
+              <strong style="color: var(--cor-texto); display: block; margin-bottom: 0.35rem;">🎂 Itens para Preparar/Entregar:</strong>
+              <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <% p.itens.forEach(item => { %>
+                  <div style="display: flex; justify-content: space-between; color: #334155;">
+                    <span>• <strong><%= item.quantidade %>x</strong> <%= item.descricao %><% if (item.observacao) { %> <em style="color: #64748b;">(<%= item.observacao %>)</em><% } %></span>
+                    <span style="font-weight: 600;"><%= Number(item.subtotal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) %></span>
+                  </div>
+                <% }); %>
+              </div>
+            </div>
+
+            <!-- Ações Operacionais Rápidas -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #eee;">
+              <div style="display: flex; gap: 0.4rem; align-items: center;">
+                <% if (p.waLinkPronto) { %>
+                  <a href="<%= p.waLinkPronto %>" target="_blank" class="btn btn-sm" style="background: #25d366; color: #fff; border: none; font-weight: 700;" title="Avisar no WhatsApp que o pedido está pronto">
+                    💬 Avisar: "Pedido Pronto!"
+                  </a>
+                <% } %>
+                <a href="/pedidos/<%= p.id %>" class="btn btn-secundario btn-sm" title="Ver Detalhes do Pedido">
+                  👁️ Ver Pedido
+                </a>
+              </div>
+
+              <!-- Transição Rápida de Status -->
+              <div style="display: flex; gap: 0.35rem; align-items: center;">
+                <% if (p.status === 'orcamento') { %>
+                  <form method="POST" action="/agenda/<%= p.id %>/status" style="margin: 0;">
+                    <input type="hidden" name="status" value="confirmado">
+                    <button type="submit" class="btn btn-sm btn-primario">✓ Confirmar</button>
+                  </form>
+                <% } else if (p.status === 'confirmado') { %>
+                  <form method="POST" action="/agenda/<%= p.id %>/status" style="margin: 0;">
+                    <input type="hidden" name="status" value="producao">
+                    <button type="submit" class="btn btn-sm" style="background: #f97316; color: #fff; border: none;">▶ Iniciar Produção</button>
+                  </form>
+                <% } else if (p.status === 'producao') { %>
+                  <form method="POST" action="/agenda/<%= p.id %>/status" style="margin: 0;">
+                    <input type="hidden" name="status" value="entregue">
+                    <button type="submit" class="btn btn-sm" style="background: #16a34a; color: #fff; border: none; font-weight: 700;">✓ Marcar como Entregue</button>
+                  </form>
+                <% } else if (p.status === 'entregue') { %>
+                  <span style="font-size: 0.8rem; color: #16a34a; font-weight: 700;">✅ Encomenda Finalizada</span>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- SEÇÃO 2: AMANHÃ -->
+  <div class="cartao" style="margin-bottom: 1.5rem; border-top: 4px solid #3b82f6;">
+    <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.15rem;">⏳</span>
+        <span style="font-weight: 800; font-size: 1.05rem;">Entregas de Amanhã</span>
+        <span style="color: var(--cor-texto-suave); font-weight: normal; font-size: 0.85rem;">— <%= amanhaFmt %></span>
+      </div>
+      <span class="badge-contador" style="background: #3b82f6; color: #fff;"><%= pedidosAmanha.length %></span>
+    </div>
+
+    <% if (pedidosAmanha.length === 0) { %>
+      <div style="text-align: center; padding: 1.25rem 1rem; color: var(--cor-texto-suave); font-size: 0.88rem;">
+        Nenhuma encomenda agendada para amanhã.
+      </div>
+    <% } else { %>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0.85rem;">
+        <% pedidosAmanha.forEach(p => { %>
+          <div style="background: #fff; border: 1px solid var(--cor-borda); border-radius: 8px; padding: 0.85rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-weight: 800; color: #111;">#<%= p.id %> • <%= p.clienteNome %></span>
+              <span style="font-weight: 700; color: var(--cor-primaria);"><%= p.totalFormatado %></span>
+            </div>
+            <div style="font-size: 0.82rem; color: #64748b; margin-bottom: 0.5rem;">
+              ⏰ <%= p.horario_entrega || 'Sem horário' %> • <%= p.tipo_entrega === 'entrega' ? '🚗 Entrega' : '🏬 Retirada' %>
+            </div>
+            <div style="font-size: 0.82rem; color: #334155; margin-bottom: 0.65rem; background: #f8fafc; padding: 0.4rem 0.6rem; border-radius: 4px;">
+              <% p.itens.forEach(it => { %>
+                <div>• <%= it.quantidade %>x <%= it.descricao %></div>
+              <% }); %>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <a href="/pedidos/<%= p.id %>" class="btn btn-secundario btn-sm">Ver Detalhes</a>
+              <% if (p.status === 'confirmado') { %>
+                <form method="POST" action="/agenda/<%= p.id %>/status" style="margin: 0;">
+                  <input type="hidden" name="status" value="producao">
+                  <button type="submit" class="btn btn-sm" style="background: #f97316; color: #fff; border: none;">▶ Adiantar Produção</button>
+                </form>
+              <% } %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- SEÇÃO 3: PRÓXIMOS 7 DIAS (AGRUPADO) -->
+  <div class="cartao" style="margin-bottom: 1.5rem;">
+    <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.15rem;">📆</span>
+        <span style="font-weight: 800; font-size: 1.05rem;">Próximos Dias da Semana</span>
+      </div>
+    </div>
+
+    <% if (listaGruposSemana.length === 0) { %>
+      <div style="text-align: center; padding: 1.25rem 1rem; color: var(--cor-texto-suave); font-size: 0.88rem;">
+        Nenhum pedido agendado para o restante dos próximos 7 dias.
+      </div>
+    <% } else { %>
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <% listaGruposSemana.forEach(grupo => { %>
+          <div style="border-left: 3px solid #64748b; padding-left: 0.85rem;">
+            <div style="font-weight: 800; font-size: 0.95rem; color: var(--cor-texto); margin-bottom: 0.4rem;">
+              📅 <%= grupo.dataFmt %> — <span style="color: var(--cor-texto-suave); font-weight: normal;"><%= grupo.diaSemana %></span>
+              <span style="font-size: 0.8rem; background: #f1f5f9; padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.4rem;">
+                <%= grupo.pedidos.length %> <%= grupo.pedidos.length === 1 ? 'pedido' : 'pedidos' %>
+              </span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.65rem;">
+              <% grupo.pedidos.forEach(p => { %>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.65rem 0.85rem; font-size: 0.85rem;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <strong>#<%= p.id %> • <%= p.clienteNome %></strong>
+                    <span style="font-weight: 700; color: #0284c7;"><%= p.totalFormatado %></span>
+                  </div>
+                  <div style="color: #64748b; font-size: 0.8rem; margin: 0.2rem 0;">
+                    ⏰ <%= p.horario_entrega || 'Sem horário' %> • <%= p.itens.map(i => i.quantidade + 'x ' + i.descricao).join(', ') %>
+                  </div>
+                  <div style="margin-top: 0.35rem;">
+                    <a href="/pedidos/<%= p.id %>" style="color: var(--cor-primaria); font-weight: 600; font-size: 0.8rem;">Ver pedido →</a>
+                  </div>
+                </div>
+              <% }); %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+
+<% } else { %>
+  <!-- ========================================== -->
+  <!-- VISUALIZAÇÃO 2: CALENDÁRIO MENSAL          -->
+  <!-- ========================================== -->
+
+  <div class="cartao" style="margin-bottom: 1.5rem;">
+    <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+      <span style="font-weight: 800; font-size: 1.05rem;">Grade Mensal de Encomendas</span>
+      <span style="font-size: 0.82rem; color: var(--cor-texto-suave);">Clique em um dia para inspecionar os pedidos</span>
+    </div>
+
+    <!-- Cabeçalho dos Dias da Semana -->
+    <div class="grade-calendario-semana">
+      <div>Dom</div>
+      <div>Seg</div>
+      <div>Ter</div>
+      <div>Qua</div>
+      <div>Qui</div>
+      <div>Sex</div>
+      <div>Sáb</div>
+    </div>
+
+    <!-- Grade dos Dias do Mês -->
+    <div class="grade-calendario-dias">
+      <% gradeDias.forEach(celula => { %>
+        <% if (celula.dia === null) { %>
+          <div class="calendario-celula celula-vazia"></div>
+        <% } else { %>
+          <a href="/agenda?aba=mes&mes=<%= mesAtual %>&data=<%= celula.dataIso %>" 
+             class="calendario-celula <%= celula.eHoje ? 'celula-hoje' : '' %> <%= celula.selecionada ? 'celula-selecionada' : '' %> <%= celula.resumo ? 'tem-pedidos' : '' %>">
+            <div class="celula-cabecalho">
+              <span class="celula-numero"><%= celula.dia %></span>
+              <% if (celula.eHoje) { %>
+                <span class="badge-hoje">Hoje</span>
+              <% } %>
+            </div>
+
+            <% if (celula.resumo) { %>
+              <div class="celula-pedidos-info">
+                <span class="contador-pedidos-dia"><%= celula.resumo.total %> <%= celula.resumo.total === 1 ? 'ped.' : 'peds.' %></span>
+                <div class="pedidos-pontos-status">
+                  <% if (celula.resumo.em_producao > 0) { %>
+                    <span class="ponto-status ponto-producao" title="<%= celula.resumo.em_producao %> em aberto/produção"></span>
+                  <% } %>
+                  <% if (celula.resumo.concluidos > 0) { %>
+                    <span class="ponto-status ponto-entregue" title="<%= celula.resumo.concluidos %> entregue(s)"></span>
+                  <% } %>
+                  <% if (celula.resumo.orcamentos > 0) { %>
+                    <span class="ponto-status ponto-orcamento" title="<%= celula.resumo.orcamentos %> orçamento(s)"></span>
+                  <% } %>
+                </div>
+              </div>
+            <% } %>
+          </a>
+        <% } %>
+      <% }); %>
+    </div>
+  </div>
+
+  <!-- Painel do Dia Selecionado no Calendário -->
+  <% if (dataSelecionada && pedidosDataSelecionada) { %>
+    <div class="cartao" style="border-top: 4px solid var(--cor-primaria); margin-bottom: 1.5rem;">
+      <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 800; font-size: 1.05rem;">
+          📅 Pedidos de <%= dataSelecionadaFmt %>
+        </span>
+        <span class="badge-contador" style="background: var(--cor-primaria); color: #fff;">
+          <%= pedidosDataSelecionada.length %>
+        </span>
+      </div>
+
+      <% if (pedidosDataSelecionada.length === 0) { %>
+        <div style="text-align: center; padding: 1.5rem 1rem; color: var(--cor-texto-suave);">
+          Nenhum pedido cadastrado para esta data.
+        </div>
+      <% } else { %>
+        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+          <% pedidosDataSelecionada.forEach(p => { %>
+            <div style="background: #fafafa; border: 1px solid var(--cor-borda); border-radius: 8px; padding: 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+                  <strong>#<%= p.id %> • <%= p.clienteNome %></strong>
+                  <span style="font-size: 0.8rem; background: #e0f2fe; color: #0369a1; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                    ⏰ <%= p.horario_entrega || 'Sem horário' %>
+                  </span>
+                  <span class="status-pilula status-<%= p.status %>" style="font-size: 0.75rem;">
+                    <%= p.status %>
+                  </span>
+                </div>
+                <div style="font-size: 0.82rem; color: #64748b;">
+                  <%= p.itens.map(i => i.quantidade + 'x ' + i.descricao).join(', ') %>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 0.65rem;">
+                <div style="text-align: right;">
+                  <strong style="color: var(--cor-texto);"><%= p.totalFormatado %></strong>
+                  <% if (p.saldoPendente > 0 && p.status_pagamento !== 'pago') { %>
+                    <div style="font-size: 0.75rem; color: #b45309;">Saldo: <%= p.saldoFormatado %></div>
+                  <% } %>
+                </div>
+                <a href="/pedidos/<%= p.id %>" class="btn btn-secundario btn-sm">Ver Detalhes</a>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+
+<% } %>
+
+<%- include('partials/rodape') %>

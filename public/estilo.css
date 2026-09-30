@@ -1476,6 +1476,166 @@ footer.rodape {
   align-items: center;
 }
 
+/* ============================================================================
+   MÓDULO DE AGENDA & CALENDÁRIO MENSAL (ONDA 3)
+   ============================================================================ */
+
+.grade-calendario-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--cor-texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.grade-calendario-dias {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.calendario-celula {
+  min-height: 82px;
+  background: #ffffff;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  padding: 0.45rem 0.5rem;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.18s ease;
+  position: relative;
+}
+
+.calendario-celula:hover:not(.celula-vazia) {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.celula-vazia {
+  background: #f8fafc;
+  border-color: transparent;
+  cursor: default;
+}
+
+.celula-hoje {
+  border: 2px solid var(--cor-primaria) !important;
+  background-color: #fff9f9;
+}
+
+.celula-selecionada {
+  outline: 2px solid #0284c7;
+  outline-offset: 1px;
+  background-color: #f0f9ff;
+}
+
+.celula-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.celula-numero {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--cor-texto);
+}
+
+.badge-hoje {
+  font-size: 0.65rem;
+  background: var(--cor-primaria);
+  color: #ffffff;
+  font-weight: 800;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.celula-pedidos-info {
+  margin-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.contador-pedidos-dia {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #1e293b;
+  background: #f1f5f9;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  text-align: center;
+  display: block;
+}
+
+.tem-pedidos {
+  border-color: #cbd5e1;
+}
+
+.pedidos-pontos-status {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  align-items: center;
+}
+
+.ponto-status {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.ponto-producao {
+  background-color: #f97316;
+}
+
+.ponto-entregue {
+  background-color: #16a34a;
+}
+
+.ponto-orcamento {
+  background-color: #3b82f6;
+}
+
+.agenda-card-pedido {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.agenda-card-pedido:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 680px) {
+  .grade-calendario-semana {
+    font-size: 0.7rem;
+  }
+
+  .calendario-celula {
+    min-height: 65px;
+    padding: 0.25rem 0.35rem;
+  }
+
+  .celula-numero {
+    font-size: 0.78rem;
+  }
+
+  .contador-pedidos-dia {
+    font-size: 0.68rem;
+    padding: 0.1rem;
+  }
+}
+
+
 
 
 
