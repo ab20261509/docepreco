@@ -7,7 +7,7 @@ const helmet = require('helmet');
 const db = require('./db');
 
 const app = express();
-const producao = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+const producao = process.env.NODE_ENV === 'production';
 const sessionSecret = process.env.SESSION_SECRET || 'confeitaria_super_secreta_padrao_2026';
 
 if (producao) {
@@ -100,9 +100,7 @@ function encerrarGracioso() {
 process.on('SIGINT', encerrarGracioso);
 process.on('SIGTERM', encerrarGracioso);
 
-if (!process.env.VERCEL) {
-  const porta = process.env.PORT || 3000;
-  app.listen(porta, () => {
-    console.log(`🧁 Confeitaria rodando em http://localhost:${porta}`);
-  });
-}
+const porta = process.env.PORT || 3000;
+app.listen(porta, () => {
+  console.log(`🧁 Confeitaria rodando em http://localhost:${porta}`);
+});

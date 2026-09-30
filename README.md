@@ -1,52 +1,62 @@
-﻿# Doce Preço 🧁 — Sistema de Precificação e Gestão para Confeitaria
+# Doce Preço 🧁 — Sistema de Precificação e Gestão para Confeitaria
 
-Sistema completo para confeiteiras gerenciarem sua precificação, fichas técnicas, controle de estoque de insumos com validade, custos fixos e clientes.
+Sistema completo para confeiteiras gerenciarem sua precificação, fichas técnicas, controle de estoque de insumos com validade, custos fixos, clientes, orçamentos, agenda de entregas e lista inteligente de compras.
 
 ## 🚀 Como Executar Localmente
 
 1. Clone o repositório:
-`ash
-git clone https://github.com/ab20261509/DocePreco.git
-cd DocePreco
-`
+```bash
+git clone https://github.com/ab20261509/docepreco.git
+cd docepreco
+```
 
 2. Instale as dependências:
-`ash
+```bash
 npm install
-`
+```
 
 3. Configure o arquivo .env:
-`ash
+```bash
 cp .env.example .env
-`
+```
 
 4. Execute os testes automatizados:
-`ash
+```bash
 npm test
-`
+```
 
 5. Inicie a aplicação:
-`ash
+```bash
 npm start
-`
+```
 Acesse em: **http://localhost:3000**
 
 ---
 
-## ☁️ Instruções para Deploy
+## ☁️ Deploy no Render.com (com Disco Persistente & Migrações)
 
-### Opção 1: Vercel (Configurado)
-O projeto inclui ercel.json e pi/index.js para execução como Serverless Function.
+O **Doce Preço** foi arquitetado para rodar no [Render.com](https://render.com) com persistência permanente de dados e migrações versionadas automáticas.
 
-> ⚠️ **Atenção sobre SQLite na Vercel**: 
-> A Vercel opera em arquitetura **Serverless** (funções efêmeras sem disco persistente). O banco SQLite local no /tmp é recriado a cada reinicialização da função, o que significa que cadastros de novos produtos e clientes não persistem permanentemente entre reinicializações na Vercel. 
-> Para persistência permanente na nuvem, recomendamos a **Opção 2 (Render/Railway)** ou conectar a um banco serverless externo como **Turso (libSQL)** ou **Neon/Supabase**.
+### Passo a Passo no Render:
 
-### Opção 2: Render.com ou Railway (Recomendado para SQLite com Disco Persistente)
-Essas plataformas executam Node.js continuamente com suporte a disco persistente, mantendo o banco SQLite e todos os dados intactos:
-1. Conecte o repositório no [Render.com](https://render.com) como **Web Service**.
-2. Build Command: 
-pm install
-3. Start Command: 
-pm start
-4. Adicione um Persistent Disk apontando para /data.
+1. **Crie um novo Web Service**:
+   - Conecte seu repositório do GitHub: `https://github.com/ab20261509/docepreco`.
+   - **Environment**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+
+2. **Adicione um Disco Persistente (Persistent Disk)**:
+   - No menu do seu serviço no Render, vá em **Disks** ➔ **Add Disk**.
+   - **Name**: `confeitaria-data`
+   - **Mount Path**: `/data`
+   - **Size**: 1 GB (mais que suficiente para centenas de milhares de registros).
+
+3. **Configure as Variáveis de Ambiente (Environment Variables)**:
+   - `DATA_DIR`: `/data` (faz o banco SQLite gravar diretamente no disco persistente).
+   - `SESSION_SECRET`: Uma frase longa e aleatória para segurança das sessões.
+   - `NODE_ENV`: `production`
+
+4. **Como funcionam as atualizações e novos commits**:
+   - Toda vez que você enviar melhorias (`git push`), o Render compila e sobe a nova versão do código.
+   - O disco montado em `/data` **permanece 100% intacto**, mantendo todos os seus produtos, receitas, clientes e pedidos salvos.
+   - O **Sistema de Migrações Versionadas** (`migrations/`) detecta automaticamente novas tabelas ou colunas e as aplica com segurança sem nunca resetar nem recriar o seu banco de dados.
