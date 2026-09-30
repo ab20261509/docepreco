@@ -1,0 +1,375 @@
+<%- include('partials/topo') %>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem; flex-wrap: wrap; gap: 0.75rem;">
+  <div>
+    <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--cor-texto);">🛒 Planejamento & Lista de Compras</h1>
+    <p style="color: var(--cor-texto-suave); font-size: 0.85rem;">Visão unificada cruzando demandas de encomendas, estoque mínimo de segurança e histórico de compras</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <button type="button" class="btn btn-primario btn-sm" id="btn-copiar-lista" title="Copiar lista de compras para colar no WhatsApp ou bloco de notas">
+      📋 Copiar Lista de Mercado
+    </button>
+    <button type="button" class="btn btn-secundario btn-sm" onclick="window.print()" title="Imprimir lista de compras">
+      🖨️ Imprimir
+    </button>
+    <% if (incluirVendas && totalPedidos > 0) { %>
+      <button type="button" class="btn btn-sm" id="btn-abrir-baixa" style="background: #0284c7; color: #fff; border: none; font-weight: 700;" title="Dar baixa nos insumos usados por estas encomendas">
+        📦 Dar Baixa de Produção
+      </button>
+    <% } %>
+  </div>
+</div>
+
+<% if (typeof sucessoBaixa !== 'undefined' && sucessoBaixa) { %>
+  <div class="alerta alerta-sucesso" style="margin-bottom: 1.15rem;">
+    <span>✓</span>
+    <span><strong>Baixa de estoque realizada com sucesso!</strong> Os insumos das encomendas foram debitados do estoque e os pedidos avançaram para produção.</span>
+  </div>
+<% } %>
+
+<!-- KPIs Rápidos do Planejamento -->
+<div class="grid-kpis" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.25rem;">
+  <div class="kpi-card" style="border-left: 4px solid #ef4444;">
+    <span class="kpi-rotulo">Custo Est. de Compras</span>
+    <span class="kpi-valor" style="color: #b91c1c;"><%= custoTotalEstimadoFmt %></span>
+    <span class="kpi-subtexto">Estimativa de reposição</span>
+  </div>
+
+  <div class="kpi-card" style="border-left: 4px solid #f59e0b;">
+    <span class="kpi-rotulo">Itens Faltantes</span>
+    <span class="kpi-valor" style="color: #b45309;"><%= totalItensComprar %></span>
+    <span class="kpi-subtexto">Insumos que precisam de compra</span>
+  </div>
+
+  <div class="kpi-card" style="border-left: 4px solid #10b981;">
+    <span class="kpi-rotulo">Estoque Suficiente</span>
+    <span class="kpi-valor" style="color: #047857;"><%= totalItensSuficientes %></span>
+    <span class="kpi-subtexto">Itens 100% cobertos</span>
+  </div>
+
+  <div class="kpi-card" style="border-left: 4px solid #3b82f6;">
+    <span class="kpi-rotulo">Encomendas no Cálculo</span>
+    <span class="kpi-valor" style="color: #1d4ed8;"><%= totalPedidos %></span>
+    <span class="kpi-subtexto"><%= incluirVendas ? 'Pedidos considerados' : 'Vendas desativadas' %></span>
+  </div>
+</div>
+
+<!-- BARRA DE CONTROLE UNIFICADA COM TOGGLES DE CÁLCULO E VISÃO -->
+<form method="GET" action="/compras" id="form-filtros-compras" class="cartao" style="margin-bottom: 1.25rem; padding: 0.85rem 1rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+    
+    <!-- Toggles das 3 Colunas/Pilares de Cálculo -->
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+      <span style="font-size: 0.82rem; font-weight: 800; color: var(--cor-texto); text-transform: uppercase; letter-spacing: 0.4px;">
+        ⚙️ Critérios no Cálculo:
+      </span>
+
+      <label class="toggle-controle-item" title="Soma a demanda dos ingredientes das encomendas ativas">
+        <input type="checkbox" name="incluir_vendas" value="1" <%= incluirVendas ? 'checked' : '' %> onchange="document.getElementById('form-filtros-compras').submit()">
+        <span>🎂 Vendas Pendentes</span>
+      </label>
+
+      <label class="toggle-controle-item" title="Garante que o estoque não fique abaixo do estoque mínimo configurado">
+        <input type="checkbox" name="incluir_minimo" value="1" <%= incluirMinimo ? 'checked' : '' %> onchange="document.getElementById('form-filtros-compras').submit()">
+        <span>🛡️ Quantidade Mínima</span>
+      </label>
+
+      <label class="toggle-controle-item" title="Exibe o histórico de compra e baliza a sugestão pelo lote habitual">
+        <input type="checkbox" name="incluir_ultimas" value="1" <%= incluirUltimas ? 'checked' : '' %> onchange="document.getElementById('form-filtros-compras').submit()">
+        <span>🕒 Últimas Compras</span>
+      </label>
+    </div>
+
+    <!-- Filtro de Período das Encomendas (se Vendas estiver ativa) -->
+    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+      <% if (incluirVendas) { %>
+        <div style="display: flex; align-items: center; gap: 0.35rem;">
+          <span style="font-size: 0.8rem; color: var(--cor-texto-suave);">Período:</span>
+          <select name="periodo" class="campo-select" style="width: auto; height: 32px; padding: 0.15rem 0.5rem; font-size: 0.82rem;" onchange="document.getElementById('form-filtros-compras').submit()">
+            <option value="semana" <%= periodo === 'semana' ? 'selected' : '' %>>Próximos 7 Dias</option>
+            <option value="hoje" <%= periodo === 'hoje' ? 'selected' : '' %>>Hoje</option>
+            <option value="amanha" <%= periodo === 'amanha' ? 'selected' : '' %>>Amanhã</option>
+            <option value="todos" <%= periodo === 'todos' ? 'selected' : '' %>>Todas as Encomendas</option>
+          </select>
+        </div>
+      <% } %>
+
+      <!-- Filtro Somente Faltantes vs Todos -->
+      <div style="display: flex; gap: 0.3rem;">
+        <a href="/compras?incluir_vendas=<%= incluirVendas ? '1' : '0' %>&incluir_minimo=<%= incluirMinimo ? '1' : '0' %>&incluir_ultimas=<%= incluirUltimas ? '1' : '0' %>&periodo=<%= periodo %>&somente_faltantes=0" 
+           class="btn btn-sm <%= !somenteFaltantes ? 'btn-primario' : 'btn-secundario' %>" style="font-size: 0.78rem;">
+          Todos (<%= totalItens %>)
+        </a>
+        <a href="/compras?incluir_vendas=<%= incluirVendas ? '1' : '0' %>&incluir_minimo=<%= incluirMinimo ? '1' : '0' %>&incluir_ultimas=<%= incluirUltimas ? '1' : '0' %>&periodo=<%= periodo %>&somente_faltantes=1" 
+           class="btn btn-sm <%= somenteFaltantes ? 'btn-primario' : 'btn-secundario' %>" style="font-size: 0.78rem;">
+          ⚠️ Faltantes (<%= totalItensComprar %>)
+        </a>
+      </div>
+    </div>
+  </div>
+</form>
+
+<!-- TABELA UNIFICADA DE PLANEJAMENTO DE COMPRAS -->
+<div class="cartao" style="padding: 0; overflow: hidden; margin-bottom: 1.5rem;">
+  <div style="padding: 0.85rem 1.15rem; border-bottom: 1px solid var(--cor-borda); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; background: #fafafa;">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <span style="font-weight: 800; font-size: 0.95rem; color: var(--cor-texto);">📋 Tabela Comparativa de Insumos</span>
+      <span class="badge-contador"><%= itens.length %></span>
+    </div>
+
+    <!-- Campo de Busca Rápida na Tabela -->
+    <div class="busca-input-wrapper">
+      <span class="busca-icone">🔍</span>
+      <input type="text" id="filtro-insumos-tabela" placeholder="Filtrar por nome do insumo..." class="input-busca-tabela" autocomplete="off" style="width: 240px !important;">
+    </div>
+  </div>
+
+  <% if (itens.length === 0) { %>
+    <div style="text-align: center; padding: 2.5rem 1rem; color: var(--cor-texto-suave);">
+      <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🎉</div>
+      <p style="font-weight: 700; color: var(--cor-texto); margin-bottom: 0.25rem;">Nenhum insumo faltante!</p>
+      <p style="font-size: 0.85rem;">Todos os ingredientes estão com estoque suficiente para o período e critérios selecionados.</p>
+    </div>
+  <% } else { %>
+    <div class="tabela-scroll">
+      <table class="tabela-compacta" id="tabela-compras" style="margin: 0;">
+        <thead>
+          <tr>
+            <th>Insumo</th>
+            <th style="text-align: right;">Estoque Atual</th>
+            
+            <% if (incluirVendas) { %>
+              <th style="text-align: right; background: #fdf2f8; color: #9d174d;" title="Demanda total das encomendas selecionadas">
+                🎂 Vendas Pend.
+              </th>
+            <% } %>
+
+            <% if (incluirMinimo) { %>
+              <th style="text-align: right; background: #fefce8; color: #854d0e;" title="Estoque mínimo de segurança cadastrado">
+                🛡️ Mínimo
+              </th>
+            <% } %>
+
+            <% if (incluirUltimas) { %>
+              <th style="text-align: right; background: #f0fdf4; color: #166534;" title="Histórico da última compra registrada">
+                🕒 Última Compra
+              </th>
+            <% } %>
+
+            <th style="text-align: center;">Situação</th>
+            <th style="text-align: right;">Sugestão Compra</th>
+            <th style="text-align: right;">Embalagens</th>
+            <th style="text-align: right;">Custo Est.</th>
+            <th style="text-align: center; width: 85px;">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% itens.forEach(item => { %>
+            <tr class="linha-insumo-compra <%= item.situacao === 'comprar' ? 'linha-faltante' : '' %>">
+              <td>
+                <div style="font-weight: 700; color: var(--cor-texto);"><%= item.nome %></div>
+                <div style="font-size: 0.74rem; color: var(--cor-texto-suave);">
+                  Emb: <%= item.qtdEmbalagem %> <%= item.unidade %> • <%= item.precoEmbalagemFmt %>
+                  <% if (item.produtosOrigem && item.produtosOrigem.length > 0) { %>
+                    <span style="display: block; color: #0284c7; margin-top: 1px;">
+                      Usado em: <%= item.produtosOrigem.slice(0, 2).join(', ') %><%= item.produtosOrigem.length > 2 ? '...' : '' %>
+                    </span>
+                  <% } %>
+                </div>
+              </td>
+
+              <!-- Estoque Atual -->
+              <td style="text-align: right; font-weight: 600;">
+                <%= item.estoqueAtual %> <span style="font-size: 0.75rem; color: #64748b;"><%= item.unidade %></span>
+              </td>
+
+              <!-- Vendas Pendentes (Toggleable) -->
+              <% if (incluirVendas) { %>
+                <td style="text-align: right; background: #fdf2f8; font-weight: 700; color: #be185d;">
+                  <% if (item.V > 0) { %>
+                    <%= item.V %> <span style="font-size: 0.75rem;"><%= item.unidade %></span>
+                  <% } else { %>
+                    <span style="color: #cbd5e1;">-</span>
+                  <% } %>
+                </td>
+              <% } %>
+
+              <!-- Estoque Mínimo (Toggleable) -->
+              <% if (incluirMinimo) { %>
+                <td style="text-align: right; background: #fefce8; color: #a16207; font-weight: 600;">
+                  <% if (item.M > 0) { %>
+                    <%= item.M %> <span style="font-size: 0.75rem;"><%= item.unidade %></span>
+                  <% } else { %>
+                    <span style="color: #cbd5e1;">-</span>
+                  <% } %>
+                </td>
+              <% } %>
+
+              <!-- Última Compra (Toggleable) -->
+              <% if (incluirUltimas) { %>
+                <td style="text-align: right; background: #f0fdf4; font-size: 0.8rem; color: #166534;">
+                  <% if (item.ultimaCompraQtd > 0) { %>
+                    <strong><%= item.ultimaCompraEmbalagens %> emb.</strong> (<%= item.ultimaCompraQtd %><%= item.unidade %>)
+                    <div style="font-size: 0.7rem; color: #64748b;"><%= item.ultimaCompraData %></div>
+                  <% } else { %>
+                    <span style="color: #cbd5e1;">Sem hist.</span>
+                  <% } %>
+                </td>
+              <% } %>
+
+              <!-- Situação -->
+              <td style="text-align: center;">
+                <% if (item.situacao === 'comprar') { %>
+                  <span class="badge-comprar">⚠️ Comprar</span>
+                <% } else { %>
+                  <span class="badge-suficiente">✅ Suficiente</span>
+                <% } %>
+              </td>
+
+              <!-- Sugestão Líquida -->
+              <td style="text-align: right; font-weight: 700;">
+                <% if (item.sugestaoQtd > 0) { %>
+                  <span style="color: #b91c1c;"><%= item.sugestaoQtd %> <%= item.unidade %></span>
+                <% } else { %>
+                  <span style="color: #10b981;">0 <%= item.unidade %></span>
+                <% } %>
+              </td>
+
+              <!-- Embalagens Fechadas -->
+              <td style="text-align: right;">
+                <% if (item.pacotesAComprar > 0) { %>
+                  <span style="background: #fef2f2; color: #b91c1c; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid #fecaca;">
+                    <%= item.pacotesAComprar %> <%= item.pacotesAComprar === 1 ? 'pacote' : 'pacotes' %>
+                  </span>
+                <% } else { %>
+                  <span style="color: #cbd5e1;">-</span>
+                <% } %>
+              </td>
+
+              <!-- Custo Estimado -->
+              <td style="text-align: right; font-weight: 800; color: <%= item.custoEstimado > 0 ? '#b91c1c' : '#64748b' %>;">
+                <%= item.custoEstimadoFmt %>
+              </td>
+
+              <!-- Ação Rápida -->
+              <td style="text-align: center;">
+                <% if (item.catalogoId) { %>
+                  <a href="/ingredientes/<%= item.catalogoId %>" class="btn btn-secundario btn-sm" title="Dar entrada de compra neste insumo" style="font-size: 0.75rem; padding: 0.2rem 0.45rem;">
+                    🛒 Comprar
+                  </a>
+                <% } else { %>
+                  <a href="/ingredientes" class="btn btn-secundario btn-sm" title="Cadastrar este insumo no estoque" style="font-size: 0.75rem; padding: 0.2rem 0.45rem;">
+                    ➕ Cadastrar
+                  </a>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<!-- SEÇÃO DE PEDIDOS ATENDIDOS NESTE PLANEJAMENTO (SE HOUVER) -->
+<% if (incluirVendas && pedidos && pedidos.length > 0) { %>
+  <div class="cartao" style="margin-bottom: 1.5rem;">
+    <details>
+      <summary style="font-weight: 800; font-size: 0.95rem; cursor: pointer; color: var(--cor-texto);">
+        🎂 Encomendas Consideradas neste Planejamento (<%= pedidos.length %> pedidos)
+      </summary>
+      <div style="margin-top: 0.85rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.65rem;">
+        <% pedidos.forEach(p => { %>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.65rem 0.85rem; font-size: 0.84rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+              <strong>#<%= p.id %> • <%= p.cliente_cadastrado_nome || p.cliente_nome_avulso || 'Cliente' %></strong>
+              <span class="status-pilula status-<%= p.status %>" style="font-size: 0.72rem;"><%= p.status %></span>
+            </div>
+            <div style="color: #64748b; font-size: 0.8rem;">
+              📅 Entrega: <%= p.data_entrega %> <%= p.horario_entrega ? 'às ' + p.horario_entrega : '' %>
+            </div>
+            <div style="margin-top: 0.3rem;">
+              <a href="/pedidos/<%= p.id %>" style="color: var(--cor-primaria); font-weight: 600; font-size: 0.78rem;">Ver pedido →</a>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </details>
+  </div>
+<% } %>
+
+<!-- MODAL DE CONFIRMAÇÃO DE BAIXA DE ESTOQUE -->
+<% if (incluirVendas && totalPedidos > 0) { %>
+  <div id="modal-baixa-estoque" class="modal-backdrop" style="display: none;">
+    <div class="modal-caixa" style="max-width: 480px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800;">📦 Confirmar Baixa de Produção</h3>
+        <button type="button" class="btn-fechar-modal" onclick="document.getElementById('modal-baixa-estoque').style.display = 'none'">✕</button>
+      </div>
+      <p style="font-size: 0.88rem; color: #475569; margin-bottom: 1rem;">
+        Esta ação irá <strong>debitar automaticamente do estoque</strong> os insumos necessários para produzir as <strong><%= totalPedidos %> encomendas</strong> selecionadas no período.
+      </p>
+      <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 0.75rem; margin-bottom: 1.25rem; font-size: 0.84rem; color: #0369a1;">
+        💡 Os pedidos confirmados serão marcados como <strong>Em Produção</strong>.
+      </div>
+      <form method="POST" action="/compras/baixa-producao">
+        <input type="hidden" name="periodo" value="<%= periodo %>">
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+          <button type="button" class="btn btn-secundario btn-sm" onclick="document.getElementById('modal-baixa-estoque').style.display = 'none'">Cancelar</button>
+          <button type="submit" class="btn btn-primario btn-sm" style="background: #0284c7; border-color: #0284c7;">✓ Confirmar Baixa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+<% } %>
+
+<!-- Textarea Oculto com o texto formatado para copiar -->
+<textarea id="texto-lista-whatsapp" style="display: none;"><%= textoWhatsApp %></textarea>
+
+<script>
+  // 1. Copiar Lista de Mercado para WhatsApp
+  const btnCopiar = document.getElementById('btn-copiar-lista');
+  if (btnCopiar) {
+    btnCopiar.addEventListener('click', function() {
+      const texto = document.getElementById('texto-lista-whatsapp').value;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(() => {
+          const textoOriginal = btnCopiar.innerText;
+          btnCopiar.innerText = '✓ Lista Copiada!';
+          btnCopiar.style.background = '#16a34a';
+          btnCopiar.style.borderColor = '#16a34a';
+          setTimeout(() => {
+            btnCopiar.innerText = textoOriginal;
+            btnCopiar.style.background = '';
+            btnCopiar.style.borderColor = '';
+          }, 2500);
+        });
+      } else {
+        alert('Texto da lista de compras:\n\n' + texto);
+      }
+    });
+  }
+
+  // 2. Filtro instantâneo no cliente da tabela
+  const inputFiltro = document.getElementById('filtro-insumos-tabela');
+  if (inputFiltro) {
+    inputFiltro.addEventListener('input', function() {
+      const termo = this.value.toLowerCase().trim();
+      const linhas = document.querySelectorAll('.linha-insumo-compra');
+      linhas.forEach(tr => {
+        const texto = tr.innerText.toLowerCase();
+        tr.style.display = texto.includes(termo) ? '' : 'none';
+      });
+    });
+  }
+
+  // 3. Modal de Baixa de Produção
+  const btnBaixa = document.getElementById('btn-abrir-baixa');
+  if (btnBaixa) {
+    btnBaixa.addEventListener('click', function() {
+      document.getElementById('modal-baixa-estoque').style.display = 'flex';
+    });
+  }
+</script>
+
+<%- include('partials/rodape') %>

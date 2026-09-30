@@ -1635,6 +1635,110 @@ footer.rodape {
   }
 }
 
+/* ============================================================================
+   MÓDULO DE PLANEJAMENTO & LISTA DE COMPRAS (ONDA 4)
+   ============================================================================ */
+
+.toggle-controle-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--cor-texto);
+  background: #f8fafc;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--cor-borda);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.toggle-controle-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.toggle-controle-item input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--cor-primaria);
+  width: 15px;
+  height: 15px;
+  margin: 0;
+}
+
+.badge-comprar {
+  display: inline-block;
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.badge-suficiente {
+  display: inline-block;
+  background-color: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.linha-faltante {
+  background-color: #fffbfb;
+}
+
+.linha-faltante:hover {
+  background-color: #fff1f2 !important;
+}
+
+/* Regras Otimizadas de Impressão */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt;
+  }
+
+  .topo, .menu, .usuario-info, .rodape,
+  #form-filtros-compras, .btn, #btn-copiar-lista,
+  #filtro-insumos-tabela, .busca-input-wrapper,
+  .modal-backdrop, td:last-child, th:last-child {
+    display: none !important;
+  }
+
+  .container {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .cartao {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  .tabela-compacta {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .tabela-compacta th, .tabela-compacta td {
+    border: 1px solid #ddd !important;
+    padding: 6px 8px !important;
+  }
+}
+
+
 
 
 
