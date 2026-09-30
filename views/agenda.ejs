@@ -14,8 +14,8 @@
 <!-- KPIs Rápidos da Agenda -->
 <div class="grid-kpis" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1.25rem;">
   <div class="kpi-card" style="border-left: 4px solid var(--cor-primaria);">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-      <div>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+      <div class="kpi-card-conteudo">
         <span class="kpi-rotulo">Entregas Hoje</span>
         <span class="kpi-valor" style="color: var(--cor-primaria);"><%= totalHoje %></span>
         <span class="kpi-subtexto">
@@ -31,8 +31,8 @@
   </div>
 
   <div class="kpi-card" style="border-left: 4px solid #f59e0b;">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-      <div>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+      <div class="kpi-card-conteudo">
         <span class="kpi-rotulo">Saldo a Receber Hoje</span>
         <span class="kpi-valor" style="color: #b45309;"><%= saldoReceberHoje %></span>
         <span class="kpi-subtexto">A receber no ato da entrega</span>
@@ -42,8 +42,8 @@
   </div>
 
   <div class="kpi-card" style="border-left: 4px solid #3b82f6;">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-      <div>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+      <div class="kpi-card-conteudo">
         <span class="kpi-rotulo">Próximos 7 Dias</span>
         <span class="kpi-valor" style="color: #1d4ed8;"><%= totalSemana %></span>
         <span class="kpi-subtexto">Carga operacional da semana</span>

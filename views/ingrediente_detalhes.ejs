@@ -39,37 +39,45 @@
 <!-- KPIs do Ingrediente -->
 <div class="grid-kpis">
   <div class="kpi-card">
-    <span class="kpi-rotulo">Saldo em Estoque</span>
-    <span class="kpi-valor" style="color: <%= ingrediente.estoque_atual <= 0 ? 'var(--cor-alerta)' : (ingrediente.estoque_minimo > 0 && ingrediente.estoque_atual <= ingrediente.estoque_minimo ? '#b78103' : 'var(--cor-verde)') %>;">
-      <%= ingrediente.estoque_atual %> <%= ingrediente.unidade %>
-    </span>
-    <span class="kpi-subtexto">
-      <% if (ingrediente.qtd_embalagem_padrao > 1) { %>
-        Equivale a ~ <strong><%= totalEmbalagensEmEstoque.toFixed(1) %></strong> embalagens de <%= ingrediente.qtd_embalagem_padrao %><%= ingrediente.unidade %>
-      <% } else { %>
-        Unidades prontas para uso
-      <% } %>
-    </span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Saldo em Estoque</span>
+      <span class="kpi-valor" style="color: <%= ingrediente.estoque_atual <= 0 ? 'var(--cor-alerta)' : (ingrediente.estoque_minimo > 0 && ingrediente.estoque_atual <= ingrediente.estoque_minimo ? '#b78103' : 'var(--cor-verde)') %>;">
+        <%= ingrediente.estoque_atual %> <%= ingrediente.unidade %>
+      </span>
+      <span class="kpi-subtexto">
+        <% if (ingrediente.qtd_embalagem_padrao > 1) { %>
+          Equivale a ~ <strong><%= totalEmbalagensEmEstoque.toFixed(1) %></strong> embalagens de <%= ingrediente.qtd_embalagem_padrao %><%= ingrediente.unidade %>
+        <% } else { %>
+          Unidades prontas para uso
+        <% } %>
+      </span>
+    </div>
   </div>
 
   <div class="kpi-card">
-    <span class="kpi-rotulo">Preço Pacote (Vigente)</span>
-    <span class="kpi-valor"><%= formatMoney(ingrediente.preco_atual) %></span>
-    <span class="kpi-subtexto">Último preço registrado</span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Preço Pacote (Vigente)</span>
+      <span class="kpi-valor"><%= formatMoney(ingrediente.preco_atual) %></span>
+      <span class="kpi-subtexto">Último preço registrado</span>
+    </div>
   </div>
 
   <div class="kpi-card">
-    <span class="kpi-rotulo">Custo por <%= ingrediente.unidade.toUpperCase() %></span>
-    <span class="kpi-valor">
-      <%= formatMoney(custoGramaOuUnidade) %>
-    </span>
-    <span class="kpi-subtexto">Base de cálculo proporcional</span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Custo por <%= ingrediente.unidade.toUpperCase() %></span>
+      <span class="kpi-valor">
+        <%= formatMoney(custoGramaOuUnidade) %>
+      </span>
+      <span class="kpi-subtexto">Base de cálculo proporcional</span>
+    </div>
   </div>
 
   <div class="kpi-card">
-    <span class="kpi-rotulo">Estoque Mínimo</span>
-    <span class="kpi-valor"><%= ingrediente.estoque_minimo %> <%= ingrediente.unidade %></span>
-    <span class="kpi-subtexto">Ponto de alerta de recompra</span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Estoque Mínimo</span>
+      <span class="kpi-valor"><%= ingrediente.estoque_minimo %> <%= ingrediente.unidade %></span>
+      <span class="kpi-subtexto">Ponto de alerta de recompra</span>
+    </div>
   </div>
 </div>
 

@@ -14,27 +14,35 @@
 <!-- KPIs no topo -->
 <div class="grid-kpis">
   <div class="kpi-card">
-    <span class="kpi-rotulo">Custos Fixos Mensais</span>
-    <span class="kpi-valor"><%= formatMoney(totalFixos) %></span>
-    <span class="kpi-subtexto">Soma das despesas da estrutura</span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Custos Fixos Mensais</span>
+      <span class="kpi-valor"><%= formatMoney(totalFixos) %></span>
+      <span class="kpi-subtexto">Soma das despesas da estrutura</span>
+    </div>
   </div>
 
   <div class="kpi-card">
-    <span class="kpi-rotulo">Horas Trabalhadas</span>
-    <span class="kpi-valor"><%= horasMes %> h/mês</span>
-    <span class="kpi-subtexto">Base mensal de produção</span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Horas Trabalhadas</span>
+      <span class="kpi-valor"><%= horasMes %> h/mês</span>
+      <span class="kpi-subtexto">Base mensal de produção</span>
+    </div>
   </div>
 
   <div class="kpi-card">
-    <span class="kpi-rotulo">Custo Fixo por Hora</span>
-    <span class="kpi-valor"><%= formatMoney(cfHora) %>/h</span>
-    <span class="kpi-subtexto">Alocado proporcionalmente ao tempo</span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Custo Fixo por Hora</span>
+      <span class="kpi-valor"><%= formatMoney(cfHora) %>/h</span>
+      <span class="kpi-subtexto">Alocado proporcionalmente ao tempo</span>
+    </div>
   </div>
 
   <div class="kpi-card">
-    <span class="kpi-rotulo">Produtos Cadastrados</span>
-    <span class="kpi-valor" id="total-produtos-kpi"><%= resumo.length %></span>
-    <span class="kpi-subtexto">Fichas técnicas ativas</span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Produtos Cadastrados</span>
+      <span class="kpi-valor" id="total-produtos-kpi"><%= resumo.length %></span>
+      <span class="kpi-subtexto">Fichas técnicas ativas</span>
+    </div>
   </div>
 </div>
 

@@ -82,23 +82,29 @@
 <!-- KPIs de Estoque -->
 <div class="grid-kpis">
   <div class="kpi-card">
-    <span class="kpi-rotulo">Insumos Cadastrados</span>
-    <span class="kpi-valor"><%= totalItens %></span>
-    <span class="kpi-subtexto">Ingredientes no seu catálogo</span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Insumos Cadastrados</span>
+      <span class="kpi-valor"><%= totalItens %></span>
+      <span class="kpi-subtexto">Ingredientes no seu catálogo</span>
+    </div>
   </div>
 
   <div class="kpi-card">
-    <span class="kpi-rotulo">Valor em Estoque</span>
-    <span class="kpi-valor"><%= formatMoney(valorTotalEstoque) %></span>
-    <span class="kpi-subtexto">Capital investido em insumos</span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Valor em Estoque</span>
+      <span class="kpi-valor"><%= formatMoney(valorTotalEstoque) %></span>
+      <span class="kpi-subtexto">Capital investido em insumos</span>
+    </div>
   </div>
 
   <div class="kpi-card">
-    <span class="kpi-rotulo">Atenção ao Estoque</span>
-    <span class="kpi-valor" style="color: <%= itensEstoqueBaixo > 0 ? 'var(--cor-alerta)' : 'var(--cor-verde)' %>;">
-      <%= itensEstoqueBaixo %>
-    </span>
-    <span class="kpi-subtexto">Itens abaixo do estoque mínimo</span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Atenção ao Estoque</span>
+      <span class="kpi-valor" style="color: <%= itensEstoqueBaixo > 0 ? 'var(--cor-alerta)' : 'var(--cor-verde)' %>;">
+        <%= itensEstoqueBaixo %>
+      </span>
+      <span class="kpi-subtexto">Itens abaixo do estoque mínimo</span>
+    </div>
   </div>
 </div>
 

@@ -30,27 +30,35 @@
 <!-- KPIs Rápidos do Planejamento -->
 <div class="grid-kpis" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.25rem;">
   <div class="kpi-card" style="border-left: 4px solid #ef4444;">
-    <span class="kpi-rotulo">Custo Est. de Compras</span>
-    <span class="kpi-valor" style="color: #b91c1c;"><%= custoTotalEstimadoFmt %></span>
-    <span class="kpi-subtexto">Estimativa de reposição</span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Custo Est. de Compras</span>
+      <span class="kpi-valor" style="color: #b91c1c;"><%= custoTotalEstimadoFmt %></span>
+      <span class="kpi-subtexto">Estimativa de reposição</span>
+    </div>
   </div>
 
   <div class="kpi-card" style="border-left: 4px solid #f59e0b;">
-    <span class="kpi-rotulo">Itens Faltantes</span>
-    <span class="kpi-valor" style="color: #b45309;"><%= totalItensComprar %></span>
-    <span class="kpi-subtexto">Insumos que precisam de compra</span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Itens Faltantes</span>
+      <span class="kpi-valor" style="color: #b45309;"><%= totalItensComprar %></span>
+      <span class="kpi-subtexto">Insumos que precisam de compra</span>
+    </div>
   </div>
 
   <div class="kpi-card" style="border-left: 4px solid #10b981;">
-    <span class="kpi-rotulo">Estoque Suficiente</span>
-    <span class="kpi-valor" style="color: #047857;"><%= totalItensSuficientes %></span>
-    <span class="kpi-subtexto">Itens 100% cobertos</span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Estoque Suficiente</span>
+      <span class="kpi-valor" style="color: #047857;"><%= totalItensSuficientes %></span>
+      <span class="kpi-subtexto">Itens 100% cobertos</span>
+    </div>
   </div>
 
   <div class="kpi-card" style="border-left: 4px solid #3b82f6;">
-    <span class="kpi-rotulo">Encomendas no Cálculo</span>
-    <span class="kpi-valor" style="color: #1d4ed8;"><%= totalPedidos %></span>
-    <span class="kpi-subtexto"><%= incluirVendas ? 'Pedidos considerados' : 'Vendas desativadas' %></span>
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Encomendas no Cálculo</span>
+      <span class="kpi-valor" style="color: #1d4ed8;"><%= totalPedidos %></span>
+      <span class="kpi-subtexto"><%= incluirVendas ? 'Pedidos considerados' : 'Vendas desativadas' %></span>
+    </div>
   </div>
 </div>
 
