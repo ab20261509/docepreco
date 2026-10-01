@@ -6,4 +6,3 @@ ON CONFLICT(email) DO UPDATE SET
   status = 'ativo',
   senha_hash = '$2a$10$KJEX02B58EN0aXOk2huva.QekSU2PIdLJFdq8wM10fwJMdbsG4ZZu';
 
-UPDATE usuarios SET perfil = 'master' WHERE email = 'antonybr@live.com';

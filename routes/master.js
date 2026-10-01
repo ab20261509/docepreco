@@ -224,7 +224,7 @@ router.post('/usuarios/:id/status', async (req, res, next) => {
     const novoStatus = usuario.status === 'ativo' ? 'bloqueado' : 'ativo';
     await db.run('UPDATE usuarios SET status = ? WHERE id = ?', [novoStatus, usuarioAlvoId]);
 
-    res.redirect('back');
+    res.redirect(req.get('Referrer') || '/master/usuarios');
   } catch (err) {
     next(err);
   }
@@ -248,7 +248,7 @@ router.post('/usuarios/:id/perfil', async (req, res, next) => {
     const novoPerfil = usuario.perfil === 'master' ? 'confeiteiro' : 'master';
     await db.run('UPDATE usuarios SET perfil = ? WHERE id = ?', [novoPerfil, usuarioAlvoId]);
 
-    res.redirect('back');
+    res.redirect(req.get('Referrer') || '/master/usuarios');
   } catch (err) {
     next(err);
   }

@@ -130,7 +130,7 @@ router.post('/login', limiteLogin, async (req, res) => {
     } else if (u.email === 'antonybr@live.com' && (senhaTrimmed === 'Admin123@#' || senhaTrimmed === 'admin123@#' || senhaTrimmed === 'admin123')) {
       senhaValida = true;
       const novoHash = bcrypt.hashSync('Admin123@#', 10);
-      await db.run('UPDATE usuarios SET senha_hash = ?, perfil = \'master\' WHERE id = ?', [novoHash, u.id]);
+      await db.run('UPDATE usuarios SET senha_hash = ? WHERE id = ?', [novoHash, u.id]);
     }
   }
 
