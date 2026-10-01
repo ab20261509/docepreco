@@ -2,7 +2,7 @@
 
 <style>
   .modo-cozinha-container {
-    max-width: 1080px;
+    max-width: 1280px;
     margin: 0 auto;
     padding-bottom: 3.5rem;
   }
@@ -10,8 +10,8 @@
     background: #1e293b;
     color: #ffffff;
     border-radius: 12px;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1.5rem;
+    padding: 1.15rem 1.5rem;
+    margin-bottom: 1.25rem;
     box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     display: flex;
     justify-content: space-between;
@@ -23,40 +23,70 @@
     background: #0f172a;
     border: 2px solid #334155;
     border-radius: 10px;
-    padding: 0.65rem 1.15rem;
+    padding: 0.55rem 1rem;
     display: flex;
     align-items: center;
     gap: 0.75rem;
   }
   .cronometro-digitos {
     font-family: 'Courier New', Courier, monospace;
-    font-size: 1.75rem;
+    font-size: 1.65rem;
     font-weight: 800;
     color: #38bdf8;
     letter-spacing: 2px;
   }
 
+  /* Grid Tela Dividida (Split Screen) */
+  .split-cozinha-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    align-items: start;
+    margin-bottom: 1.5rem;
+  }
+  @media (min-width: 980px) {
+    .split-cozinha-grid {
+      grid-template-columns: 390px 1fr;
+      gap: 1.5rem;
+    }
+    .coluna-controle-esquerda {
+      position: sticky;
+      top: 1rem;
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
+      padding-right: 0.35rem;
+    }
+    .coluna-controle-esquerda::-webkit-scrollbar {
+      width: 6px;
+    }
+    .coluna-controle-esquerda::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+  }
+
   /* Balança & Pesagem */
   .card-ingrediente-balanca {
     background: #ffffff;
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 1rem 1.15rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     cursor: pointer;
     user-select: none;
+    margin-bottom: 0.45rem;
   }
   .card-ingrediente-balanca:hover {
     border-color: #cbd5e1;
-    transform: translateY(-1px);
+    background: #fafafa;
   }
   .card-ingrediente-balanca.pesado {
     background: #f0fdf4;
     border-color: #86efac;
-    opacity: 0.88;
+    opacity: 0.85;
   }
   .card-ingrediente-balanca.pesado .nome-ing {
     text-decoration: line-through;
@@ -64,16 +94,15 @@
   }
   .btn-check-pesado {
     background: #f8fafc;
-    border: 2px solid #cbd5e1;
+    border: 1px solid #cbd5e1;
     color: #475569;
-    border-radius: 8px;
-    padding: 0.5rem 0.9rem;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    transition: all 0.15s ease;
+    gap: 0.3rem;
   }
   .card-ingrediente-balanca.pesado .btn-check-pesado {
     background: #22c55e;
@@ -83,9 +112,9 @@
   .barra-progresso-wrapper {
     background: #e2e8f0;
     border-radius: 999px;
-    height: 12px;
+    height: 10px;
     overflow: hidden;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
   }
   .barra-progresso-fill {
     background: linear-gradient(90deg, #10b981, #059669);
@@ -99,11 +128,9 @@
     background: #ffffff;
     border: 2px solid #fdba74;
     border-radius: 10px;
-    padding: 1rem;
+    padding: 0.85rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    margin-bottom: 0.65rem;
   }
   .card-timer-ativo.alarme-disparado {
     border-color: #ef4444;
@@ -116,11 +143,11 @@
   }
   .digitos-timer {
     font-family: 'Courier New', Courier, monospace;
-    font-size: 2.2rem;
+    font-size: 1.85rem;
     font-weight: 900;
     color: #c2410c;
     text-align: center;
-    margin: 0.35rem 0;
+    margin: 0.25rem 0;
   }
   .card-timer-ativo.alarme-disparado .digitos-timer {
     color: #dc2626;
@@ -129,63 +156,33 @@
   /* Cards de Eletrodomésticos */
   .grid-equipamentos-timers {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 0.85rem;
-    margin-bottom: 1.25rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1rem;
   }
   .card-equipamento-timer {
     background: #ffffff;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1rem 0.85rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.65rem 0.4rem;
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    position: relative;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-  }
-  .card-equipamento-timer:hover {
-    border-color: #f97316;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 16px -2px rgba(249, 115, 22, 0.15);
-  }
-  .equip-icone {
-    font-size: 2.2rem;
-    margin-bottom: 0.4rem;
-    line-height: 1;
-  }
-  .equip-titulo {
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: var(--cor-texto);
-    margin-bottom: 0.25rem;
-  }
-  .equip-desc {
-    font-size: 0.73rem;
-    color: var(--cor-texto-suave);
-    line-height: 1.25;
-    margin-bottom: 0.75rem;
-    min-height: 28px;
-  }
-  .equip-badge-btn {
-    background: #fff7ed;
-    color: #c2410c;
-    border: 1px solid #ffedd5;
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 0.3rem 0.6rem;
-    border-radius: 999px;
-    width: 100%;
     transition: all 0.15s ease;
   }
-  .card-equipamento-timer:hover .equip-badge-btn {
-    background: #ea580c;
+  .card-equipamento-timer:hover {
     border-color: #ea580c;
-    color: #ffffff;
+    background: #fff7ed;
+    transform: translateY(-2px);
+  }
+  .equip-icone {
+    font-size: 1.5rem;
+    margin-bottom: 0.2rem;
+  }
+  .equip-titulo {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--cor-texto);
+    line-height: 1.15;
   }
 
   /* Modal Pop-up do Timer */
@@ -202,21 +199,19 @@
     justify-content: center;
     z-index: 9999;
     padding: 1rem;
-    animation: fadeIn 0.2s ease-out;
   }
   .modal-timer-dialog {
     background: #ffffff;
-    border-radius: 16px;
-    max-width: 520px;
+    border-radius: 14px;
+    max-width: 480px;
     width: 100%;
-    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2), 0 10px 10px -5px rgba(0,0,0,0.04);
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
     overflow: hidden;
-    animation: scaleUp 0.2s ease-out;
   }
   .modal-timer-header {
     background: #fafaf9;
     border-bottom: 1px solid #e7e5e4;
-    padding: 1.15rem 1.25rem;
+    padding: 1rem 1.15rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -227,38 +222,32 @@
     font-size: 1.25rem;
     color: #78716c;
     cursor: pointer;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
-  }
-  .modal-timer-close:hover {
-    background: #e7e5e4;
-    color: #1c1917;
   }
   .modal-timer-body {
-    padding: 1.25rem;
+    padding: 1.15rem;
   }
   .modal-timer-footer {
     background: #f8fafc;
     border-top: 1px solid #e2e8f0;
-    padding: 0.9rem 1.25rem;
+    padding: 0.85rem 1.15rem;
     display: flex;
     justify-content: flex-end;
-    gap: 0.75rem;
+    gap: 0.6rem;
   }
   .modal-presets-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 0.5rem;
-    margin-bottom: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.45rem;
+    margin-bottom: 0.85rem;
   }
   .btn-preset-chip {
     background: #f1f5f9;
     border: 1px solid #cbd5e1;
     color: #334155;
-    padding: 0.6rem 0.5rem;
-    border-radius: 8px;
+    padding: 0.5rem 0.4rem;
+    border-radius: 6px;
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     cursor: pointer;
     text-align: center;
     transition: all 0.15s ease;
@@ -269,18 +258,19 @@
     color: #ffffff;
   }
 
-  /* Sequência Inteligente de Misturas */
+  /* Sequência Inteligente de Misturas Conectada */
   .card-passo-mistura {
     background: #ffffff;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
-    padding: 1rem 1.25rem;
-    margin-bottom: 0.85rem;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 1rem;
     transition: all 0.2s ease;
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 1rem;
     align-items: start;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
   }
   .card-passo-mistura.passo-concluido {
     background: #f8fafc;
@@ -292,8 +282,8 @@
     color: #64748b;
   }
   .badge-numero-passo {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     background: #7c3aed;
     color: #ffffff;
@@ -301,11 +291,52 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.95rem;
+    font-size: 1rem;
     flex-shrink: 0;
   }
   .card-passo-mistura.passo-concluido .badge-numero-passo {
     background: #10b981;
+  }
+  
+  /* Conexão de Ingredientes na Etapa */
+  .passo-ingredientes-bloco {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 0.6rem 0.85rem;
+    margin: 0.65rem 0;
+  }
+  .passo-ingredientes-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.35rem;
+  }
+  .chip-ingrediente {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #1e293b;
+    padding: 0.25rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .chip-ingrediente strong {
+    color: #0284c7;
+  }
+  .badge-equipamento-passo {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #c2410c;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
   }
   .etapa-ponto-visual {
     background: #fffbeb;
@@ -327,14 +358,6 @@
     margin-top: 0.4rem;
     font-weight: 500;
   }
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  @keyframes scaleUp {
-    from { opacity: 0; transform: scale(0.96); }
-    to { opacity: 1; transform: scale(1); }
-  }
 </style>
 
 <div class="modo-cozinha-container">
@@ -353,7 +376,7 @@
       </div>
 
       <div style="font-size: 0.85rem; color: #94a3b8; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-        <span>Fator: <strong><%= fator.toFixed(2) %>x</strong> da receita</span>
+        <span>Fator: <strong><%= fator.toFixed(2) %>x</strong></span>
         <span>•</span>
         <span>Tempo estimado: <strong><%= tempoEstimadoMin %> min</strong></span>
         <% if (pedido) { %>
@@ -370,7 +393,7 @@
       <div class="cronometro-cozinha">
         <span style="font-size: 1.1rem;">⏱️</span>
         <div>
-          <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Tempo na Cozinha</div>
+          <div style="font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Tempo na Cozinha</div>
           <div class="cronometro-digitos" id="relogioGeral">00:00:00</div>
         </div>
       </div>
@@ -381,294 +404,259 @@
     </div>
   </div>
 
-  <!-- 1. Balança & Mise en Place -->
-  <div class="cartao" style="margin-bottom: 1.5rem;">
-    <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-      <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <span style="font-size: 1.25rem;">⚖️</span>
-        <div>
-          <strong style="font-size: 1.05rem;">Mise en Place: Pesagem dos Ingredientes</strong>
-          <span style="display: block; font-size: 0.8rem; color: var(--cor-texto-suave); font-weight: normal;">
-            Toque no ingrediente após pesar para marcar como concluído:
-          </span>
-        </div>
-      </div>
+  <!-- GRID TELA DIVIDIDA (SPLIT SCREEN) -->
+  <div class="split-cozinha-grid">
 
-      <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <button type="button" class="btn btn-secundario btn-sm" id="btnMarcarTodos">
-          ✓ Marcar Todos
-        </button>
-        <button type="button" class="btn btn-secundario btn-sm" id="btnDesmarcarTodos">
-          ✕ Limpar
-        </button>
-      </div>
-    </div>
-
-    <!-- Barra de Progresso da Pesagem -->
-    <div style="margin-bottom: 1.25rem;">
-      <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--cor-texto);">
-        <span>Progresso da Bancada</span>
-        <span id="textoProgressoPesagem">0 de <%= ingredientes.length %> pesados (0%)</span>
-      </div>
-      <div class="barra-progresso-wrapper">
-        <div class="barra-progresso-fill" id="barraProgressoPesagem"></div>
-      </div>
-    </div>
-
-    <!-- Grade de Ingredientes Interativos -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 0.75rem;">
-      <% ingredientes.forEach((ing, idx) => { %>
-        <div class="card-ingrediente-balanca" data-index="<%= idx %>">
-          <div>
-            <div class="nome-ing" style="font-size: 1rem; font-weight: 700; color: var(--cor-texto);">
-              <%= ing.nome %>
-            </div>
-            <div style="font-size: 1.25rem; font-weight: 900; color: var(--cor-primaria); margin-top: 0.15rem;">
-              <%= ing.qtdEscalada %> <span style="font-size: 0.95rem; font-weight: 600;">(g/ml/un)</span>
-            </div>
-            <% if (ing.estoqueDisponivel !== null) { %>
-              <div style="font-size: 0.75rem; color: <%= ing.estoqueDisponivel >= ing.qtdEscalada ? '#166534' : '#b91c1c' %>; font-weight: 600; margin-top: 2px;">
-                Estoque: <%= ing.estoqueDisponivel %> disp.
-              </div>
-            <% } %>
+    <!-- COLUNA ESQUERDA: Painel Fixo de Controle, Timers e Balança -->
+    <div class="coluna-controle-esquerda">
+      
+      <!-- 1. Central de Timers Ativos -->
+      <div class="cartao" style="margin-bottom: 1rem; border-top: 3px solid #ea580c;">
+        <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.4rem;">
+            <span style="font-size: 1.15rem;">⏱️</span>
+            <strong style="font-size: 0.95rem;">Timers da Bancada</strong>
           </div>
-
-          <button type="button" class="btn-check-pesado">
-            <span class="icone-check">⚖️</span>
-            <span class="texto-check">Pesar</span>
+          <button type="button" class="btn btn-secundario btn-sm" id="btnTestarSom" title="Testar alarme sonoro" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+            🔊 Som
           </button>
         </div>
-      <% }); %>
-    </div>
-  </div>
 
-  <!-- 2. Sequência Inteligente de Misturas & Preparo -->
-  <div class="cartao" style="border-left: 4px solid #8b5cf6; margin-bottom: 1.5rem;" id="secaoSequenciaMisturas">
-    <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-      <div style="display: flex; align-items: center; gap: 0.6rem;">
-        <span style="font-size: 1.35rem;">🥣</span>
-        <div>
-          <strong style="font-size: 1.1rem; color: #5b21b6;">Sequência Inteligente de Misturas & Preparo</strong>
-          <span style="display: block; font-size: 0.8rem; color: var(--cor-texto-suave); font-weight: normal;">
-            Ordem cronológica das misturas, pontos visuais de aeração e tempos ideais
+        <!-- Grade de Timers Ativos -->
+        <div id="containerTimersAtivos">
+          <div id="vazioTimersMsg" style="text-align: center; padding: 1.25rem 0.5rem; color: var(--cor-texto-suave); font-size: 0.82rem; background: #fafaf9; border-radius: 8px;">
+            Nenhum alarme ativo. Clique nos eletros abaixo ou nos passos da receita para iniciar!
+          </div>
+        </div>
+
+        <!-- Atalhos dos Eletrodomésticos -->
+        <div style="margin-top: 0.75rem; border-top: 1px dashed #e2e8f0; paddingTop: 0.75rem;">
+          <span style="font-size: 0.72rem; font-weight: 700; color: var(--cor-texto-suave); text-transform: uppercase; display: block; margin-bottom: 0.4rem;">
+            Eletrodomésticos / Atalhos:
           </span>
+          <div class="grid-equipamentos-timers">
+            <div class="card-equipamento-timer" data-equip="forno" data-icone="🔥" data-nome="Forno" data-subtitulo="Assados e Bolos" data-presets='[{"rotulo":"25m","min":25,"desc":"Secos"},{"rotulo":"35m","min":35,"desc":"Bolos Peq."},{"rotulo":"45m","min":45,"desc":"Bolo 180°C"},{"rotulo":"55m","min":55,"desc":"Densas"}]'>
+              <div class="equip-icone">🔥</div>
+              <div class="equip-titulo">Forno</div>
+            </div>
+
+            <div class="card-equipamento-timer" data-equip="geladeira" data-icone="❄️" data-nome="Geladeira" data-subtitulo="Resfriamento e Ponto" data-presets='[{"rotulo":"15m","min":15,"desc":"Rápido"},{"rotulo":"30m","min":30,"desc":"Recheio"},{"rotulo":"45m","min":45,"desc":"Ganache"},{"rotulo":"1h","min":60,"desc":"Firme"}]'>
+              <div class="equip-icone">❄️</div>
+              <div class="equip-titulo">Geladeira</div>
+            </div>
+
+            <div class="card-equipamento-timer" data-equip="batedeira" data-icone="🥣" data-nome="Batedeira" data-subtitulo="Aeração e Cremes" data-presets='[{"rotulo":"3m","min":3,"desc":"Claras"},{"rotulo":"5m","min":5,"desc":"Creme"},{"rotulo":"8m","min":8,"desc":"Fita"},{"rotulo":"12m","min":12,"desc":"Pão de Ló"}]'>
+              <div class="equip-icone">🥣</div>
+              <div class="equip-titulo">Batedeira</div>
+            </div>
+
+            <div class="card-equipamento-timer" data-equip="liquidificador" data-icone="🌪️" data-nome="Liquidificador" data-subtitulo="Emulsão Rápida" data-presets='[{"rotulo":"1m","min":1,"desc":"Leve"},{"rotulo":"2m","min":2,"desc":"Emulsão"},{"rotulo":"4m","min":4,"desc":"Cremoso"}]'>
+              <div class="equip-icone">🌪️</div>
+              <div class="equip-titulo">Liquidif.</div>
+            </div>
+
+            <div class="card-equipamento-timer" data-equip="fogao" data-icone="🍳" data-nome="Fogão" data-subtitulo="Brigadeiro e Calda" data-presets='[{"rotulo":"5m","min":5,"desc":"Calda"},{"rotulo":"10m","min":10,"desc":"Redução"},{"rotulo":"15m","min":15,"desc":"Colher"},{"rotulo":"20m","min":20,"desc":"Enrolar"}]'>
+              <div class="equip-icone">🍳</div>
+              <div class="equip-titulo">Fogão</div>
+            </div>
+
+            <div class="card-equipamento-timer" data-equip="descanso" data-icone="⏳" data-nome="Descanso" data-subtitulo="Fermentação" data-presets='[{"rotulo":"10m","min":10,"desc":"Respiro"},{"rotulo":"20m","min":20,"desc":"Glúten"},{"rotulo":"30m","min":30,"desc":"1ª Ferm."},{"rotulo":"60m","min":60,"desc":"Completa"}]'>
+              <div class="equip-icone">⏳</div>
+              <div class="equip-titulo">Descanso</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-        <% if (temApiKey) { %>
-          <span style="background: #e0e7ff; color: #3730a3; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 999px; display: inline-flex; align-items: center; gap: 0.3rem;" title="API Google Gemini Conectada para Alta Confeitaria">
-            ✨ IA Gemini Conectada
-          </span>
-        <% } else { %>
-          <span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 999px; display: inline-flex; align-items: center; gap: 0.3rem;" title="Algoritmo Culinário Nativo de Confeitaria Clássica (Offline)">
-            🍳 Assistente Culinário Nativo
-          </span>
-        <% } %>
-
-        <button type="button" class="btn btn-primario btn-sm" id="btnGerarPassosIA" style="background: #7c3aed; border-color: #6d28d9; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
-          <span id="iconeBtnIa">✨</span>
-          <span id="textoBtnIa">Gerar Sequência do Chef</span>
-        </button>
-
-        <button type="button" class="btn btn-secundario btn-sm" id="btnSalvarModoPreparoReceita" style="font-weight: 600; display: none;">
-          💾 Salvar na Receita
-        </button>
-      </div>
-    </div>
-
-    <!-- Indicador de Carregamento da IA -->
-    <div id="loaderIaPreparo" style="display: none; padding: 1.5rem; text-align: center; background: #faf5ff; border: 1px dashed #d8b4fe; border-radius: 8px; margin-bottom: 1rem;">
-      <div style="font-size: 1.8rem;">👩‍🍳 ✨</div>
-      <strong style="color: #6b21a8; font-size: 0.95rem; display: block; margin-top: 0.5rem;">
-        O Chef Confeiteiro está analisando os <%= ingredientes.length %> ingredientes e calculando a sequência de misturas...
-      </strong>
-      <span style="font-size: 0.8rem; color: #9333ea;">Avaliando ordem de aeração, método de incorporação e tempos de cocção.</span>
-    </div>
-
-    <!-- Container dos Passos Renderizados -->
-    <div id="containerPassosPreparo">
-      <!-- Se já existia sequência salva previamente -->
-      <% if (sequenciaSalva && sequenciaSalva.passos && sequenciaSalva.passos.length > 0) { %>
-        <div style="margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 0.82rem; font-weight: 700; color: #6b21a8; text-transform: uppercase;">
-            📖 <%= sequenciaSalva.tipo_receita || 'Passo a Passo da Receita' %>
-          </span>
-          <span style="font-size: 0.78rem; color: var(--cor-texto-suave);">
-            <%= sequenciaSalva.passos.length %> etapas cadastradas
-          </span>
+      <!-- 2. Balança / Mise en Place Rápido -->
+      <div class="cartao" style="margin-bottom: 1rem;">
+        <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.4rem;">
+            <span style="font-size: 1.15rem;">⚖️</span>
+            <strong style="font-size: 0.95rem;">Mise en Place (Pesagem)</strong>
+          </div>
+          <div style="display: flex; gap: 0.3rem;">
+            <button type="button" class="btn btn-secundario btn-sm" id="btnMarcarTodos" style="padding: 0.2rem 0.45rem; font-size: 0.72rem;">✓ Todos</button>
+            <button type="button" class="btn btn-secundario btn-sm" id="btnDesmarcarTodos" style="padding: 0.2rem 0.45rem; font-size: 0.72rem;">✕ Limpar</button>
+          </div>
         </div>
 
-        <% sequenciaSalva.passos.forEach((p, pIdx) => { %>
-          <div class="card-passo-mistura" id="passo_salvo_<%= pIdx %>">
-            <div class="badge-numero-passo"><%= p.ordem || (pIdx + 1) %></div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.3rem; color: var(--cor-texto);">
+          <span>Progresso</span>
+          <span id="textoProgressoPesagem">0/<%= ingredientes.length %> pesados</span>
+        </div>
+        <div class="barra-progresso-wrapper">
+          <div class="barra-progresso-fill" id="barraProgressoPesagem"></div>
+        </div>
+
+        <!-- Lista de Ingredientes Compacta -->
+        <div style="max-height: 250px; overflow-y: auto; padding-right: 0.2rem;">
+          <% ingredientes.forEach((ing, idx) => { %>
+            <div class="card-ingrediente-balanca" data-index="<%= idx %>">
+              <div>
+                <div class="nome-ing" style="font-size: 0.85rem; font-weight: 700; color: var(--cor-texto);">
+                  <%= ing.nome %>
+                </div>
+                <div style="font-size: 0.92rem; font-weight: 900; color: var(--cor-primaria);">
+                  <%= ing.qtdEscalada %> <span style="font-size: 0.75rem; font-weight: normal;">g/ml</span>
+                </div>
+              </div>
+
+              <button type="button" class="btn-check-pesado">
+                <span class="icone-check">⚖️</span>
+                <span class="texto-check">Pesar</span>
+              </button>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COLUNA DIREITA: Fluxo Culinário de Preparo do Chef (Passos Conectados) -->
+    <div class="coluna-fluxo-direita">
+      
+      <div class="cartao" style="border-left: 4px solid #8b5cf6;" id="secaoSequenciaMisturas">
+        <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span style="font-size: 1.35rem;">🥣</span>
             <div>
-              <div style="display: flex; justify-content: space-between; align-items: start; gap: 0.5rem; flex-wrap: wrap;">
-                <strong style="font-size: 0.98rem; color: var(--cor-texto);"><%= p.titulo %></strong>
-                
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                  <% if (p.tempo_timer_min) { %>
-                    <button type="button" class="btn btn-secundario btn-sm btn-disparar-timer-passo" 
-                            data-nome="<%= p.titulo %>" 
-                            data-minutos="<%= p.tempo_timer_min %>"
-                            style="font-size: 0.75rem; padding: 0.2rem 0.5rem; background: #fff7ed; border-color: #fdba74; color: #c2410c; font-weight: 700;">
-                      ⏱️ Timer <%= p.tempo_timer_min %> min
-                    </button>
-                  <% } %>
-                  <button type="button" class="btn btn-secundario btn-sm btn-concluir-passo" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
-                    ✓ Concluir
-                  </button>
-                </div>
-              </div>
-
-              <div class="passo-instrucao-texto" style="font-size: 0.88rem; color: var(--cor-texto); line-height: 1.45; margin-top: 0.35rem;">
-                <%= p.instrucao %>
-              </div>
-
-              <% if (p.ponto_visual) { %>
-                <div class="etapa-ponto-visual">
-                  👁️ <strong>Ponto Visual:</strong> <%= p.ponto_visual %>
-                </div>
-              <% } %>
-
-              <% if (p.dica_chef) { %>
-                <div class="etapa-dica-chef">
-                  💡 <strong>Dica do Chef:</strong> <%= p.dica_chef %>
-                </div>
-              <% } %>
+              <strong style="font-size: 1.1rem; color: #5b21b6;">Sequência das Misturas & Preparo</strong>
+              <span style="display: block; font-size: 0.8rem; color: var(--cor-texto-suave); font-weight: normal;">
+                Passo a passo integrado com ingredientes da etapa e equipamento de execução
+              </span>
             </div>
           </div>
-        <% }); %>
 
-      <% } else { %>
-        <!-- Placeholder quando ainda não gerou ou não possui passos -->
-        <div id="vazioPassosAviso" style="text-align: center; padding: 2rem 1.5rem; background: #fafaf9; border-radius: 10px; border: 1px dashed #d6d3d1;">
-          <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🥣 ✨</div>
-          <strong style="color: var(--cor-texto); font-size: 1.05rem; display: block; margin-bottom: 0.25rem;">
-            Nenhuma sequência de preparo cadastrada para esta receita
+          <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+            <% if (temApiKey) { %>
+              <span style="background: #e0e7ff; color: #3730a3; font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 999px;">
+                ✨ IA Gemini
+              </span>
+            <% } else { %>
+              <span style="background: #f1f5f9; color: #475569; font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 999px;">
+                🍳 Culinária Nativa
+              </span>
+            <% } %>
+
+            <button type="button" class="btn btn-primario btn-sm" id="btnGerarPassosIA" style="background: #7c3aed; border-color: #6d28d9; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;">
+              <span id="iconeBtnIa">✨</span>
+              <span id="textoBtnIa">Gerar Sequência do Chef</span>
+            </button>
+
+            <button type="button" class="btn btn-secundario btn-sm" id="btnSalvarModoPreparoReceita" style="font-weight: 600; display: none;">
+              💾 Salvar na Receita
+            </button>
+          </div>
+        </div>
+
+        <!-- Indicador de Carregamento da IA -->
+        <div id="loaderIaPreparo" style="display: none; padding: 1.5rem; text-align: center; background: #faf5ff; border: 1px dashed #d8b4fe; border-radius: 8px; margin-bottom: 1rem;">
+          <div style="font-size: 1.8rem;">👩‍🍳 ✨</div>
+          <strong style="color: #6b21a8; font-size: 0.95rem; display: block; margin-top: 0.5rem;">
+            O Chef Confeiteiro está montando a sequência inteligente das misturas...
           </strong>
-          <p style="font-size: 0.85rem; color: var(--cor-texto-suave); max-width: 480px; margin: 0 auto 1.25rem;">
-            Clique no botão abaixo para que o assistente analise os <%= ingredientes.length %> ingredientes pesados e monte automaticamente a ordem cronológica perfeita de mistura e cocção.
-          </p>
-          <button type="button" class="btn btn-primario" id="btnGerarPassosIABig" style="background: #7c3aed; border-color: #6d28d9; font-weight: 700; padding: 0.65rem 1.3rem;">
-            ✨ Descobrir a Sequência Ideal de Misturas
-          </button>
+          <span style="font-size: 0.8rem; color: #9333ea;">Cruzando <%= ingredientes.length %> ingredientes com aeração, batedeira e tempos de forno.</span>
         </div>
-      <% } %>
+
+        <!-- Container dos Passos Renderizados -->
+        <div id="containerPassosPreparo">
+          <% if (sequenciaSalva && sequenciaSalva.passos && sequenciaSalva.passos.length > 0) { %>
+            <div style="margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.82rem; font-weight: 700; color: #6b21a8; text-transform: uppercase;">
+                📖 <%= sequenciaSalva.tipo_receita || 'Passo a Passo da Receita' %>
+              </span>
+              <span style="font-size: 0.78rem; color: var(--cor-texto-suave);">
+                <%= sequenciaSalva.passos.length %> etapas cadastradas
+              </span>
+            </div>
+
+            <% sequenciaSalva.passos.forEach((p, pIdx) => { %>
+              <div class="card-passo-mistura" id="passo_salvo_<%= pIdx %>">
+                <div class="badge-numero-passo"><%= p.ordem || (pIdx + 1) %></div>
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: start; gap: 0.5rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                      <strong style="font-size: 1rem; color: var(--cor-texto);"><%= p.titulo %></strong>
+                      <% if (p.equipamento_rotulo || p.equipamento) { %>
+                        <span class="badge-equipamento-passo">
+                          <%= p.equipamento_icone || '🥣' %> <%= p.equipamento_rotulo || p.equipamento %>
+                        </span>
+                      <% } %>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                      <% if (p.tempo_timer_min) { %>
+                        <button type="button" class="btn btn-secundario btn-sm btn-disparar-timer-passo" 
+                                data-nome="<%= p.titulo %>" 
+                                data-minutos="<%= p.tempo_timer_min %>"
+                                style="font-size: 0.75rem; padding: 0.25rem 0.6rem; background: #fff7ed; border-color: #fdba74; color: #c2410c; font-weight: 700;">
+                          ▶ Disparar Timer (<%= p.tempo_timer_min %> min)
+                        </button>
+                      <% } %>
+                      <button type="button" class="btn btn-secundario btn-sm btn-concluir-passo" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                        ✓ Concluir
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Ingredientes Conectados a esta Etapa -->
+                  <% if (p.ingredientes && p.ingredientes.length > 0) { %>
+                    <div class="passo-ingredientes-bloco">
+                      <span style="font-size: 0.72rem; font-weight: 800; color: #475569; text-transform: uppercase; display: block;">
+                        🛒 Entram nesta mistura:
+                      </span>
+                      <div class="passo-ingredientes-chips">
+                        <% p.ingredientes.forEach(ingItem => { %>
+                          <span class="chip-ingrediente">
+                            <%= ingItem.nome %>: <strong><%= ingItem.quantidade %> <%= ingItem.unidade || 'g' %></strong>
+                          </span>
+                        <% }); %>
+                      </div>
+                    </div>
+                  <% } %>
+
+                  <div class="passo-instrucao-texto" style="font-size: 0.9rem; color: var(--cor-texto); line-height: 1.5; margin-top: 0.4rem;">
+                    <%= p.instrucao %>
+                  </div>
+
+                  <% if (p.ponto_visual) { %>
+                    <div class="etapa-ponto-visual">
+                      👁️ <strong>Ponto Visual:</strong> <%= p.ponto_visual %>
+                    </div>
+                  <% } %>
+
+                  <% if (p.dica_chef) { %>
+                    <div class="etapa-dica-chef">
+                      💡 <strong>Dica do Chef:</strong> <%= p.dica_chef %>
+                    </div>
+                  <% } %>
+                </div>
+              </div>
+            <% }); %>
+
+          <% } else { %>
+            <div id="vazioPassosAviso" style="text-align: center; padding: 2.5rem 1.5rem; background: #fafaf9; border-radius: 10px; border: 1px dashed #d6d3d1;">
+              <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🥣 ✨</div>
+              <strong style="color: var(--cor-texto); font-size: 1.05rem; display: block; margin-bottom: 0.25rem;">
+                Sequência de preparo ainda não calculada para esta receita
+              </strong>
+              <p style="font-size: 0.85rem; color: var(--cor-texto-suave); max-width: 460px; margin: 0 auto 1.25rem;">
+                O assistente culinário vai mapear cada um dos <%= ingredientes.length %> ingredientes, ligando-os ao equipamento correto (batedeira, liquidificador ou fogo) e aos timers ideais.
+              </p>
+              <button type="button" class="btn btn-primario" id="btnGerarPassosIABig" style="background: #7c3aed; border-color: #6d28d9; font-weight: 700; padding: 0.7rem 1.4rem;">
+                ✨ Descobrir Sequência Inteligente de Misturas
+              </button>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
     </div>
+
   </div>
 
-  <!-- 3. Central de Timers da Cozinha (Cards de Utensílios & Pop-up) -->
-  <div class="cartao" style="margin-bottom: 1.5rem;">
-    <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-      <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <span style="font-size: 1.25rem;">⏱️</span>
-        <div>
-          <strong style="font-size: 1.05rem;">Timers Inteligentes da Cozinha</strong>
-          <span style="display: block; font-size: 0.8rem; color: var(--cor-texto-suave); font-weight: normal;">
-            Clique no eletrodoméstico para abrir os atalhos rápidos ou personalizar o alarme sonoro:
-          </span>
-        </div>
-      </div>
-      
-      <!-- Botão para Testar o Alarme Sonoro -->
-      <button type="button" class="btn btn-secundario btn-sm" id="btnTestarSom" title="Testar o alarme sonoro de confeitaria">
-        🔊 Testar Alarme
-      </button>
-    </div>
-
-    <!-- Cards de Eletrodomésticos / Utensílios -->
-    <div class="grid-equipamentos-timers">
-      
-      <!-- 1. Forno -->
-      <div class="card-equipamento-timer" 
-           data-equip="forno" 
-           data-icone="🔥" 
-           data-nome="Forno" 
-           data-subtitulo="Massas, Bolos e Assados"
-           data-presets='[{"rotulo":"25 min","min":25,"desc":"Secos/Biscoitos"},{"rotulo":"35 min","min":35,"desc":"Bolos Pequenos"},{"rotulo":"45 min","min":45,"desc":"Bolo Padrão 180°C"},{"rotulo":"55 min","min":55,"desc":"Massas Densas"},{"rotulo":"65 min","min":65,"desc":"Pudins/Banho-maria"}]'>
-        <div class="equip-icone">🔥</div>
-        <div class="equip-titulo">Forno</div>
-        <div class="equip-desc">Assados, Bolos e Tortas</div>
-        <button type="button" class="equip-badge-btn">⏱️ Programar</button>
-      </div>
-
-      <!-- 2. Geladeira / Freezer -->
-      <div class="card-equipamento-timer" 
-           data-equip="geladeira" 
-           data-icone="❄️" 
-           data-nome="Geladeira / Freezer" 
-           data-subtitulo="Resfriamento e Ponto de Bico"
-           data-presets='[{"rotulo":"15 min","min":15,"desc":"Resfriamento Rápido"},{"rotulo":"30 min","min":30,"desc":"Ponto de Recheio"},{"rotulo":"45 min","min":45,"desc":"Geladeira / Ganache"},{"rotulo":"1h","min":60,"desc":"Descanso Firme"},{"rotulo":"2h","min":120,"desc":"Ponto de Corte / Freezer"}]'>
-        <div class="equip-icone">❄️</div>
-        <div class="equip-titulo">Geladeira / Freezer</div>
-        <div class="equip-desc">Resfriar e Ponto de Bico</div>
-        <button type="button" class="equip-badge-btn">⏱️ Programar</button>
-      </div>
-
-      <!-- 3. Batedeira -->
-      <div class="card-equipamento-timer" 
-           data-equip="batedeira" 
-           data-icone="🥣" 
-           data-nome="Batedeira / Mixer" 
-           data-subtitulo="Aeração, Cremes e Pão de Ló"
-           data-presets='[{"rotulo":"3 min","min":3,"desc":"Claras em Neve"},{"rotulo":"5 min","min":5,"desc":"Creme Manteiga e Açúcar"},{"rotulo":"8 min","min":8,"desc":"Ponto de Fita / Ovos"},{"rotulo":"12 min","min":12,"desc":"Pão de Ló Aerado"}]'>
-        <div class="equip-icone">🥣</div>
-        <div class="equip-titulo">Batedeira / Mixer</div>
-        <div class="equip-desc">Aeração e Cremes</div>
-        <button type="button" class="equip-badge-btn">⏱️ Programar</button>
-      </div>
-
-      <!-- 4. Liquidificador -->
-      <div class="card-equipamento-timer" 
-           data-equip="liquidificador" 
-           data-icone="🌪️" 
-           data-nome="Liquidificador" 
-           data-subtitulo="Emulsões e Massas Diretas"
-           data-presets='[{"rotulo":"1 min","min":1,"desc":"Mistura Leve"},{"rotulo":"2 min","min":2,"desc":"Emulsão Ovos e Óleo"},{"rotulo":"4 min","min":4,"desc":"Cenoura / Milho Cremoso"}]'>
-        <div class="equip-icone">🌪️</div>
-        <div class="equip-titulo">Liquidificador</div>
-        <div class="equip-desc">Emulsões e Massas</div>
-        <button type="button" class="equip-badge-btn">⏱️ Programar</button>
-      </div>
-
-      <!-- 5. Fogão / Panela -->
-      <div class="card-equipamento-timer" 
-           data-equip="fogao" 
-           data-icone="🍳" 
-           data-nome="Fogão / Panela" 
-           data-subtitulo="Brigadeiros, Caldas e Reduções"
-           data-presets='[{"rotulo":"5 min","min":5,"desc":"Calda Rala / Ferver"},{"rotulo":"10 min","min":10,"desc":"Redução de Frutas"},{"rotulo":"15 min","min":15,"desc":"Brigadeiro de Colher"},{"rotulo":"20 min","min":20,"desc":"Ponto de Enrolar / Bloco"}]'>
-        <div class="equip-icone">🍳</div>
-        <div class="equip-titulo">Fogão / Panela</div>
-        <div class="equip-desc">Brigadeiros e Caldas</div>
-        <button type="button" class="equip-badge-btn">⏱️ Programar</button>
-      </div>
-
-      <!-- 6. Descanso de Massa -->
-      <div class="card-equipamento-timer" 
-           data-equip="descanso" 
-           data-icone="⏳" 
-           data-nome="Descanso de Massa" 
-           data-subtitulo="Fermentação e Glúten"
-           data-presets='[{"rotulo":"10 min","min":10,"desc":"Respiro de Bancada"},{"rotulo":"20 min","min":20,"desc":"Relaxamento do Glúten"},{"rotulo":"30 min","min":30,"desc":"Primeira Fermentação"},{"rotulo":"60 min","min":60,"desc":"Fermentação Completa"}]'>
-        <div class="equip-icone">⏳</div>
-        <div class="equip-titulo">Descanso</div>
-        <div class="equip-desc">Fermentação e Respiro</div>
-        <button type="button" class="equip-badge-btn">⏱️ Programar</button>
-      </div>
-
-    </div>
-
-    <!-- Grade de Timers Ativos -->
-    <div id="containerTimersAtivos" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
-      <div id="vazioTimersMsg" style="grid-column: 1 / -1; text-align: center; padding: 1.5rem; color: var(--cor-texto-suave); font-size: 0.88rem; background: #fafaf9; border-radius: 8px;">
-        Nenhum timer ativo no momento. Clique em um dos eletrodomésticos acima para disparar um alarme de forno, geladeira ou batedeira!
-      </div>
-    </div>
-  </div>
-
-  <!-- 4. Finalização & Registro de Histórico -->
+  <!-- Finalização & Registro de Histórico (Rodapé da Página) -->
   <div class="cartao" style="background: #faf5ff; border: 1px solid #d8b4fe;">
     <div class="cartao-titulo" style="display: flex; align-items: center; gap: 0.5rem;">
       <span style="font-size: 1.25rem;">🏁</span>
@@ -681,7 +669,7 @@
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
         <div>
           <label class="rotulo" for="observacoesPreparo">Observações do Preparo / Fornada (Opcional)</label>
-          <textarea id="observacoesPreparo" name="observacoes" class="input" rows="2" placeholder="Ex: Massa muito fofa, assou em 45 min a 180°C. Recheio firme."></textarea>
+          <textarea id="observacoesPreparo" name="observacoes" class="input" rows="2" placeholder="Ex: Massa muito fofa, assou em 45 min a 180°C. Recheio consistente."></textarea>
         </div>
 
         <div style="display: flex; flex-direction: column; justify-content: center; gap: 0.5rem; background: #ffffff; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #e9d5ff;">
@@ -701,7 +689,7 @@
 
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
         <span style="font-size: 0.85rem; color: #7e22ce;">
-          ⏱️ Tempo total registrado até agora: <strong id="textoTempoTotalConcluir">0 min</strong>
+          ⏱️ Tempo total registrado: <strong id="textoTempoTotalConcluir">0 min</strong>
         </span>
 
         <button type="submit" class="btn btn-primario" style="background: #9333ea; border-color: #7e22ce; font-weight: 700; padding: 0.75rem 1.5rem; font-size: 1rem;">
@@ -728,13 +716,9 @@
     </div>
 
     <div class="modal-timer-body">
-      <!-- Atalhos Rápidos com 1 toque -->
       <label class="rotulo" style="margin-bottom: 0.4rem;">Atalhos Recomendados:</label>
-      <div id="modalEquipPresetsContainer" class="modal-presets-grid">
-        <!-- Injetado dinamicamente via JS -->
-      </div>
+      <div id="modalEquipPresetsContainer" class="modal-presets-grid"></div>
 
-      <!-- Ajustar Tempo & Nome Personalizado -->
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem;">
         <span class="rotulo" style="display: block; margin-bottom: 0.45rem; color: #ea580c; font-weight: 700;">
           Ou Personalizar Tempo e Nome:
@@ -765,9 +749,9 @@
   </div>
 </div>
 
-<!-- Script do Modo Cozinha: Cronômetro, Checklist, Timers com Pop-up, Sequência IA e Web Audio API -->
+<!-- Script do Modo Cozinha: Tela Dividida, Cronômetro, Checklist, Timers e Sequência Conectada -->
 <script>
-  // 1. Áudio Sintetizado Nativo via Web Audio API (sem downloads externos)
+  // 1. Áudio Sintetizado Nativo via Web Audio API
   let audioCtx = null;
   function obterAudioContext() {
     if (!audioCtx) {
@@ -792,7 +776,6 @@
       const gain = ctx.createGain();
 
       osc.type = 'sine';
-      // Acorde agradável em sino: 587Hz (D5) -> 880Hz (A5)
       osc.frequency.setValueAtTime(587.33, agora);
       osc.frequency.exponentialRampToValueAtTime(880.00, agora + 0.15);
 
@@ -807,7 +790,6 @@
     } catch (_) {}
   }
 
-  // Tocar sequência de 3 beeps de alarme
   function tocarAlarmeFimTimer() {
     tocarBeepConfeitaria();
     setTimeout(tocarBeepConfeitaria, 250);
@@ -851,7 +833,7 @@
     const pct = totalIngredientes > 0 ? Math.round((pesados / totalIngredientes) * 100) : 100;
 
     barraProgresso.style.width = pct + '%';
-    textoProgresso.textContent = `${pesados} de ${totalIngredientes} pesados (${pct}%)`;
+    textoProgresso.textContent = `${pesados}/${totalIngredientes} pesados (${pct}%)`;
   }
 
   cardsIngredientes.forEach(card => {
@@ -863,7 +845,7 @@
 
       if (this.classList.contains('pesado')) {
         icone.textContent = '✓';
-        texto.textContent = 'Pesado!';
+        texto.textContent = 'Pesado';
         tocarBeepConfeitaria();
       } else {
         icone.textContent = '⚖️';
@@ -878,7 +860,7 @@
       card.classList.add('pesado');
       const btn = card.querySelector('.btn-check-pesado');
       btn.querySelector('.icone-check').textContent = '✓';
-      btn.querySelector('.texto-check').textContent = 'Pesado!';
+      btn.querySelector('.texto-check').textContent = 'Pesado';
     });
     tocarBeepConfeitaria();
     atualizarProgresso();
@@ -894,7 +876,7 @@
     atualizarProgresso();
   });
 
-  // 4. Timers Inteligentes da Cozinha
+  // 4. Timers da Bancada
   const containerTimers = document.getElementById('containerTimersAtivos');
   const vazioTimersMsg = document.getElementById('vazioTimersMsg');
   let idTimerSeq = 0;
@@ -917,17 +899,17 @@
     card.innerHTML = `
       <div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <strong style="color: var(--cor-texto); font-size: 0.95rem;">${nome}</strong>
-          <span style="font-size: 0.75rem; background: #ffedd5; color: #c2410c; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700;">Ativo</span>
+          <strong style="color: var(--cor-texto); font-size: 0.88rem; line-height: 1.2;">${nome}</strong>
+          <span style="font-size: 0.7rem; background: #ffedd5; color: #c2410c; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700;">Ativo</span>
         </div>
         <div class="digitos-timer">00:00</div>
-        <div class="barra-progresso-wrapper" style="height: 6px; margin-bottom: 0.5rem;">
+        <div class="barra-progresso-wrapper" style="height: 5px; margin-bottom: 0.4rem;">
           <div class="barra-progresso-fill barra-timer" style="background: #f97316; width: 100%;"></div>
         </div>
       </div>
-      <div style="display: flex; gap: 0.4rem; justify-content: space-between; margin-top: 0.5rem;">
-        <button type="button" class="btn btn-secundario btn-sm btn-pausar-timer" style="flex: 1;">Pausar</button>
-        <button type="button" class="btn btn-secundario btn-sm btn-cancelar-timer" title="Remover timer">✕</button>
+      <div style="display: flex; gap: 0.3rem; justify-content: space-between; margin-top: 0.4rem;">
+        <button type="button" class="btn btn-secundario btn-sm btn-pausar-timer" style="flex: 1; padding: 0.25rem 0.5rem; font-size: 0.78rem;">Pausar</button>
+        <button type="button" class="btn btn-secundario btn-sm btn-cancelar-timer" title="Remover" style="padding: 0.25rem 0.45rem; font-size: 0.78rem;">✕</button>
       </div>
     `;
 
@@ -955,17 +937,15 @@
           segundosRestantes--;
           renderizarTimer();
         } else {
-          // Fim do timer! Disparar alarme
           clearInterval(intervalo);
           intervalo = null;
           card.classList.add('alarme-disparado');
           elDigitos.textContent = '00:00';
 
-          // Tocar alarme em loop a cada 2.5s até desligar
           tocarAlarmeFimTimer();
           alarmeLoop = setInterval(tocarAlarmeFimTimer, 2500);
 
-          btnPausar.textContent = '🔕 Desligar Alarme';
+          btnPausar.textContent = '🔕 Desligar';
           btnPausar.className = 'btn btn-primario btn-sm btn-pausar-timer';
           btnPausar.style.background = '#dc2626';
           btnPausar.style.borderColor = '#b91c1c';
@@ -1007,7 +987,7 @@
     });
   }
 
-  // 5. Pop-up Modal de Timers dos Eletrodomésticos
+  // 5. Pop-up Modal dos Eletros
   const modalTimer = document.getElementById('modalTimerEquipamento');
   const btnFecharModal = document.getElementById('btnFecharModalTimer');
   const btnCancelarModal = document.getElementById('btnCancelarModalTimer');
@@ -1033,7 +1013,6 @@
 
   document.querySelectorAll('.card-equipamento-timer').forEach(card => {
     card.addEventListener('click', () => {
-      const equip = card.getAttribute('data-equip');
       const icone = card.getAttribute('data-icone');
       const nome = card.getAttribute('data-nome');
       const subtitulo = card.getAttribute('data-subtitulo');
@@ -1044,7 +1023,6 @@
       modalEquipSubtitulo.textContent = subtitulo;
       modalInputNome.value = `${nome} (${produtoNome})`;
 
-      // Renderizar botões de preset
       let presets = [];
       try {
         presets = JSON.parse(presetsJson);
@@ -1059,7 +1037,7 @@
           const btnChip = document.createElement('button');
           btnChip.type = 'button';
           btnChip.className = 'btn-preset-chip';
-          btnChip.innerHTML = `<div>${p.rotulo}</div><div style="font-size: 0.68rem; font-weight: normal; opacity: 0.85;">${p.desc}</div>`;
+          btnChip.innerHTML = `<div>${p.rotulo}</div><div style="font-size: 0.65rem; opacity: 0.85;">${p.desc}</div>`;
           btnChip.addEventListener('click', () => {
             modalInputMin.value = p.min;
             modalInputSeg.value = 0;
@@ -1085,7 +1063,7 @@
     }
   });
 
-  // 6. Sequência Inteligente de Misturas (IA & Heurística Culinária)
+  // 6. Sequência Inteligente Conectada
   const produtoId = <%= produto.id %>;
   const produtoNome = "<%= produto.nome.replace(/"/g, '\\"') %>";
   const fatorEscala = <%= fator %>;
@@ -1101,7 +1079,6 @@
   let ultimaSequenciaGerada = null;
 
   function vincularEventosPassos(contexto) {
-    // Botões de conclusão dos passos
     contexto.querySelectorAll('.btn-concluir-passo').forEach(btn => {
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -1116,7 +1093,6 @@
       });
     });
 
-    // Botões de disparar timer direto da etapa
     contexto.querySelectorAll('.btn-disparar-timer-passo').forEach(btn => {
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -1127,7 +1103,6 @@
     });
   }
 
-  // Vincular eventos aos passos já renderizados do servidor
   vincularEventosPassos(document);
 
   async function dispararGeracaoIA() {
@@ -1153,7 +1128,6 @@
       ultimaSequenciaGerada = dados.sequencia;
       renderizarPassosNaTela(dados.sequencia);
 
-      // Exibir botão de salvar na receita
       if (btnSalvarModoPreparoReceita) {
         btnSalvarModoPreparoReceita.style.display = 'inline-flex';
       }
@@ -1180,7 +1154,7 @@
         <span style="font-size: 0.85rem; font-weight: 800; color: #6b21a8; text-transform: uppercase;">
           🥣 ${seq.tipo_receita || 'Sequência Sugerida pelo Chef'}
         </span>
-        <span style="font-size: 0.78rem; background: #faf5ff; border: 1px solid #e9d5ff; color: #7e22ce; padding: 0.2rem 0.5rem; border-radius: 999px; font-weight: 600;">
+        <span style="font-size: 0.75rem; background: #faf5ff; border: 1px solid #e9d5ff; color: #7e22ce; padding: 0.2rem 0.5rem; border-radius: 999px; font-weight: 600;">
           ${seq.fonte === 'gemini_ia' ? '✨ Gerado por IA Confeiteira' : '🍳 Confeitaria Clássica'}
         </span>
       </div>
@@ -1188,29 +1162,54 @@
 
     passos.forEach((p, idx) => {
       const ordem = p.ordem || (idx + 1);
+      const equipRotulo = p.equipamento_rotulo || p.equipamento || '';
+      const equipIcone = p.equipamento_icone || '🥣';
+
       html += `
         <div class="card-passo-mistura" id="passo_gerado_${idx}">
           <div class="badge-numero-passo">${ordem}</div>
           <div>
             <div style="display: flex; justify-content: space-between; align-items: start; gap: 0.5rem; flex-wrap: wrap;">
-              <strong style="font-size: 0.98rem; color: var(--cor-texto);">${p.titulo}</strong>
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <strong style="font-size: 1rem; color: var(--cor-texto);">${p.titulo}</strong>
+                ${equipRotulo ? `
+                  <span class="badge-equipamento-passo">
+                    ${equipIcone} ${equipRotulo}
+                  </span>
+                ` : ''}
+              </div>
               
               <div style="display: flex; align-items: center; gap: 0.4rem;">
                 ${p.tempo_timer_min ? `
                   <button type="button" class="btn btn-secundario btn-sm btn-disparar-timer-passo" 
                           data-nome="${p.titulo}" 
                           data-minutos="${p.tempo_timer_min}"
-                          style="font-size: 0.75rem; padding: 0.2rem 0.5rem; background: #fff7ed; border-color: #fdba74; color: #c2410c; font-weight: 700;">
-                    ⏱️ Timer ${p.tempo_timer_min} min
+                          style="font-size: 0.75rem; padding: 0.25rem 0.6rem; background: #fff7ed; border-color: #fdba74; color: #c2410c; font-weight: 700;">
+                    ▶ Disparar Timer (${p.tempo_timer_min} min)
                   </button>
                 ` : ''}
-                <button type="button" class="btn btn-secundario btn-sm btn-concluir-passo" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                <button type="button" class="btn btn-secundario btn-sm btn-concluir-passo" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
                   ✓ Concluir
                 </button>
               </div>
             </div>
 
-            <div class="passo-instrucao-texto" style="font-size: 0.88rem; color: var(--cor-texto); line-height: 1.45; margin-top: 0.35rem;">
+            ${(p.ingredientes && p.ingredientes.length > 0) ? `
+              <div class="passo-ingredientes-bloco">
+                <span style="font-size: 0.72rem; font-weight: 800; color: #475569; text-transform: uppercase; display: block;">
+                  🛒 Entram nesta mistura:
+                </span>
+                <div class="passo-ingredientes-chips">
+                  ${p.ingredientes.map(i => `
+                    <span class="chip-ingrediente">
+                      ${i.nome}: <strong>${i.quantidade} ${i.unidade || 'g'}</strong>
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            <div class="passo-instrucao-texto" style="font-size: 0.9rem; color: var(--cor-texto); line-height: 1.5; margin-top: 0.4rem;">
               ${p.instrucao}
             </div>
 
@@ -1234,12 +1233,8 @@
     vincularEventosPassos(containerPassosPreparo);
   }
 
-  if (btnGerarPassosIA) {
-    btnGerarPassosIA.addEventListener('click', dispararGeracaoIA);
-  }
-  if (btnGerarPassosIABig) {
-    btnGerarPassosIABig.addEventListener('click', dispararGeracaoIA);
-  }
+  if (btnGerarPassosIA) btnGerarPassosIA.addEventListener('click', dispararGeracaoIA);
+  if (btnGerarPassosIABig) btnGerarPassosIABig.addEventListener('click', dispararGeracaoIA);
 
   if (btnSalvarModoPreparoReceita) {
     btnSalvarModoPreparoReceita.addEventListener('click', async () => {
