@@ -3,5 +3,9 @@
   <footer class="rodape">
     <p>🧁 Sistema de Precificação para Confeitaria &copy; <%= new Date().getFullYear() %> &bull; Todos os direitos reservados</p>
   </footer>
+
+  <% if (typeof usuario !== 'undefined' && usuario) { %>
+    <%- include('chat_drawer') %>
+  <% } %>
 </body>
 </html>

@@ -71,6 +71,7 @@ app.use('/pedidos', require('./routes/pedidos'));
 app.use('/agenda', require('./routes/agenda'));
 app.use('/compras', require('./routes/compras').router);
 app.use('/producao', require('./routes/producao'));
+app.use('/assistente', require('./routes/assistente'));
 
 // Rota 404
 app.use((req, res) => {
