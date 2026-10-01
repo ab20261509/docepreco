@@ -1,41 +1,39 @@
 const fs = require('fs');
 const path = require('path');
-const Database = require('better-sqlite3');
+const db = require('./db');
 
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
-
-const dbPath = path.join(dataDir, 'confeitaria.db');
-
-// Fechar e redefinir o arquivo do banco se existir
-if (fs.existsSync(dbPath)) {
-  try {
-    fs.unlinkSync(dbPath);
-    console.log('🗑️ Arquivo de banco de dados antigo removido.');
-  } catch (err) {
-    // Se estiver bloqueado por outro processo, limpar as tabelas
-    console.log('⚠️ Arquivo em uso, limpando tabelas via SQL...');
-    const db = new Database(dbPath);
-    db.pragma('foreign_keys = OFF');
-    const tabelas = ['pedido_itens', 'pedidos', 'clientes', 'ingredientes_compras', 'ingredientes_catalogo', 'complementos', 'ingredientes', 'produtos', 'custos_fixos', 'configuracoes', 'usuarios', 'sessions'];
-    tabelas.forEach(t => {
-      try { db.exec(`DROP TABLE IF EXISTS ${t}`); } catch (e) {}
-    });
-    db.pragma('foreign_keys = ON');
-    db.close();
+async function reset() {
+  const dataDir = path.join(__dirname, 'data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
   }
+
+  const tabelas = [
+    '_migracoes', 'sessions', 'pedido_itens', 'pedidos', 'clientes',
+    'ingredientes_compras', 'ingredientes_catalogo', 'complementos',
+    'ingredientes', 'produtos', 'custos_fixos', 'configuracoes', 'usuarios'
+  ];
+
+  for (const t of tabelas) {
+    try {
+      await db.run(`DROP TABLE IF EXISTS ${t}`);
+    } catch (e) {}
+  }
+
+  const schemaPath = path.join(__dirname, 'schema.sql');
+  const schema = fs.readFileSync(schemaPath, 'utf8');
+  await db.exec(schema);
+
+  await db.rodarMigracoes();
+
+  console.log('✅ Banco de dados resetado com sucesso! Estrutura limpa e pronta para uso.');
 }
 
-// Inicializar banco limpo com schema.sql
-const db = new Database(dbPath);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+if (require.main === module) {
+  reset().catch(err => {
+    console.error('Erro ao resetar DB:', err);
+    process.exit(1);
+  });
+}
 
-const schemaPath = path.join(__dirname, 'schema.sql');
-const schema = fs.readFileSync(schemaPath, 'utf8');
-db.exec(schema);
-db.close();
-
-console.log('✅ Banco de dados resetado com sucesso! Estrutura limpa e pronta para uso.');
+module.exports = reset;

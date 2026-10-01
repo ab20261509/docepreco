@@ -5,47 +5,51 @@ const { custoFixoHora, calcularProduto } = require('../calculo');
 
 const router = express.Router();
 
-router.get('/', exigirLogin, (req, res) => {
-  const uid = req.session.usuario.id;
+router.get('/', exigirLogin, async (req, res, next) => {
+  try {
+    const uid = req.session.usuario.id;
 
-  const totalFixosRow = db.prepare('SELECT COALESCE(SUM(valor_mensal), 0) AS t FROM custos_fixos WHERE usuario_id = ?').get(uid);
-  const totalFixos = totalFixosRow ? totalFixosRow.t : 0;
+    const totalFixosRow = await db.get('SELECT COALESCE(SUM(valor_mensal), 0) AS t FROM custos_fixos WHERE usuario_id = ?', [uid]);
+    const totalFixos = totalFixosRow ? totalFixosRow.t : 0;
 
-  const configRow = db.prepare('SELECT horas_mes FROM configuracoes WHERE usuario_id = ?').get(uid);
-  const horasMes = configRow && configRow.horas_mes > 0 ? configRow.horas_mes : 160;
+    const configRow = await db.get('SELECT horas_mes FROM configuracoes WHERE usuario_id = ?', [uid]);
+    const horasMes = configRow && configRow.horas_mes > 0 ? configRow.horas_mes : 160;
 
-  const cfHora = custoFixoHora(totalFixos, horasMes);
+    const cfHora = custoFixoHora(totalFixos, horasMes);
 
-  const produtos = db.prepare('SELECT * FROM produtos WHERE usuario_id = ? ORDER BY nome ASC').all(uid);
+    const produtos = await db.all('SELECT * FROM produtos WHERE usuario_id = ? ORDER BY nome ASC', [uid]);
 
-  const resumo = produtos.map((p) => {
-    const ing = db.prepare('SELECT * FROM ingredientes WHERE produto_id = ?').all(p.id);
-    const comp = db.prepare('SELECT * FROM complementos WHERE produto_id = ?').all(p.id);
-    
-    let calc = null;
-    let erroCalculo = null;
-    try {
-      calc = calcularProduto(p, ing, comp, cfHora);
-    } catch (err) {
-      erroCalculo = err.message;
-    }
+    const resumo = await Promise.all(produtos.map(async (p) => {
+      const ing = await db.all('SELECT * FROM ingredientes WHERE produto_id = ?', [p.id]);
+      const comp = await db.all('SELECT * FROM complementos WHERE produto_id = ?', [p.id]);
+      
+      let calc = null;
+      let erroCalculo = null;
+      try {
+        calc = calcularProduto(p, ing, comp, cfHora);
+      } catch (err) {
+        erroCalculo = err.message;
+      }
 
-    return {
-      produto: p,
-      totalIngredientes: ing.length,
-      totalComplementos: comp.length,
-      calculo: calc,
-      erroCalculo
-    };
-  });
+      return {
+        produto: p,
+        totalIngredientes: ing.length,
+        totalComplementos: comp.length,
+        calculo: calc,
+        erroCalculo
+      };
+    }));
 
-  res.render('painel', {
-    resumo,
-    totalFixos,
-    horasMes,
-    cfHora,
-    activeNav: 'painel'
-  });
+    res.render('painel', {
+      resumo,
+      totalFixos,
+      horasMes,
+      cfHora,
+      activeNav: 'painel'
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = router;

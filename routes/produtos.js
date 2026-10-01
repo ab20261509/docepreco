@@ -52,159 +52,156 @@ router.get('/modelo-excel', exigirLogin, (req, res) => {
   res.send(buf);
 });
 
-function getCustoFixoHoraUsuario(uid) {
-  const totalFixosRow = db.prepare('SELECT COALESCE(SUM(valor_mensal), 0) AS t FROM custos_fixos WHERE usuario_id = ?').get(uid);
+async function getCustoFixoHoraUsuario(uid) {
+  const totalFixosRow = await db.get('SELECT COALESCE(SUM(valor_mensal), 0) AS t FROM custos_fixos WHERE usuario_id = ?', [uid]);
   const totalFixos = totalFixosRow ? totalFixosRow.t : 0;
-  const configRow = db.prepare('SELECT horas_mes FROM configuracoes WHERE usuario_id = ?').get(uid);
+  const configRow = await db.get('SELECT horas_mes FROM configuracoes WHERE usuario_id = ?', [uid]);
   const horasMes = configRow && configRow.horas_mes > 0 ? configRow.horas_mes : 160;
   return { cfHora: custoFixoHora(totalFixos, horasMes), totalFixos, horasMes };
 }
 
 // Tela de cadastro de novo produto
-router.get('/novo', exigirLogin, (req, res) => {
-  const uid = req.session.usuario.id;
-  const { cfHora } = getCustoFixoHoraUsuario(uid);
-  const catalogoIngredientes = db.prepare(`
-    SELECT id, nome, unidade, preco_atual, qtd_embalagem_padrao, estoque_atual 
-    FROM ingredientes_catalogo 
-    WHERE usuario_id = ? 
-    ORDER BY nome ASC
-  `).all(uid);
+router.get('/novo', exigirLogin, async (req, res, next) => {
+  try {
+    const uid = req.session.usuario.id;
+    const { cfHora } = await getCustoFixoHoraUsuario(uid);
+    const catalogoIngredientes = await db.all(`
+      SELECT id, nome, unidade, preco_atual, qtd_embalagem_padrao, estoque_atual 
+      FROM ingredientes_catalogo 
+      WHERE usuario_id = ? 
+      ORDER BY nome ASC
+    `, [uid]);
 
-  const produtoVazio = {
-    id: null,
-    nome: '',
-    rendimento: 1,
-    tempo_horas: 0,
-    mao_obra_extra: 0,
-    margem_pct: 40,
-    taxas_pct: 5
-  };
+    const produtoVazio = {
+      id: null,
+      nome: '',
+      rendimento: 1,
+      tempo_horas: 0,
+      mao_obra_extra: 0,
+      margem_pct: 40,
+      taxas_pct: 5
+    };
 
-  res.render('produto', {
-    produto: produtoVazio,
-    ingredientes: [],
-    complementos: [],
-    catalogoIngredientes,
-    calculo: null,
-    cfHora,
-    erro: null,
-    modo: 'novo',
-    activeNav: 'novo_produto'
-  });
+    res.render('produto', {
+      produto: produtoVazio,
+      ingredientes: [],
+      complementos: [],
+      catalogoIngredientes,
+      calculo: null,
+      cfHora,
+      erro: null,
+      modo: 'novo',
+      activeNav: 'novo_produto'
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Processar criação de produto
-router.post('/', exigirLogin, (req, res) => {
-  const uid = req.session.usuario.id;
-  const { cfHora } = getCustoFixoHoraUsuario(uid);
-
-  const nome = (req.body.nome || '').trim();
-  const rendimento = parseFloat(req.body.rendimento) || 1;
-  let tempoHoras = parseFloat(req.body.tempo_horas);
-  if (isNaN(tempoHoras) || tempoHoras < 0) {
-    const th = Math.max(0, parseFloat(req.body.tempo_horas_parte) || 0);
-    const tm = Math.max(0, parseFloat(req.body.tempo_minutos_parte) || 0);
-    tempoHoras = th + (tm / 60);
-  }
-  const maoObraExtra = parseFloat(req.body.mao_obra_extra) || 0;
-  const margemPct = parseFloat(req.body.margem_pct) || 0;
-  const taxasPct = parseFloat(req.body.taxas_pct) || 0;
-
-  if (!nome) {
-    return res.status(400).render('produto', {
-      produto: { id: null, nome, rendimento, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
-      ingredientes: [],
-      complementos: [],
-      calculo: null,
-      cfHora,
-      erro: 'Informe o nome do produto.',
-      modo: 'novo',
-      activeNav: 'novo_produto'
-    });
-  }
-
-  if (rendimento <= 0) {
-    return res.status(400).render('produto', {
-      produto: { id: null, nome, rendimento, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
-      ingredientes: [],
-      complementos: [],
-      calculo: null,
-      cfHora,
-      erro: 'O rendimento (unidades por lote) deve ser maior que zero.',
-      modo: 'novo',
-      activeNav: 'novo_produto'
-    });
-  }
-
-  if (margemPct + taxasPct >= 100) {
-    return res.status(400).render('produto', {
-      produto: { id: null, nome, rendimento, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
-      ingredientes: [],
-      complementos: [],
-      calculo: null,
-      cfHora,
-      erro: 'A soma de Margem de Lucro (%) e Taxas (%) deve ser menor que 100%.',
-      modo: 'novo',
-      activeNav: 'novo_produto'
-    });
-  }
-
-  // Processar listas dinâmicas de ingredientes
-  const ingNomes = Array.isArray(req.body.ing_nome) ? req.body.ing_nome : (req.body.ing_nome ? [req.body.ing_nome] : []);
-  const ingQtdUsada = Array.isArray(req.body.ing_qtd_usada) ? req.body.ing_qtd_usada : (req.body.ing_qtd_usada ? [req.body.ing_qtd_usada] : []);
-  const ingPrecoPacote = Array.isArray(req.body.ing_preco_pacote) ? req.body.ing_preco_pacote : (req.body.ing_preco_pacote ? [req.body.ing_preco_pacote] : []);
-  const ingQtdPacote = Array.isArray(req.body.ing_qtd_pacote) ? req.body.ing_qtd_pacote : (req.body.ing_qtd_pacote ? [req.body.ing_qtd_pacote] : []);
-
-  // Processar complementos
-  const compNomes = Array.isArray(req.body.comp_nome) ? req.body.comp_nome : (req.body.comp_nome ? [req.body.comp_nome] : []);
-  const compCustos = Array.isArray(req.body.comp_custo) ? req.body.comp_custo : (req.body.comp_custo ? [req.body.comp_custo] : []);
-
-  const criarProdutoTx = db.transaction(() => {
-    const info = db.prepare(`
-      INSERT INTO produtos (usuario_id, nome, rendimento, tempo_horas, mao_obra_extra, margem_pct, taxas_pct, atualizado_em)
-      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
-    `).run(uid, nome, rendimento, tempoHoras, maoObraExtra, margemPct, taxasPct);
-
-    const produtoId = info.lastInsertRowid;
-
-    // Inserir ingredientes
-    const stmtIng = db.prepare(`
-      INSERT INTO ingredientes (produto_id, nome, qtd_usada, preco_pacote, qtd_pacote)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-
-    for (let i = 0; i < ingNomes.length; i++) {
-      const ingNome = (ingNomes[i] || '').trim();
-      const qtdUsada = parseFloat(ingQtdUsada[i]) || 0;
-      const precoPacote = parseFloat(ingPrecoPacote[i]) || 0;
-      const qtdPacote = parseFloat(ingQtdPacote[i]) || 0;
-
-      if (ingNome && qtdPacote > 0) {
-        stmtIng.run(produtoId, ingNome, Math.max(0, qtdUsada), Math.max(0, precoPacote), qtdPacote);
-      }
-    }
-
-    // Inserir complementos
-    const stmtComp = db.prepare(`
-      INSERT INTO complementos (produto_id, nome, custo_lote)
-      VALUES (?, ?, ?)
-    `);
-
-    for (let i = 0; i < compNomes.length; i++) {
-      const compNome = (compNomes[i] || '').trim();
-      const custoLote = parseFloat(compCustos[i]) || 0;
-
-      if (compNome) {
-        stmtComp.run(produtoId, compNome, Math.max(0, custoLote));
-      }
-    }
-
-    return produtoId;
-  });
-
+router.post('/', exigirLogin, async (req, res, next) => {
   try {
-    const novoProdutoId = criarProdutoTx();
+    const uid = req.session.usuario.id;
+    const { cfHora } = await getCustoFixoHoraUsuario(uid);
+
+    const nome = (req.body.nome || '').trim();
+    const rendimento = parseFloat(req.body.rendimento) || 1;
+    let tempoHoras = parseFloat(req.body.tempo_horas);
+    if (isNaN(tempoHoras) || tempoHoras < 0) {
+      const th = Math.max(0, parseFloat(req.body.tempo_horas_parte) || 0);
+      const tm = Math.max(0, parseFloat(req.body.tempo_minutos_parte) || 0);
+      tempoHoras = th + (tm / 60);
+    }
+    const maoObraExtra = parseFloat(req.body.mao_obra_extra) || 0;
+    const margemPct = parseFloat(req.body.margem_pct) || 0;
+    const taxasPct = parseFloat(req.body.taxas_pct) || 0;
+
+    if (!nome) {
+      return res.status(400).render('produto', {
+        produto: { id: null, nome, rendimento, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
+        ingredientes: [],
+        complementos: [],
+        calculo: null,
+        cfHora,
+        erro: 'Informe o nome do produto.',
+        modo: 'novo',
+        activeNav: 'novo_produto'
+      });
+    }
+
+    if (rendimento <= 0) {
+      return res.status(400).render('produto', {
+        produto: { id: null, nome, rendimento, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
+        ingredientes: [],
+        complementos: [],
+        calculo: null,
+        cfHora,
+        erro: 'O rendimento (unidades por lote) deve ser maior que zero.',
+        modo: 'novo',
+        activeNav: 'novo_produto'
+      });
+    }
+
+    if (margemPct + taxasPct >= 100) {
+      return res.status(400).render('produto', {
+        produto: { id: null, nome, rendimento, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
+        ingredientes: [],
+        complementos: [],
+        calculo: null,
+        cfHora,
+        erro: 'A soma de Margem de Lucro (%) e Taxas (%) deve ser menor que 100%.',
+        modo: 'novo',
+        activeNav: 'novo_produto'
+      });
+    }
+
+    // Processar listas dinâmicas de ingredientes
+    const ingNomes = Array.isArray(req.body.ing_nome) ? req.body.ing_nome : (req.body.ing_nome ? [req.body.ing_nome] : []);
+    const ingQtdUsada = Array.isArray(req.body.ing_qtd_usada) ? req.body.ing_qtd_usada : (req.body.ing_qtd_usada ? [req.body.ing_qtd_usada] : []);
+    const ingPrecoPacote = Array.isArray(req.body.ing_preco_pacote) ? req.body.ing_preco_pacote : (req.body.ing_preco_pacote ? [req.body.ing_preco_pacote] : []);
+    const ingQtdPacote = Array.isArray(req.body.ing_qtd_pacote) ? req.body.ing_qtd_pacote : (req.body.ing_qtd_pacote ? [req.body.ing_qtd_pacote] : []);
+
+    // Processar complementos
+    const compNomes = Array.isArray(req.body.comp_nome) ? req.body.comp_nome : (req.body.comp_nome ? [req.body.comp_nome] : []);
+    const compCustos = Array.isArray(req.body.comp_custo) ? req.body.comp_custo : (req.body.comp_custo ? [req.body.comp_custo] : []);
+
+    const novoProdutoId = await db.transaction(async (tx) => {
+      const info = await tx.run(`
+        INSERT INTO produtos (usuario_id, nome, rendimento, tempo_horas, mao_obra_extra, margem_pct, taxas_pct, atualizado_em)
+        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      `, [uid, nome, rendimento, tempoHoras, maoObraExtra, margemPct, taxasPct]);
+
+      const produtoId = Number(info.lastInsertRowid);
+
+      for (let i = 0; i < ingNomes.length; i++) {
+        const ingNome = (ingNomes[i] || '').trim();
+        const qtdUsada = parseFloat(ingQtdUsada[i]) || 0;
+        const precoPacote = parseFloat(ingPrecoPacote[i]) || 0;
+        const qtdPacote = parseFloat(ingQtdPacote[i]) || 0;
+
+        if (ingNome && qtdPacote > 0) {
+          await tx.run(`
+            INSERT INTO ingredientes (produto_id, nome, qtd_usada, preco_pacote, qtd_pacote)
+            VALUES (?, ?, ?, ?, ?)
+          `, [produtoId, ingNome, Math.max(0, qtdUsada), Math.max(0, precoPacote), qtdPacote]);
+        }
+      }
+
+      for (let i = 0; i < compNomes.length; i++) {
+        const compNome = (compNomes[i] || '').trim();
+        const custoLote = parseFloat(compCustos[i]) || 0;
+
+        if (compNome) {
+          await tx.run(`
+            INSERT INTO complementos (produto_id, nome, custo_lote)
+            VALUES (?, ?, ?)
+          `, [produtoId, compNome, Math.max(0, custoLote)]);
+        }
+      }
+
+      return produtoId;
+    });
+
     res.redirect(`/produtos/${novoProdutoId}?salvo=1`);
   } catch (err) {
     console.error('Erro ao cadastrar produto:', err);
@@ -213,134 +210,135 @@ router.post('/', exigirLogin, (req, res) => {
 });
 
 // Ver e editar produto existente
-router.get('/:id', exigirLogin, (req, res) => {
-  const uid = req.session.usuario.id;
-  const id = parseInt(req.params.id, 10);
-
-  const produto = db.prepare('SELECT * FROM produtos WHERE id = ? AND usuario_id = ?').get(id, uid);
-  if (!produto) {
-    return res.status(404).render('erro_404', { mensagem: 'Produto não encontrado ou você não tem permissão para acessá-lo.' });
-  }
-
-  const { cfHora } = getCustoFixoHoraUsuario(uid);
-  const catalogoIngredientes = db.prepare(`
-    SELECT id, nome, unidade, preco_atual, qtd_embalagem_padrao, estoque_atual 
-    FROM ingredientes_catalogo 
-    WHERE usuario_id = ? 
-    ORDER BY nome ASC
-  `).all(uid);
-  const ingredientes = db.prepare('SELECT * FROM ingredientes WHERE produto_id = ? ORDER BY id ASC').all(id);
-  const complementos = db.prepare('SELECT * FROM complementos WHERE produto_id = ? ORDER BY id ASC').all(id);
-
-  let calculo = null;
-  let erro = null;
+router.get('/:id', exigirLogin, async (req, res, next) => {
   try {
-    calculo = calcularProduto(produto, ingredientes, complementos, cfHora);
-  } catch (err) {
-    erro = err.message;
-  }
+    const uid = req.session.usuario.id;
+    const id = parseInt(req.params.id, 10);
 
-  res.render('produto', {
-    produto,
-    ingredientes,
-    complementos,
-    catalogoIngredientes,
-    calculo,
-    cfHora,
-    erro,
-    sucesso: req.query.salvo === '1',
-    modo: 'editar',
-    activeNav: 'produtos'
-  });
-});
+    const produto = await db.get('SELECT * FROM produtos WHERE id = ? AND usuario_id = ?', [id, uid]);
+    if (!produto) {
+      return res.status(404).render('erro_404', { mensagem: 'Produto não encontrado ou você não tem permissão para acessá-lo.' });
+    }
 
-// Atualizar produto existente
-router.post('/:id', exigirLogin, (req, res) => {
-  const uid = req.session.usuario.id;
-  const id = parseInt(req.params.id, 10);
+    const { cfHora } = await getCustoFixoHoraUsuario(uid);
+    const catalogoIngredientes = await db.all(`
+      SELECT id, nome, unidade, preco_atual, qtd_embalagem_padrao, estoque_atual 
+      FROM ingredientes_catalogo 
+      WHERE usuario_id = ? 
+      ORDER BY nome ASC
+    `, [uid]);
+    const ingredientes = await db.all('SELECT * FROM ingredientes WHERE produto_id = ? ORDER BY id ASC', [id]);
+    const complementos = await db.all('SELECT * FROM complementos WHERE produto_id = ? ORDER BY id ASC', [id]);
 
-  const produto = db.prepare('SELECT * FROM produtos WHERE id = ? AND usuario_id = ?').get(id, uid);
-  if (!produto) {
-    return res.status(404).send('Produto não encontrado');
-  }
+    let calculo = null;
+    let erro = null;
+    try {
+      calculo = calcularProduto(produto, ingredientes, complementos, cfHora);
+    } catch (err) {
+      erro = err.message;
+    }
 
-  const { cfHora } = getCustoFixoHoraUsuario(uid);
-
-  const nome = (req.body.nome || '').trim();
-  const rendimento = parseFloat(req.body.rendimento) || 1;
-  let tempoHoras = parseFloat(req.body.tempo_horas);
-  if (isNaN(tempoHoras) || tempoHoras < 0) {
-    const th = Math.max(0, parseFloat(req.body.tempo_horas_parte) || 0);
-    const tm = Math.max(0, parseFloat(req.body.tempo_minutos_parte) || 0);
-    tempoHoras = th + (tm / 60);
-  }
-  const maoObraExtra = parseFloat(req.body.mao_obra_extra) || 0;
-  const margemPct = parseFloat(req.body.margem_pct) || 0;
-  const taxasPct = parseFloat(req.body.taxas_pct) || 0;
-
-  if (!nome || rendimento <= 0 || margemPct + taxasPct >= 100) {
-    const ingredientes = db.prepare('SELECT * FROM ingredientes WHERE produto_id = ?').all(id);
-    const complementos = db.prepare('SELECT * FROM complementos WHERE produto_id = ?').all(id);
-    return res.status(400).render('produto', {
-      produto: { id, nome, rendimento, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
+    res.render('produto', {
+      produto,
       ingredientes,
       complementos,
-      calculo: null,
+      catalogoIngredientes,
+      calculo,
       cfHora,
-      erro: 'Dados inválidos. Verifique o nome, rendimento (> 0) e a soma da margem + taxas (< 100%).',
+      erro,
+      sucesso: req.query.salvo === '1',
       modo: 'editar',
       activeNav: 'produtos'
     });
+  } catch (err) {
+    next(err);
   }
+});
 
-  const ingNomes = Array.isArray(req.body.ing_nome) ? req.body.ing_nome : (req.body.ing_nome ? [req.body.ing_nome] : []);
-  const ingQtdUsada = Array.isArray(req.body.ing_qtd_usada) ? req.body.ing_qtd_usada : (req.body.ing_qtd_usada ? [req.body.ing_qtd_usada] : []);
-  const ingPrecoPacote = Array.isArray(req.body.ing_preco_pacote) ? req.body.ing_preco_pacote : (req.body.ing_preco_pacote ? [req.body.ing_preco_pacote] : []);
-  const ingQtdPacote = Array.isArray(req.body.ing_qtd_pacote) ? req.body.ing_qtd_pacote : (req.body.ing_qtd_pacote ? [req.body.ing_qtd_pacote] : []);
-
-  const compNomes = Array.isArray(req.body.comp_nome) ? req.body.comp_nome : (req.body.comp_nome ? [req.body.comp_nome] : []);
-  const compCustos = Array.isArray(req.body.comp_custo) ? req.body.comp_custo : (req.body.comp_custo ? [req.body.comp_custo] : []);
-
-  const atualizarProdutoTx = db.transaction(() => {
-    db.prepare(`
-      UPDATE produtos
-      SET nome = ?, rendimento = ?, tempo_horas = ?, mao_obra_extra = ?, margem_pct = ?, taxas_pct = ?, atualizado_em = datetime('now')
-      WHERE id = ? AND usuario_id = ?
-    `).run(nome, rendimento, tempoHoras, maoObraExtra, margemPct, taxasPct, id, uid);
-
-    // Substituição de ingredientes
-    db.prepare('DELETE FROM ingredientes WHERE produto_id = ?').run(id);
-    const stmtIng = db.prepare(`
-      INSERT INTO ingredientes (produto_id, nome, qtd_usada, preco_pacote, qtd_pacote)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    for (let i = 0; i < ingNomes.length; i++) {
-      const ingNome = (ingNomes[i] || '').trim();
-      const qtdUsada = parseFloat(ingQtdUsada[i]) || 0;
-      const precoPacote = parseFloat(ingPrecoPacote[i]) || 0;
-      const qtdPacote = parseFloat(ingQtdPacote[i]) || 0;
-      if (ingNome && qtdPacote > 0) {
-        stmtIng.run(id, ingNome, Math.max(0, qtdUsada), Math.max(0, precoPacote), qtdPacote);
-      }
-    }
-
-    // Substituição de complementos
-    db.prepare('DELETE FROM complementos WHERE produto_id = ?').run(id);
-    const stmtComp = db.prepare(`
-      INSERT INTO complementos (produto_id, nome, custo_lote)
-      VALUES (?, ?, ?)
-    `);
-    for (let i = 0; i < compNomes.length; i++) {
-      const compNome = (compNomes[i] || '').trim();
-      const custoLote = parseFloat(compCustos[i]) || 0;
-      if (compNome) {
-        stmtComp.run(id, compNome, Math.max(0, custoLote));
-      }
-    }
-  });
-
+// Atualizar produto existente
+router.post('/:id', exigirLogin, async (req, res, next) => {
   try {
-    atualizarProdutoTx();
+    const uid = req.session.usuario.id;
+    const id = parseInt(req.params.id, 10);
+
+    const produto = await db.get('SELECT * FROM produtos WHERE id = ? AND usuario_id = ?', [id, uid]);
+    if (!produto) {
+      return res.status(404).send('Produto não encontrado');
+    }
+
+    const { cfHora } = await getCustoFixoHoraUsuario(uid);
+
+    const nome = (req.body.nome || '').trim();
+    const rendimento = parseFloat(req.body.rendimento) || 1;
+    let tempoHoras = parseFloat(req.body.tempo_horas);
+    if (isNaN(tempoHoras) || tempoHoras < 0) {
+      const th = Math.max(0, parseFloat(req.body.tempo_horas_parte) || 0);
+      const tm = Math.max(0, parseFloat(req.body.tempo_minutos_parte) || 0);
+      tempoHoras = th + (tm / 60);
+    }
+    const maoObraExtra = parseFloat(req.body.mao_obra_extra) || 0;
+    const margemPct = parseFloat(req.body.margem_pct) || 0;
+    const taxasPct = parseFloat(req.body.taxas_pct) || 0;
+
+    if (!nome || rendimento <= 0 || margemPct + taxasPct >= 100) {
+      const ingredientes = await db.all('SELECT * FROM ingredientes WHERE produto_id = ?', [id]);
+      const complementos = await db.all('SELECT * FROM complementos WHERE produto_id = ?', [id]);
+      return res.status(400).render('produto', {
+        produto: { id, nome, rendimento, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
+        ingredientes,
+        complementos,
+        calculo: null,
+        cfHora,
+        erro: 'Dados inválidos. Verifique o nome, rendimento (> 0) e a soma da margem + taxas (< 100%).',
+        modo: 'editar',
+        activeNav: 'produtos'
+      });
+    }
+
+    const ingNomes = Array.isArray(req.body.ing_nome) ? req.body.ing_nome : (req.body.ing_nome ? [req.body.ing_nome] : []);
+    const ingQtdUsada = Array.isArray(req.body.ing_qtd_usada) ? req.body.ing_qtd_usada : (req.body.ing_qtd_usada ? [req.body.ing_qtd_usada] : []);
+    const ingPrecoPacote = Array.isArray(req.body.ing_preco_pacote) ? req.body.ing_preco_pacote : (req.body.ing_preco_pacote ? [req.body.ing_preco_pacote] : []);
+    const ingQtdPacote = Array.isArray(req.body.ing_qtd_pacote) ? req.body.ing_qtd_pacote : (req.body.ing_qtd_pacote ? [req.body.ing_qtd_pacote] : []);
+
+    const compNomes = Array.isArray(req.body.comp_nome) ? req.body.comp_nome : (req.body.comp_nome ? [req.body.comp_nome] : []);
+    const compCustos = Array.isArray(req.body.comp_custo) ? req.body.comp_custo : (req.body.comp_custo ? [req.body.comp_custo] : []);
+
+    await db.transaction(async (tx) => {
+      await tx.run(`
+        UPDATE produtos
+        SET nome = ?, rendimento = ?, tempo_horas = ?, mao_obra_extra = ?, margem_pct = ?, taxas_pct = ?, atualizado_em = datetime('now')
+        WHERE id = ? AND usuario_id = ?
+      `, [nome, rendimento, tempoHoras, maoObraExtra, margemPct, taxasPct, id, uid]);
+
+      // Substituição de ingredientes
+      await tx.run('DELETE FROM ingredientes WHERE produto_id = ?', [id]);
+      for (let i = 0; i < ingNomes.length; i++) {
+        const ingNome = (ingNomes[i] || '').trim();
+        const qtdUsada = parseFloat(ingQtdUsada[i]) || 0;
+        const precoPacote = parseFloat(ingPrecoPacote[i]) || 0;
+        const qtdPacote = parseFloat(ingQtdPacote[i]) || 0;
+        if (ingNome && qtdPacote > 0) {
+          await tx.run(`
+            INSERT INTO ingredientes (produto_id, nome, qtd_usada, preco_pacote, qtd_pacote)
+            VALUES (?, ?, ?, ?, ?)
+          `, [id, ingNome, Math.max(0, qtdUsada), Math.max(0, precoPacote), qtdPacote]);
+        }
+      }
+
+      // Substituição de complementos
+      await tx.run('DELETE FROM complementos WHERE produto_id = ?', [id]);
+      for (let i = 0; i < compNomes.length; i++) {
+        const compNome = (compNomes[i] || '').trim();
+        const custoLote = parseFloat(compCustos[i]) || 0;
+        if (compNome) {
+          await tx.run(`
+            INSERT INTO complementos (produto_id, nome, custo_lote)
+            VALUES (?, ?, ?)
+          `, [id, compNome, Math.max(0, custoLote)]);
+        }
+      }
+    });
+
     res.redirect(`/produtos/${id}?salvo=1`);
   } catch (err) {
     console.error('Erro ao atualizar produto:', err);
@@ -349,12 +347,16 @@ router.post('/:id', exigirLogin, (req, res) => {
 });
 
 // Excluir produto
-router.post('/:id/excluir', exigirLogin, (req, res) => {
-  const uid = req.session.usuario.id;
-  const id = parseInt(req.params.id, 10);
+router.post('/:id/excluir', exigirLogin, async (req, res, next) => {
+  try {
+    const uid = req.session.usuario.id;
+    const id = parseInt(req.params.id, 10);
 
-  db.prepare('DELETE FROM produtos WHERE id = ? AND usuario_id = ?').run(id, uid);
-  res.redirect('/');
+    await db.run('DELETE FROM produtos WHERE id = ? AND usuario_id = ?', [id, uid]);
+    res.redirect('/');
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = router;

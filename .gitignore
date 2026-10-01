@@ -1,3 +1,7 @@
 node_modules/
 data/
 .env
+*.db
+*.db-journal
+test_migrations.db
+test/test_migrations.db

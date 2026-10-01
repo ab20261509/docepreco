@@ -35,7 +35,7 @@ function adicionarDias(dataIso, dias) {
 }
 
 // Helper para calcular o planejamento unificado
-function calcularPlanejamentoCompras(uid, options = {}) {
+async function calcularPlanejamentoCompras(uid, options = {}) {
   const incluirVendas = options.incluirVendas !== false;
   const incluirMinimo = options.incluirMinimo !== false;
   const incluirUltimas = options.incluirUltimas !== false;
@@ -60,23 +60,22 @@ function calcularPlanejamentoCompras(uid, options = {}) {
     paramsPedidos.push(hoje, daqui7dias);
   } // Se periodo === 'todos', não filtra por data de entrega
 
-  const pedidos = db.prepare(`
+  const pedidos = await db.all(`
     SELECT p.*, c.nome AS cliente_cadastrado_nome
     FROM pedidos p
     LEFT JOIN clientes c ON p.cliente_id = c.id
     WHERE p.usuario_id = ? AND p.status IN ('confirmado', 'producao') ${sqlCondData}
     ORDER BY p.data_entrega ASC
-  `).all(...paramsPedidos);
+  `, paramsPedidos);
 
   const pedidoIds = pedidos.map(p => p.id);
 
   // 2. Apurar demanda de insumos das vendas pendentes
   const demandaVendasPorNome = {};
-  const pedidosComProdutos = [];
 
   if (pedidoIds.length > 0) {
     const placeholders = pedidoIds.map(() => '?').join(',');
-    const itensPedidos = db.prepare(`
+    const itensPedidos = await db.all(`
       SELECT 
         pi.pedido_id,
         pi.produto_id,
@@ -87,14 +86,26 @@ function calcularPlanejamentoCompras(uid, options = {}) {
       FROM pedido_itens pi
       LEFT JOIN produtos p ON pi.produto_id = p.id
       WHERE pi.pedido_id IN (${placeholders}) AND pi.produto_id IS NOT NULL
-    `).all(...pedidoIds);
+    `, pedidoIds);
+
+    const produtoIds = [...new Set(itensPedidos.map(it => it.produto_id).filter(Boolean))];
+    const ingredientesPorProduto = {};
+    if (produtoIds.length > 0) {
+      const pPlaceholders = produtoIds.map(() => '?').join(',');
+      const todosIngs = await db.all(`SELECT * FROM ingredientes WHERE produto_id IN (${pPlaceholders})`, produtoIds);
+      todosIngs.forEach(ing => {
+        if (!ingredientesPorProduto[ing.produto_id]) {
+          ingredientesPorProduto[ing.produto_id] = [];
+        }
+        ingredientesPorProduto[ing.produto_id].push(ing);
+      });
+    }
 
     itensPedidos.forEach(it => {
       const rendimento = it.rendimento > 0 ? it.rendimento : 1;
       const fatorLote = it.qtd_pedida / rendimento;
 
-      // Buscar ingredientes da receita deste produto
-      const ings = db.prepare('SELECT * FROM ingredientes WHERE produto_id = ?').all(it.produto_id);
+      const ings = ingredientesPorProduto[it.produto_id] || [];
       ings.forEach(ing => {
         const chave = ing.nome.trim().toLowerCase();
         const qtdConsumida = ing.qtd_usada * fatorLote;
@@ -115,14 +126,14 @@ function calcularPlanejamentoCompras(uid, options = {}) {
   }
 
   // 3. Buscar catálogo de ingredientes da usuária
-  const catalogo = db.prepare(`
+  const catalogo = await db.all(`
     SELECT * FROM ingredientes_catalogo
     WHERE usuario_id = ?
     ORDER BY nome ASC
-  `).all(uid);
+  `, [uid]);
 
   // 4. Buscar últimas compras ativas para cada ingrediente
-  const ultimasComprasRaw = db.prepare(`
+  const ultimasComprasRaw = await db.all(`
     SELECT 
       c.ingrediente_id,
       c.data_compra,
@@ -134,7 +145,7 @@ function calcularPlanejamentoCompras(uid, options = {}) {
     FROM ingredientes_compras c
     WHERE c.usuario_id = ? AND c.status = 'ativo'
     ORDER BY c.data_compra DESC, c.id DESC
-  `).all(uid);
+  `, [uid]);
 
   const mapaUltimaCompra = {};
   ultimasComprasRaw.forEach(compra => {
@@ -306,86 +317,87 @@ function calcularPlanejamentoCompras(uid, options = {}) {
 }
 
 // 1. Tela Principal de Compras e Planejamento Unificado
-router.get('/', exigirLogin, (req, res) => {
-  const uid = req.session.usuario.id;
+router.get('/', exigirLogin, async (req, res, next) => {
+  try {
+    const uid = req.session.usuario.id;
 
-  const incluirVendas = req.query.incluir_vendas !== '0';
-  const incluirMinimo = req.query.incluir_minimo !== '0';
-  const incluirUltimas = req.query.incluir_ultimas !== '0';
-  const periodo = req.query.periodo || 'semana';
-  const somenteFaltantes = req.query.somente_faltantes === '1';
+    const incluirVendas = req.query.incluir_vendas !== '0';
+    const incluirMinimo = req.query.incluir_minimo !== '0';
+    const incluirUltimas = req.query.incluir_ultimas !== '0';
+    const periodo = req.query.periodo || 'semana';
+    const somenteFaltantes = req.query.somente_faltantes === '1';
 
-  const resultado = calcularPlanejamentoCompras(uid, {
-    incluirVendas,
-    incluirMinimo,
-    incluirUltimas,
-    periodo
-  });
+    const resultado = await calcularPlanejamentoCompras(uid, {
+      incluirVendas,
+      incluirMinimo,
+      incluirUltimas,
+      periodo
+    });
 
-  const listaExibicao = somenteFaltantes 
-    ? resultado.itensPlanejamento.filter(i => i.situacao === 'comprar')
-    : resultado.itensPlanejamento;
+    const listaExibicao = somenteFaltantes 
+      ? resultado.itensPlanejamento.filter(i => i.situacao === 'comprar')
+      : resultado.itensPlanejamento;
 
-  res.render('compras', {
-    activeNav: 'compras',
-    activeModulo: 'comercial',
-    incluirVendas,
-    incluirMinimo,
-    incluirUltimas,
-    periodo,
-    somenteFaltantes,
-    pedidos: resultado.pedidos,
-    totalPedidos: resultado.totalPedidos,
-    itens: listaExibicao,
-    totalItens: resultado.itensPlanejamento.length,
-    custoTotalEstimadoFmt: resultado.custoTotalEstimadoFmt,
-    totalItensComprar: resultado.totalItensComprar,
-    totalItensSuficientes: resultado.totalItensSuficientes,
-    textoWhatsApp: resultado.textoWhatsApp,
-    sucessoBaixa: req.query.sucesso_baixa === '1'
-  });
+    res.render('compras', {
+      activeNav: 'compras',
+      activeModulo: 'comercial',
+      incluirVendas,
+      incluirMinimo,
+      incluirUltimas,
+      periodo,
+      somenteFaltantes,
+      pedidos: resultado.pedidos,
+      totalPedidos: resultado.totalPedidos,
+      itens: listaExibicao,
+      totalItens: resultado.itensPlanejamento.length,
+      custoTotalEstimadoFmt: resultado.custoTotalEstimadoFmt,
+      totalItensComprar: resultado.totalItensComprar,
+      totalItensSuficientes: resultado.totalItensSuficientes,
+      textoWhatsApp: resultado.textoWhatsApp,
+      sucessoBaixa: req.query.sucesso_baixa === '1'
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // 2. Dar Baixa no Estoque pela Produção Selecionada
-router.post('/baixa-producao', exigirLogin, (req, res) => {
+router.post('/baixa-producao', exigirLogin, async (req, res) => {
   const uid = req.session.usuario.id;
   const periodo = req.body.periodo || 'semana';
 
-  const resultado = calcularPlanejamentoCompras(uid, {
-    incluirVendas: true,
-    incluirMinimo: false,
-    incluirUltimas: false,
-    periodo
-  });
-
-  // Executar baixa transacional no estoque dos insumos do catálogo
-  const transacao = db.transaction(() => {
-    resultado.itensPlanejamento.forEach(item => {
-      if (item.catalogoId && item.V > 0) {
-        // Reduzir estoque_atual sem deixar negativo
-        db.prepare(`
-          UPDATE ingredientes_catalogo
-          SET estoque_atual = MAX(0, estoque_atual - ?),
-              atualizado_em = datetime('now')
-          WHERE id = ? AND usuario_id = ?
-        `).run(item.V, item.catalogoId, uid);
-      }
-    });
-
-    // Opcional: transitar os pedidos para 'producao' se ainda estavam como 'confirmado'
-    resultado.pedidos.forEach(p => {
-      if (p.status === 'confirmado') {
-        db.prepare(`
-          UPDATE pedidos
-          SET status = 'producao', atualizado_em = datetime('now')
-          WHERE id = ? AND usuario_id = ?
-        `).run(p.id, uid);
-      }
-    });
-  });
-
   try {
-    transacao();
+    const resultado = await calcularPlanejamentoCompras(uid, {
+      incluirVendas: true,
+      incluirMinimo: false,
+      incluirUltimas: false,
+      periodo
+    });
+
+    // Executar baixa transacional no estoque dos insumos do catálogo
+    await db.transaction(async (tx) => {
+      for (const item of resultado.itensPlanejamento) {
+        if (item.catalogoId && item.V > 0) {
+          await tx.run(`
+            UPDATE ingredientes_catalogo
+            SET estoque_atual = MAX(0, estoque_atual - ?),
+                atualizado_em = datetime('now')
+            WHERE id = ? AND usuario_id = ?
+          `, [item.V, item.catalogoId, uid]);
+        }
+      }
+
+      for (const p of resultado.pedidos) {
+        if (p.status === 'confirmado') {
+          await tx.run(`
+            UPDATE pedidos
+            SET status = 'producao', atualizado_em = datetime('now')
+            WHERE id = ? AND usuario_id = ?
+          `, [p.id, uid]);
+        }
+      }
+    });
+
     res.redirect('/compras?sucesso_baixa=1');
   } catch (err) {
     console.error('Erro ao dar baixa na produção:', err);

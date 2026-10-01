@@ -26,32 +26,36 @@ function formatarTelefone(telefone) {
 }
 
 // 1. Listagem de Clientes
-router.get('/', exigirLogin, (req, res) => {
-  const uid = req.session.usuario.id;
+router.get('/', exigirLogin, async (req, res, next) => {
+  try {
+    const uid = req.session.usuario.id;
 
-  const clientes = db.prepare(`
-    SELECT * FROM clientes
-    WHERE usuario_id = ?
-    ORDER BY nome ASC
-  `).all(uid);
+    const clientes = await db.all(`
+      SELECT * FROM clientes
+      WHERE usuario_id = ?
+      ORDER BY nome ASC
+    `, [uid]);
 
-  const listaFormatada = clientes.map(c => ({
-    ...c,
-    telefoneFormatado: formatarTelefone(c.telefone),
-    waLink: gerarLinkWhatsApp(c.telefone)
-  }));
+    const listaFormatada = clientes.map(c => ({
+      ...c,
+      telefoneFormatado: formatarTelefone(c.telefone),
+      waLink: gerarLinkWhatsApp(c.telefone)
+    }));
 
-  res.render('clientes', {
-    clientes: listaFormatada,
-    totalClientes: clientes.length,
-    sucesso: req.query.sucesso === '1',
-    activeNav: 'clientes',
-    activeModulo: 'comercial'
-  });
+    res.render('clientes', {
+      clientes: listaFormatada,
+      totalClientes: clientes.length,
+      sucesso: req.query.sucesso === '1',
+      activeNav: 'clientes',
+      activeModulo: 'comercial'
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // 2. Cadastrar Novo Cliente
-router.post('/', exigirLogin, (req, res) => {
+router.post('/', exigirLogin, async (req, res) => {
   const uid = req.session.usuario.id;
   const nome = (req.body.nome || '').trim();
   const telefone = (req.body.telefone || '').trim();
@@ -66,11 +70,11 @@ router.post('/', exigirLogin, (req, res) => {
   }
 
   try {
-    db.prepare(`
+    await db.run(`
       INSERT INTO clientes 
       (usuario_id, nome, telefone, email, endereco, bairro, cidade, observacoes)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(uid, nome, telefone || null, email || null, endereco || null, bairro || null, cidade || null, observacoes || null);
+    `, [uid, nome, telefone || null, email || null, endereco || null, bairro || null, cidade || null, observacoes || null]);
 
     res.redirect('/clientes?sucesso=1');
   } catch (err) {
@@ -80,7 +84,7 @@ router.post('/', exigirLogin, (req, res) => {
 });
 
 // 3. Editar Cliente Existente
-router.post('/:id/editar', exigirLogin, (req, res) => {
+router.post('/:id/editar', exigirLogin, async (req, res) => {
   const uid = req.session.usuario.id;
   const id = parseInt(req.params.id, 10);
   const nome = (req.body.nome || '').trim();
@@ -96,11 +100,11 @@ router.post('/:id/editar', exigirLogin, (req, res) => {
   }
 
   try {
-    db.prepare(`
+    await db.run(`
       UPDATE clientes
       SET nome = ?, telefone = ?, email = ?, endereco = ?, bairro = ?, cidade = ?, observacoes = ?
       WHERE id = ? AND usuario_id = ?
-    `).run(nome, telefone || null, email || null, endereco || null, bairro || null, cidade || null, observacoes || null, id, uid);
+    `, [nome, telefone || null, email || null, endereco || null, bairro || null, cidade || null, observacoes || null, id, uid]);
 
     res.redirect('/clientes?sucesso=1');
   } catch (err) {
@@ -110,12 +114,12 @@ router.post('/:id/editar', exigirLogin, (req, res) => {
 });
 
 // 4. Excluir Cliente
-router.post('/:id/excluir', exigirLogin, (req, res) => {
+router.post('/:id/excluir', exigirLogin, async (req, res) => {
   const uid = req.session.usuario.id;
   const id = parseInt(req.params.id, 10);
 
   try {
-    db.prepare('DELETE FROM clientes WHERE id = ? AND usuario_id = ?').run(id, uid);
+    await db.run('DELETE FROM clientes WHERE id = ? AND usuario_id = ?', [id, uid]);
     res.redirect('/clientes?sucesso=1');
   } catch (err) {
     console.error('Erro ao excluir cliente:', err);
@@ -124,27 +128,31 @@ router.post('/:id/excluir', exigirLogin, (req, res) => {
 });
 
 // 5. API de Busca Rápida (para autocomplete em pedidos/orçamentos)
-router.get('/api/buscar', exigirLogin, (req, res) => {
-  const uid = req.session.usuario.id;
-  const termo = (req.query.q || '').trim();
+router.get('/api/buscar', exigirLogin, async (req, res, next) => {
+  try {
+    const uid = req.session.usuario.id;
+    const termo = (req.query.q || '').trim();
 
-  if (!termo) {
-    const todos = db.prepare(`
+    if (!termo) {
+      const todos = await db.all(`
+        SELECT id, nome, telefone, endereco, bairro, cidade 
+        FROM clientes WHERE usuario_id = ? ORDER BY nome ASC LIMIT 15
+      `, [uid]);
+      return res.json(todos);
+    }
+
+    const like = `%${termo}%`;
+    const resultados = await db.all(`
       SELECT id, nome, telefone, endereco, bairro, cidade 
-      FROM clientes WHERE usuario_id = ? ORDER BY nome ASC LIMIT 15
-    `).all(uid);
-    return res.json(todos);
+      FROM clientes 
+      WHERE usuario_id = ? AND (nome LIKE ? OR telefone LIKE ? OR bairro LIKE ?)
+      ORDER BY nome ASC LIMIT 10
+    `, [uid, like, like, like]);
+
+    res.json(resultados);
+  } catch (err) {
+    next(err);
   }
-
-  const like = `%${termo}%`;
-  const resultados = db.prepare(`
-    SELECT id, nome, telefone, endereco, bairro, cidade 
-    FROM clientes 
-    WHERE usuario_id = ? AND (nome LIKE ? OR telefone LIKE ? OR bairro LIKE ?)
-    ORDER BY nome ASC LIMIT 10
-  `).all(uid, like, like, like);
-
-  res.json(resultados);
 });
 
 module.exports = router;

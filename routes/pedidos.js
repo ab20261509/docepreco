@@ -36,17 +36,17 @@ function adicionarDias(dataIso, dias) {
   return resAno + '-' + resMes + '-' + resDia;
 }
 
-function buscarProdutosComPreco(usuarioId) {
-  const totalFixosRow = db.prepare('SELECT COALESCE(SUM(valor_mensal), 0) AS t FROM custos_fixos WHERE usuario_id = ?').get(usuarioId);
+async function buscarProdutosComPreco(usuarioId) {
+  const totalFixosRow = await db.get('SELECT COALESCE(SUM(valor_mensal), 0) AS t FROM custos_fixos WHERE usuario_id = ?', [usuarioId]);
   const totalFixos = totalFixosRow ? totalFixosRow.t : 0;
-  const configRow = db.prepare('SELECT horas_mes FROM configuracoes WHERE usuario_id = ?').get(usuarioId);
+  const configRow = await db.get('SELECT horas_mes FROM configuracoes WHERE usuario_id = ?', [usuarioId]);
   const horasMes = configRow && configRow.horas_mes > 0 ? configRow.horas_mes : 160;
   const cfHora = custoFixoHora(totalFixos, horasMes);
 
-  const produtos = db.prepare('SELECT * FROM produtos WHERE usuario_id = ? ORDER BY nome ASC').all(usuarioId);
-  return produtos.map(p => {
-    const ing = db.prepare('SELECT * FROM ingredientes WHERE produto_id = ?').all(p.id);
-    const comp = db.prepare('SELECT * FROM complementos WHERE produto_id = ?').all(p.id);
+  const produtos = await db.all('SELECT * FROM produtos WHERE usuario_id = ? ORDER BY nome ASC', [usuarioId]);
+  return Promise.all(produtos.map(async (p) => {
+    const ing = await db.all('SELECT * FROM ingredientes WHERE produto_id = ?', [p.id]);
+    const comp = await db.all('SELECT * FROM complementos WHERE produto_id = ?', [p.id]);
     let precoSugerido = 0;
     try {
       const calc = calcularProduto(p, ing, comp, cfHora);
@@ -58,7 +58,7 @@ function buscarProdutosComPreco(usuarioId) {
       rendimento: p.rendimento,
       precoSugerido
     };
-  });
+  }));
 }
 
 function gerarTextoWhatsApp(pedido, itens) {
@@ -113,130 +113,138 @@ function gerarTextoWhatsApp(pedido, itens) {
 }
 
 // 1. Listagem de Pedidos
-router.get('/', exigirLogin, (req, res) => {
-  const uid = req.session.usuario.id;
-  const statusFiltro = (req.query.status || 'todos').toLowerCase();
-  const periodoFiltro = (req.query.periodo || 'todos').toLowerCase();
-  let dataDe = (req.query.data_de || '').trim();
-  let dataAte = (req.query.data_ate || '').trim();
+router.get('/', exigirLogin, async (req, res, next) => {
+  try {
+    const uid = req.session.usuario.id;
+    const statusFiltro = (req.query.status || 'todos').toLowerCase();
+    const periodoFiltro = (req.query.periodo || 'todos').toLowerCase();
+    let dataDe = (req.query.data_de || '').trim();
+    let dataAte = (req.query.data_ate || '').trim();
 
-  const hoje = obterHojeLocal();
+    const hoje = obterHojeLocal();
 
-  if (periodoFiltro === 'hoje') {
-    dataDe = hoje;
-    dataAte = hoje;
-  } else if (periodoFiltro === 'amanha') {
-    dataDe = adicionarDias(hoje, 1);
-    dataAte = dataDe;
-  } else if (periodoFiltro === 'semana') {
-    dataDe = hoje;
-    dataAte = adicionarDias(hoje, 7);
-  } else if (periodoFiltro === 'mes') {
-    const partesHoje = hoje.split('-');
-    dataDe = partesHoje[0] + '-' + partesHoje[1] + '-01';
-    const ultimoDia = new Date(Number(partesHoje[0]), Number(partesHoje[1]), 0).getDate();
-    dataAte = partesHoje[0] + '-' + partesHoje[1] + '-' + String(ultimoDia).padStart(2, '0');
+    if (periodoFiltro === 'hoje') {
+      dataDe = hoje;
+      dataAte = hoje;
+    } else if (periodoFiltro === 'amanha') {
+      dataDe = adicionarDias(hoje, 1);
+      dataAte = dataDe;
+    } else if (periodoFiltro === 'semana') {
+      dataDe = hoje;
+      dataAte = adicionarDias(hoje, 7);
+    } else if (periodoFiltro === 'mes') {
+      const partesHoje = hoje.split('-');
+      dataDe = partesHoje[0] + '-' + partesHoje[1] + '-01';
+      const ultimoDia = new Date(Number(partesHoje[0]), Number(partesHoje[1]), 0).getDate();
+      dataAte = partesHoje[0] + '-' + partesHoje[1] + '-' + String(ultimoDia).padStart(2, '0');
+    }
+
+    let querySql = `
+      SELECT 
+        p.*,
+        c.nome AS cliente_cadastrado_nome,
+        c.telefone AS cliente_cadastrado_telefone,
+        c.bairro AS cliente_cadastrado_bairro,
+        (SELECT COUNT(*) FROM pedido_itens WHERE pedido_id = p.id) AS total_itens,
+        (SELECT GROUP_CONCAT(quantidade || 'x ' || descricao, ', ') FROM pedido_itens WHERE pedido_id = p.id) AS resumo_itens
+      FROM pedidos p
+      LEFT JOIN clientes c ON c.id = p.cliente_id
+      WHERE p.usuario_id = ?
+    `;
+    const params = [uid];
+
+    if (statusFiltro && statusFiltro !== 'todos') {
+      querySql += ' AND p.status = ?';
+      params.push(statusFiltro);
+    }
+
+    if (dataDe && dataAte) {
+      querySql += ' AND p.data_entrega BETWEEN ? AND ?';
+      params.push(dataDe, dataAte);
+    } else if (dataDe) {
+      querySql += ' AND p.data_entrega >= ?';
+      params.push(dataDe);
+    } else if (dataAte) {
+      querySql += ' AND p.data_entrega <= ?';
+      params.push(dataAte);
+    }
+
+    querySql += ' ORDER BY p.data_entrega ASC, p.horario_entrega ASC, p.id DESC';
+
+    const pedidos = await db.all(querySql, params);
+
+    // KPIs
+    const kpis = (await db.get(`
+      SELECT 
+        COUNT(*) AS total_pedidos,
+        SUM(CASE WHEN status IN ('orcamento', 'confirmado', 'producao') THEN 1 ELSE 0 END) AS total_abertos,
+        SUM(CASE WHEN status = 'entregue' THEN 1 ELSE 0 END) AS total_entregues,
+        SUM(CASE WHEN status != 'cancelado' THEN valor_total ELSE 0 END) AS faturamento_previsto
+      FROM pedidos
+      WHERE usuario_id = ?
+    `, [uid])) || {};
+
+    const listaFormatada = pedidos.map(p => {
+      const nomeCliente = p.cliente_cadastrado_nome || p.cliente_nome_avulso || 'Cliente Avulso';
+      const telefone = p.cliente_cadastrado_telefone || p.cliente_telefone_avulso || '';
+      const saldoRestante = Math.max(0, p.valor_total - p.valor_sinal);
+
+      return {
+        ...p,
+        nomeCliente,
+        telefoneFormatado: formatarTelefone(telefone),
+        waLink: helperLinkWhatsApp(telefone),
+        dataEntregaFmt: formatarDataBR(p.data_entrega),
+        saldoRestante
+      };
+    });
+
+    res.render('pedidos', {
+      pedidos: listaFormatada,
+      statusFiltro,
+      periodoFiltro,
+      dataDe: req.query.data_de || (periodoFiltro === 'personalizado' ? dataDe : ''),
+      dataAte: req.query.data_ate || (periodoFiltro === 'personalizado' ? dataAte : ''),
+      kpis: {
+        total: kpis.total_pedidos || 0,
+        abertos: kpis.total_abertos || 0,
+        entregues: kpis.total_entregues || 0,
+        faturamento: kpis.faturamento_previsto || 0
+      },
+      sucesso: req.query.sucesso === '1',
+      activeNav: 'pedidos',
+      activeModulo: 'comercial'
+    });
+  } catch (err) {
+    next(err);
   }
-
-  let querySql = `
-    SELECT 
-      p.*,
-      c.nome AS cliente_cadastrado_nome,
-      c.telefone AS cliente_cadastrado_telefone,
-      c.bairro AS cliente_cadastrado_bairro,
-      (SELECT COUNT(*) FROM pedido_itens WHERE pedido_id = p.id) AS total_itens,
-      (SELECT GROUP_CONCAT(quantidade || 'x ' || descricao, ', ') FROM pedido_itens WHERE pedido_id = p.id) AS resumo_itens
-    FROM pedidos p
-    LEFT JOIN clientes c ON c.id = p.cliente_id
-    WHERE p.usuario_id = ?
-  `;
-  const params = [uid];
-
-  if (statusFiltro && statusFiltro !== 'todos') {
-    querySql += ' AND p.status = ?';
-    params.push(statusFiltro);
-  }
-
-  if (dataDe && dataAte) {
-    querySql += ' AND p.data_entrega BETWEEN ? AND ?';
-    params.push(dataDe, dataAte);
-  } else if (dataDe) {
-    querySql += ' AND p.data_entrega >= ?';
-    params.push(dataDe);
-  } else if (dataAte) {
-    querySql += ' AND p.data_entrega <= ?';
-    params.push(dataAte);
-  }
-
-  querySql += ' ORDER BY p.data_entrega ASC, p.horario_entrega ASC, p.id DESC';
-
-  const pedidos = db.prepare(querySql).all(...params);
-
-  // KPIs
-  const kpis = db.prepare(`
-    SELECT 
-      COUNT(*) AS total_pedidos,
-      SUM(CASE WHEN status IN ('orcamento', 'confirmado', 'producao') THEN 1 ELSE 0 END) AS total_abertos,
-      SUM(CASE WHEN status = 'entregue' THEN 1 ELSE 0 END) AS total_entregues,
-      SUM(CASE WHEN status != 'cancelado' THEN valor_total ELSE 0 END) AS faturamento_previsto
-    FROM pedidos
-    WHERE usuario_id = ?
-  `).get(uid);
-
-  const listaFormatada = pedidos.map(p => {
-    const nomeCliente = p.cliente_cadastrado_nome || p.cliente_nome_avulso || 'Cliente Avulso';
-    const telefone = p.cliente_cadastrado_telefone || p.cliente_telefone_avulso || '';
-    const saldoRestante = Math.max(0, p.valor_total - p.valor_sinal);
-
-    return {
-      ...p,
-      nomeCliente,
-      telefoneFormatado: formatarTelefone(telefone),
-      waLink: helperLinkWhatsApp(telefone),
-      dataEntregaFmt: formatarDataBR(p.data_entrega),
-      saldoRestante
-    };
-  });
-
-  res.render('pedidos', {
-    pedidos: listaFormatada,
-    statusFiltro,
-    periodoFiltro,
-    dataDe: req.query.data_de || (periodoFiltro === 'personalizado' ? dataDe : ''),
-    dataAte: req.query.data_ate || (periodoFiltro === 'personalizado' ? dataAte : ''),
-    kpis: {
-      total: kpis.total_pedidos || 0,
-      abertos: kpis.total_abertos || 0,
-      entregues: kpis.total_entregues || 0,
-      faturamento: kpis.faturamento_previsto || 0
-    },
-    sucesso: req.query.sucesso === '1',
-    activeNav: 'pedidos',
-    activeModulo: 'comercial'
-  });
 });
 
 // 2. Formulário de Novo Pedido / Orçamento
-router.get('/novo', exigirLogin, (req, res) => {
-  const uid = req.session.usuario.id;
-  const clientes = db.prepare('SELECT id, nome, telefone, endereco, bairro, cidade FROM clientes WHERE usuario_id = ? ORDER BY nome ASC').all(uid);
-  const produtos = buscarProdutosComPreco(uid);
+router.get('/novo', exigirLogin, async (req, res, next) => {
+  try {
+    const uid = req.session.usuario.id;
+    const clientes = await db.all('SELECT id, nome, telefone, endereco, bairro, cidade FROM clientes WHERE usuario_id = ? ORDER BY nome ASC', [uid]);
+    const produtos = await buscarProdutosComPreco(uid);
 
-  const clientePreSelecionado = req.query.cliente_id ? parseInt(req.query.cliente_id, 10) : null;
+    const clientePreSelecionado = req.query.cliente_id ? parseInt(req.query.cliente_id, 10) : null;
 
-  res.render('pedido_form', {
-    pedido: null,
-    itens: [],
-    clientes,
-    produtos,
-    clientePreSelecionado,
-    activeNav: 'pedidos',
-    activeModulo: 'comercial'
-  });
+    res.render('pedido_form', {
+      pedido: null,
+      itens: [],
+      clientes,
+      produtos,
+      clientePreSelecionado,
+      activeNav: 'pedidos',
+      activeModulo: 'comercial'
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // 3. Salvar Novo Pedido / Orçamento
-router.post('/', exigirLogin, (req, res) => {
+router.post('/', exigirLogin, async (req, res) => {
   const uid = req.session.usuario.id;
   
   const clienteId = req.body.cliente_id ? parseInt(req.body.cliente_id, 10) : null;
@@ -286,36 +294,34 @@ router.post('/', exigirLogin, (req, res) => {
 
   const valorTotal = Math.max(0, Number((valorProdutos + taxaEntrega - desconto).toFixed(2)));
 
-  const salvar = db.transaction(() => {
-    const result = db.prepare(`
-      INSERT INTO pedidos (
-        usuario_id, cliente_id, cliente_nome_avulso, cliente_telefone_avulso,
-        data_entrega, horario_entrega, tipo_entrega, endereco_entrega,
-        status, valor_produtos, taxa_entrega, desconto, valor_total,
-        valor_sinal, status_pagamento, forma_pagamento, observacoes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      uid, clienteId, clienteNomeAvulso || null, clienteTelefoneAvulso || null,
-      dataEntrega, horarioEntrega || null, tipoEntrega, enderecoEntrega || null,
-      status, valorProdutos, taxaEntrega, desconto, valorTotal,
-      valorSinal, statusPagamento, formaPagamento || null, observacoes || null
-    );
-
-    const pedidoId = result.lastInsertRowid;
-    const insertItem = db.prepare(`
-      INSERT INTO pedido_itens (pedido_id, produto_id, descricao, quantidade, preco_unitario, subtotal, observacao)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    for (const item of itensParsed) {
-      insertItem.run(pedidoId, item.produtoId, item.descricao, item.quantidade, item.precoUnitario, item.subtotal, item.observacao || null);
-    }
-
-    return pedidoId;
-  });
-
   try {
-    const pedidoId = salvar();
+    const pedidoId = await db.transaction(async (tx) => {
+      const result = await tx.run(`
+        INSERT INTO pedidos (
+          usuario_id, cliente_id, cliente_nome_avulso, cliente_telefone_avulso,
+          data_entrega, horario_entrega, tipo_entrega, endereco_entrega,
+          status, valor_produtos, taxa_entrega, desconto, valor_total,
+          valor_sinal, status_pagamento, forma_pagamento, observacoes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        uid, clienteId, clienteNomeAvulso || null, clienteTelefoneAvulso || null,
+        dataEntrega, horarioEntrega || null, tipoEntrega, enderecoEntrega || null,
+        status, valorProdutos, taxaEntrega, desconto, valorTotal,
+        valorSinal, statusPagamento, formaPagamento || null, observacoes || null
+      ]);
+
+      const pid = Number(result.lastInsertRowid);
+
+      for (const item of itensParsed) {
+        await tx.run(`
+          INSERT INTO pedido_itens (pedido_id, produto_id, descricao, quantidade, preco_unitario, subtotal, observacao)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [pid, item.produtoId, item.descricao, item.quantidade, item.precoUnitario, item.subtotal, item.observacao || null]);
+      }
+
+      return pid;
+    });
+
     res.redirect('/pedidos/' + pedidoId + '?sucesso=1');
   } catch (err) {
     console.error('Erro ao salvar pedido:', err);
@@ -324,87 +330,95 @@ router.post('/', exigirLogin, (req, res) => {
 });
 
 // 4. Detalhes do Pedido com Mensagem WhatsApp
-router.get('/:id', exigirLogin, (req, res) => {
-  const uid = req.session.usuario.id;
-  const id = parseInt(req.params.id, 10);
+router.get('/:id', exigirLogin, async (req, res, next) => {
+  try {
+    const uid = req.session.usuario.id;
+    const id = parseInt(req.params.id, 10);
 
-  const pedido = db.prepare(`
-    SELECT 
-      p.*,
-      c.nome AS cliente_cadastrado_nome,
-      c.telefone AS cliente_cadastrado_telefone,
-      c.endereco AS cliente_cadastrado_endereco,
-      c.bairro AS cliente_cadastrado_bairro,
-      c.cidade AS cliente_cadastrado_cidade
-    FROM pedidos p
-    LEFT JOIN clientes c ON c.id = p.cliente_id
-    WHERE p.id = ? AND p.usuario_id = ?
-  `).get(id, uid);
+    const pedido = await db.get(`
+      SELECT 
+        p.*,
+        c.nome AS cliente_cadastrado_nome,
+        c.telefone AS cliente_cadastrado_telefone,
+        c.endereco AS cliente_cadastrado_endereco,
+        c.bairro AS cliente_cadastrado_bairro,
+        c.cidade AS cliente_cadastrado_cidade
+      FROM pedidos p
+      LEFT JOIN clientes c ON c.id = p.cliente_id
+      WHERE p.id = ? AND p.usuario_id = ?
+    `, [id, uid]);
 
-  if (!pedido) {
-    return res.status(404).render('erro_404', { mensagem: 'Pedido não encontrado.', activeNav: 'pedidos' });
+    if (!pedido) {
+      return res.status(404).render('erro_404', { mensagem: 'Pedido não encontrado.', activeNav: 'pedidos' });
+    }
+
+    const itens = await db.all(`
+      SELECT pi.*, p.nome AS produto_nome
+      FROM pedido_itens pi
+      LEFT JOIN produtos p ON p.id = pi.produto_id
+      WHERE pi.pedido_id = ?
+    `, [id]);
+
+    const textoWhatsApp = gerarTextoWhatsApp(pedido, itens);
+    const telefone = pedido.cliente_cadastrado_telefone || pedido.cliente_telefone_avulso || '';
+    const waLink = helperLinkWhatsApp(telefone) ? helperLinkWhatsApp(telefone) + '?text=' + encodeURIComponent(textoWhatsApp) : null;
+    const saldoRestante = Math.max(0, pedido.valor_total - pedido.valor_sinal);
+
+    res.render('pedido_detalhes', {
+      pedido: {
+        ...pedido,
+        nomeCliente: pedido.cliente_cadastrado_nome || pedido.cliente_nome_avulso || 'Cliente Avulso',
+        telefoneFormatado: formatarTelefone(telefone),
+        dataEntregaFmt: formatarDataBR(pedido.data_entrega),
+        saldoRestante
+      },
+      itens,
+      textoWhatsApp,
+      waLink,
+      sucesso: req.query.sucesso === '1',
+      activeNav: 'pedidos',
+      activeModulo: 'comercial'
+    });
+  } catch (err) {
+    next(err);
   }
-
-  const itens = db.prepare(`
-    SELECT pi.*, p.nome AS produto_nome
-    FROM pedido_itens pi
-    LEFT JOIN produtos p ON p.id = pi.produto_id
-    WHERE pi.pedido_id = ?
-  `).all(id);
-
-  const textoWhatsApp = gerarTextoWhatsApp(pedido, itens);
-  const telefone = pedido.cliente_cadastrado_telefone || pedido.cliente_telefone_avulso || '';
-  const waLink = helperLinkWhatsApp(telefone) ? helperLinkWhatsApp(telefone) + '?text=' + encodeURIComponent(textoWhatsApp) : null;
-  const saldoRestante = Math.max(0, pedido.valor_total - pedido.valor_sinal);
-
-  res.render('pedido_detalhes', {
-    pedido: {
-      ...pedido,
-      nomeCliente: pedido.cliente_cadastrado_nome || pedido.cliente_nome_avulso || 'Cliente Avulso',
-      telefoneFormatado: formatarTelefone(telefone),
-      dataEntregaFmt: formatarDataBR(pedido.data_entrega),
-      saldoRestante
-    },
-    itens,
-    textoWhatsApp,
-    waLink,
-    sucesso: req.query.sucesso === '1',
-    activeNav: 'pedidos',
-    activeModulo: 'comercial'
-  });
 });
 
 // 5. Formulário de Edição de Pedido
-router.get('/:id/editar', exigirLogin, (req, res) => {
-  const uid = req.session.usuario.id;
-  const id = parseInt(req.params.id, 10);
+router.get('/:id/editar', exigirLogin, async (req, res, next) => {
+  try {
+    const uid = req.session.usuario.id;
+    const id = parseInt(req.params.id, 10);
 
-  const pedido = db.prepare('SELECT * FROM pedidos WHERE id = ? AND usuario_id = ?').get(id, uid);
-  if (!pedido) {
-    return res.status(404).render('erro_404', { mensagem: 'Pedido não encontrado.', activeNav: 'pedidos' });
+    const pedido = await db.get('SELECT * FROM pedidos WHERE id = ? AND usuario_id = ?', [id, uid]);
+    if (!pedido) {
+      return res.status(404).render('erro_404', { mensagem: 'Pedido não encontrado.', activeNav: 'pedidos' });
+    }
+
+    const itens = await db.all('SELECT * FROM pedido_itens WHERE pedido_id = ?', [id]);
+    const clientes = await db.all('SELECT id, nome, telefone, endereco, bairro, cidade FROM clientes WHERE usuario_id = ? ORDER BY nome ASC', [uid]);
+    const produtos = await buscarProdutosComPreco(uid);
+
+    res.render('pedido_form', {
+      pedido,
+      itens,
+      clientes,
+      produtos,
+      clientePreSelecionado: pedido.cliente_id,
+      activeNav: 'pedidos',
+      activeModulo: 'comercial'
+    });
+  } catch (err) {
+    next(err);
   }
-
-  const itens = db.prepare('SELECT * FROM pedido_itens WHERE pedido_id = ?').all(id);
-  const clientes = db.prepare('SELECT id, nome, telefone, endereco, bairro, cidade FROM clientes WHERE usuario_id = ? ORDER BY nome ASC').all(uid);
-  const produtos = buscarProdutosComPreco(uid);
-
-  res.render('pedido_form', {
-    pedido,
-    itens,
-    clientes,
-    produtos,
-    clientePreSelecionado: pedido.cliente_id,
-    activeNav: 'pedidos',
-    activeModulo: 'comercial'
-  });
 });
 
 // 6. Atualizar Pedido Existente
-router.post('/:id/editar', exigirLogin, (req, res) => {
+router.post('/:id/editar', exigirLogin, async (req, res) => {
   const uid = req.session.usuario.id;
   const id = parseInt(req.params.id, 10);
 
-  const pedidoAtual = db.prepare('SELECT id FROM pedidos WHERE id = ? AND usuario_id = ?').get(id, uid);
+  const pedidoAtual = await db.get('SELECT id FROM pedidos WHERE id = ? AND usuario_id = ?', [id, uid]);
   if (!pedidoAtual) {
     return res.status(404).send('Pedido não encontrado.');
   }
@@ -455,38 +469,35 @@ router.post('/:id/editar', exigirLogin, (req, res) => {
 
   const valorTotal = Math.max(0, Number((valorProdutos + taxaEntrega - desconto).toFixed(2)));
 
-  const atualizar = db.transaction(() => {
-    db.prepare(`
-      UPDATE pedidos SET
-        cliente_id = ?, cliente_nome_avulso = ?, cliente_telefone_avulso = ?,
-        data_entrega = ?, horario_entrega = ?, tipo_entrega = ?, endereco_entrega = ?,
-        status = ?, valor_produtos = ?, taxa_entrega = ?, desconto = ?, valor_total = ?,
-        valor_sinal = ?, status_pagamento = ?, forma_pagamento = ?, observacoes = ?,
-        atualizado_em = datetime('now')
-      WHERE id = ? AND usuario_id = ?
-    `).run(
-      clienteId, clienteNomeAvulso || null, clienteTelefoneAvulso || null,
-      dataEntrega, horarioEntrega || null, tipoEntrega, enderecoEntrega || null,
-      status, valorProdutos, taxaEntrega, desconto, valorTotal,
-      valorSinal, statusPagamento, formaPagamento || null, observacoes || null,
-      id, uid
-    );
-
-    // Substituir itens
-    db.prepare('DELETE FROM pedido_itens WHERE pedido_id = ?').run(id);
-
-    const insertItem = db.prepare(`
-      INSERT INTO pedido_itens (pedido_id, produto_id, descricao, quantidade, preco_unitario, subtotal, observacao)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    for (const item of itensParsed) {
-      insertItem.run(id, item.produtoId, item.descricao, item.quantidade, item.precoUnitario, item.subtotal, item.observacao || null);
-    }
-  });
-
   try {
-    atualizar();
+    await db.transaction(async (tx) => {
+      await tx.run(`
+        UPDATE pedidos SET
+          cliente_id = ?, cliente_nome_avulso = ?, cliente_telefone_avulso = ?,
+          data_entrega = ?, horario_entrega = ?, tipo_entrega = ?, endereco_entrega = ?,
+          status = ?, valor_produtos = ?, taxa_entrega = ?, desconto = ?, valor_total = ?,
+          valor_sinal = ?, status_pagamento = ?, forma_pagamento = ?, observacoes = ?,
+          atualizado_em = datetime('now')
+        WHERE id = ? AND usuario_id = ?
+      `, [
+        clienteId, clienteNomeAvulso || null, clienteTelefoneAvulso || null,
+        dataEntrega, horarioEntrega || null, tipoEntrega, enderecoEntrega || null,
+        status, valorProdutos, taxaEntrega, desconto, valorTotal,
+        valorSinal, statusPagamento, formaPagamento || null, observacoes || null,
+        id, uid
+      ]);
+
+      // Substituir itens
+      await tx.run('DELETE FROM pedido_itens WHERE pedido_id = ?', [id]);
+
+      for (const item of itensParsed) {
+        await tx.run(`
+          INSERT INTO pedido_itens (pedido_id, produto_id, descricao, quantidade, preco_unitario, subtotal, observacao)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [id, item.produtoId, item.descricao, item.quantidade, item.precoUnitario, item.subtotal, item.observacao || null]);
+      }
+    });
+
     res.redirect('/pedidos/' + id + '?sucesso=1');
   } catch (err) {
     console.error('Erro ao atualizar pedido:', err);
@@ -495,7 +506,7 @@ router.post('/:id/editar', exigirLogin, (req, res) => {
 });
 
 // 7. Atualização Rápida de Status
-router.post('/:id/status', exigirLogin, (req, res) => {
+router.post('/:id/status', exigirLogin, async (req, res) => {
   const uid = req.session.usuario.id;
   const id = parseInt(req.params.id, 10);
   const novoStatus = (req.body.novo_status || '').trim();
@@ -505,11 +516,11 @@ router.post('/:id/status', exigirLogin, (req, res) => {
   }
 
   try {
-    db.prepare(`
+    await db.run(`
       UPDATE pedidos 
       SET status = ?, atualizado_em = datetime('now')
       WHERE id = ? AND usuario_id = ?
-    `).run(novoStatus, id, uid);
+    `, [novoStatus, id, uid]);
 
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
       return res.json({ sucesso: true, novoStatus });
@@ -523,12 +534,12 @@ router.post('/:id/status', exigirLogin, (req, res) => {
 });
 
 // 8. Excluir Pedido
-router.post('/:id/excluir', exigirLogin, (req, res) => {
+router.post('/:id/excluir', exigirLogin, async (req, res) => {
   const uid = req.session.usuario.id;
   const id = parseInt(req.params.id, 10);
 
   try {
-    db.prepare('DELETE FROM pedidos WHERE id = ? AND usuario_id = ?').run(id, uid);
+    await db.run('DELETE FROM pedidos WHERE id = ? AND usuario_id = ?', [id, uid]);
     res.redirect('/pedidos?sucesso=1');
   } catch (err) {
     console.error('Erro ao excluir pedido:', err);

@@ -6,25 +6,23 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "build": "npm rebuild better-sqlite3",
-    "postinstall": "npm rebuild better-sqlite3",
     "test": "node test/calculo.test.js && node test/integration.test.js && node test/excel.test.js && node test/estoque.test.js && node test/validade.test.js && node test/edicao_compras.test.js && node test/clientes.test.js && node test/pedidos.test.js && node test/agenda.test.js && node test/compras.test.js && node test/migrations.test.js"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=20.x"
   },
   "keywords": [
     "precificacao",
     "confeitaria",
     "express",
-    "sqlite"
+    "sqlite",
+    "turso"
   ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^11.8.1",
-    "better-sqlite3-session-store": "^0.1.0",
     "dotenv": "^16.4.7",
     "ejs": "^3.1.10",
     "express": "^4.21.2",

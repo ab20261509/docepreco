@@ -2,7 +2,6 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
-const SqliteStore = require('better-sqlite3-session-store')(session);
 const helmet = require('helmet');
 const db = require('./db');
 
@@ -35,7 +34,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
-  store: new SqliteStore({ client: db }),
+  store: db.createSessionStore(session),
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
@@ -100,7 +99,18 @@ function encerrarGracioso() {
 process.on('SIGINT', encerrarGracioso);
 process.on('SIGTERM', encerrarGracioso);
 
-const porta = process.env.PORT || 3000;
-app.listen(porta, () => {
-  console.log(`🧁 Confeitaria rodando em http://localhost:${porta}`);
-});
+async function iniciarServidor() {
+  try {
+    await db.rodarMigracoes();
+    console.log('✅ Banco de dados sincronizado e migrações aplicadas com sucesso.');
+  } catch (err) {
+    console.error('❌ Erro ao rodar migrações:', err);
+  }
+
+  const porta = process.env.PORT || 3000;
+  app.listen(porta, () => {
+    console.log(`🧁 Confeitaria rodando em http://localhost:${porta}`);
+  });
+}
+
+iniciarServidor();

@@ -31,7 +31,7 @@ router.get('/cadastro', (req, res) => {
   res.render('cadastro', { erro: null, nome: '', email: '' });
 });
 
-router.post('/cadastro', limiteLogin, (req, res) => {
+router.post('/cadastro', limiteLogin, async (req, res) => {
   const nome = (req.body.nome || '').trim();
   const email = (req.body.email || '').trim().toLowerCase();
   const senha = req.body.senha || '';
@@ -44,38 +44,38 @@ router.post('/cadastro', limiteLogin, (req, res) => {
     return res.status(400).render('cadastro', { erro: 'A senha deve ter pelo menos 8 caracteres.', nome, email });
   }
 
-  const existe = db.prepare('SELECT id FROM usuarios WHERE email = ?').get(email);
+  const existe = await db.get('SELECT id FROM usuarios WHERE email = ?', [email]);
   if (existe) {
     return res.status(400).render('cadastro', { erro: 'Este e-mail já está cadastrado ou não pode ser utilizado.', nome, email });
   }
 
   const hash = bcrypt.hashSync(senha, 12);
 
-  const criarUsuarioTx = db.transaction(() => {
-    const info = db.prepare('INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)')
-                   .run(nome, email, hash);
-    const usuarioId = info.lastInsertRowid;
+  try {
+    const usuarioId = await db.transaction(async (tx) => {
+      const info = await tx.run('INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)', [nome, email, hash]);
+      const uid = info.lastInsertRowid;
 
-    // Horas mensais padrão (160h)
-    db.prepare('INSERT INTO configuracoes (usuario_id, horas_mes) VALUES (?, 160)')
-      .run(usuarioId);
+      // Horas mensais padrão (160h)
+      await tx.run('INSERT INTO configuracoes (usuario_id, horas_mes) VALUES (?, 160)', [uid]);
 
-    // Itens padrão de custos fixos
-    const stmtCusto = db.prepare('INSERT INTO custos_fixos (usuario_id, item, valor_mensal) VALUES (?, ?, 0)');
-    for (const item of ITENS_PADRAO_CUSTOS) {
-      stmtCusto.run(usuarioId, item);
-    }
+      // Itens padrão de custos fixos
+      for (const item of ITENS_PADRAO_CUSTOS) {
+        await tx.run('INSERT INTO custos_fixos (usuario_id, item, valor_mensal) VALUES (?, ?, 0)', [uid, item]);
+      }
 
-    return usuarioId;
-  });
+      return uid;
+    });
 
-  const usuarioId = criarUsuarioTx();
-
-  req.session.regenerate((err) => {
-    if (err) return res.status(500).render('cadastro', { erro: 'Erro ao criar sessão.', nome, email });
-    req.session.usuario = { id: usuarioId, nome, email };
-    res.redirect('/');
-  });
+    req.session.regenerate((err) => {
+      if (err) return res.status(500).render('cadastro', { erro: 'Erro ao criar sessão.', nome, email });
+      req.session.usuario = { id: usuarioId, nome, email };
+      res.redirect('/');
+    });
+  } catch (err) {
+    console.error('Erro no cadastro:', err);
+    res.status(500).render('cadastro', { erro: 'Erro ao processar cadastro.', nome, email });
+  }
 });
 
 router.get('/login', (req, res) => {
@@ -83,11 +83,11 @@ router.get('/login', (req, res) => {
   res.render('login', { erro: null, email: '' });
 });
 
-router.post('/login', limiteLogin, (req, res) => {
+router.post('/login', limiteLogin, async (req, res) => {
   const email = (req.body.email || '').trim().toLowerCase();
   const senha = req.body.senha || '';
 
-  const u = db.prepare('SELECT id, nome, email, senha_hash FROM usuarios WHERE email = ?').get(email);
+  const u = await db.get('SELECT id, nome, email, senha_hash FROM usuarios WHERE email = ?', [email]);
 
   // Mensagem genérica para evitar enumeração de contas
   if (!u || !bcrypt.compareSync(senha, u.senha_hash)) {
