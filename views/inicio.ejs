@@ -39,7 +39,7 @@
     <div class="grupo-botoes-home">
       <div class="grupo-botoes-topo">
         <span class="grupo-botoes-tag grupo-tag-destaque">⚡ Destaques</span>
-        <span class="grupo-botoes-titulo">Operação da Cozinha & Assistente Inteligente</span>
+        <span class="grupo-botoes-titulo"><%= pode('producao', 'ver') && pode('assistente', 'ver') ? 'Operação da Cozinha & Assistente Inteligente' : (pode('assistente', 'ver') ? 'Assistente Inteligente' : 'Operação da Cozinha') %></span>
       </div>
       <div class="grid-botoes-grupo">
         <% if (pode('producao', 'ver')) { %>

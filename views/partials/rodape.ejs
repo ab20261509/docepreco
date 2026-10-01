@@ -4,7 +4,7 @@
     <p>🧁 Sistema de Precificação para Confeitaria &copy; <%= new Date().getFullYear() %> &bull; Todos os direitos reservados</p>
   </footer>
 
-  <% if (typeof usuario !== 'undefined' && usuario) { %>
+  <% if (typeof usuario !== 'undefined' && usuario && (typeof pode === 'function' ? pode('assistente', 'ver') : true)) { %>
     <%- include('chat_drawer') %>
   <% } %>
 </body>

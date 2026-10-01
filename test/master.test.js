@@ -206,7 +206,29 @@ async function run() {
     console.log('✅ Persistência da rota POST /master/usuarios/:id/permissoes validada com sucesso');
   }
 
-  // 11. Limpeza final dos dados de teste
+  // 11. Validação de visibilidade condicional do Chat Drawer Flutuante no Rodapé
+  {
+    const ejs = require('ejs');
+    const path = require('path');
+    const rodapePath = path.join(__dirname, '../views/partials/rodape.ejs');
+
+    // Usuário sem permissão para o assistente
+    const htmlSemPermissao = await ejs.renderFile(rodapePath, {
+      usuario: { id: 999, nome: 'Teste' },
+      pode: (modulo, acao) => modulo === 'assistente' ? false : true
+    });
+    assert(!htmlSemPermissao.includes('btn-flutuante-assistente'), 'Botão flutuante do assistente NÃO deve aparecer quando permissão for revogada');
+
+    // Usuário com permissão para o assistente
+    const htmlComPermissao = await ejs.renderFile(rodapePath, {
+      usuario: { id: 999, nome: 'Teste' },
+      pode: (modulo, acao) => true
+    });
+    assert(htmlComPermissao.includes('btn-flutuante-assistente'), 'Botão flutuante do assistente DEVE aparecer quando permissão estiver ativa');
+    console.log('✅ Visibilidade condicional do botão flutuante do assistente no rodapé validada com sucesso');
+  }
+
+  // 12. Limpeza final dos dados de teste
   await db.run("DELETE FROM usuarios WHERE email IN ('master_test@confeitaria.com', 'confeiteiro_test@confeitaria.com', 'bloqueado_test@confeitaria.com')");
   console.log('🧹 Limpeza dos dados de teste concluída');
 
