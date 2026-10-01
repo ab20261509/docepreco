@@ -468,12 +468,12 @@
         </div>
       </div>
 
-      <!-- 2. Balança / Mise en Place Rápido -->
+      <!-- 2. Balança / Separação & Pesagem dos Ingredientes -->
       <div class="cartao" style="margin-bottom: 1rem;">
         <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
           <div style="display: flex; align-items: center; gap: 0.4rem;">
             <span style="font-size: 1.15rem;">⚖️</span>
-            <strong style="font-size: 0.95rem;">Mise en Place (Pesagem)</strong>
+            <strong style="font-size: 0.95rem;">Separação & Pesagem</strong>
           </div>
           <div style="display: flex; gap: 0.3rem;">
             <button type="button" class="btn btn-secundario btn-sm" id="btnMarcarTodos" style="padding: 0.2rem 0.45rem; font-size: 0.72rem;">✓ Todos</button>
@@ -822,7 +822,7 @@
     textoTempoTotalConcluir.textContent = `${minutosReal} min (${relogioGeral.textContent})`;
   }, 1000);
 
-  // 3. Mise en Place: Checklist de Ingredientes
+  // 3. Separação & Pesagem: Checklist de Ingredientes
   const cardsIngredientes = document.querySelectorAll('.card-ingrediente-balanca');
   const barraProgresso = document.getElementById('barraProgressoPesagem');
   const textoProgresso = document.getElementById('textoProgressoPesagem');

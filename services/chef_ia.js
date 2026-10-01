@@ -202,7 +202,7 @@ function gerarSequenciaNativa(produto, ingredientes, rendimento, fator = 1) {
   // Arquétipo 3: Massas Finas, Bolos de Batedeira (Método Cremoso / Espumoso)
   passos.push({
     ordem: 1,
-    titulo: '1. Mise en Place & Pré-aquecimento',
+    titulo: '1. Separação dos Ingredientes & Pré-aquecimento',
     instrucao: 'Pré-aqueça o forno a 180°C. Prepare as formas com manteiga e farinha ou papel manteiga. Peneire todos os ingredientes secos (farinha, cacau, amido) em um recipiente e reserve.',
     equipamento: 'forno',
     equipamento_icone: '🔥',
