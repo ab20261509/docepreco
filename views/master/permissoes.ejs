@@ -126,6 +126,32 @@
 
   <!-- Formulário da Matriz de Permissões -->
   <form method="POST" action="/master/usuarios/<%= usuarioAlvo.id %>/permissoes">
+
+    <!-- Configurações de Perfil & Status -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.15rem 1.35rem; margin-bottom: 1.5rem; display: flex; gap: 1.5rem; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 240px;">
+        <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+          Perfil de Acesso do Usuário
+        </label>
+        <select name="perfil" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; font-weight: 600;">
+          <option value="confeiteiro" <%= usuarioAlvo.perfil === 'confeiteiro' ? 'selected' : '' %>>🧁 Confeiteiro (Regido pela matriz abaixo)</option>
+          <option value="master" <%= usuarioAlvo.perfil === 'master' ? 'selected' : '' %>>🛡️ Master (Acesso total irrestrito)</option>
+        </select>
+        <small style="color: #64748b; font-size: 0.74rem; display: block; margin-top: 0.3rem;">Usuários Master ignoram restrições e têm acesso total a tudo.</small>
+      </div>
+
+      <div style="flex: 1; min-width: 240px;">
+        <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+          Status da Conta
+        </label>
+        <select name="status" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; font-weight: 600;">
+          <option value="ativo" <%= usuarioAlvo.status === 'ativo' ? 'selected' : '' %>>🟢 Ativo (Acesso liberado)</option>
+          <option value="bloqueado" <%= usuarioAlvo.status === 'bloqueado' ? 'selected' : '' %>>🔴 Bloqueado (Login suspenso)</option>
+        </select>
+        <small style="color: #64748b; font-size: 0.74rem; display: block; margin-top: 0.3rem;">Contas bloqueadas têm o acesso impedido no login.</small>
+      </div>
+    </div>
+
     <div class="cartao" style="padding: 0; overflow: hidden; margin-bottom: 2rem;">
       <div class="cartao-titulo" style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--cor-borda);">
         <strong style="font-size: 0.98rem;">Matriz de Acesso aos Menus e Ações Granulares</strong>
@@ -155,25 +181,21 @@
                 
                 <!-- 1. Exibir no Menu / Visualizar -->
                 <td style="text-align: center;">
-                  <input type="hidden" name="permissoes[<%= mod.id %>][ver]" value="0">
                   <input type="checkbox" name="permissoes[<%= mod.id %>][ver]" value="1" class="checkbox-perm check-ver" <%= perm.pode_ver ? 'checked' : '' %> title="Exibir menu e permitir acesso">
                 </td>
 
                 <!-- 2. Cadastrar / Inserir -->
                 <td style="text-align: center;">
-                  <input type="hidden" name="permissoes[<%= mod.id %>][criar]" value="0">
                   <input type="checkbox" name="permissoes[<%= mod.id %>][criar]" value="1" class="checkbox-perm check-criar" <%= perm.pode_criar ? 'checked' : '' %> title="Permitir cadastrar novos">
                 </td>
 
                 <!-- 3. Editar -->
                 <td style="text-align: center;">
-                  <input type="hidden" name="permissoes[<%= mod.id %>][editar]" value="0">
                   <input type="checkbox" name="permissoes[<%= mod.id %>][editar]" value="1" class="checkbox-perm check-editar" <%= perm.pode_editar ? 'checked' : '' %> title="Permitir editar registros">
                 </td>
 
                 <!-- 4. Excluir -->
                 <td style="text-align: center;">
-                  <input type="hidden" name="permissoes[<%= mod.id %>][excluir]" value="0">
                   <input type="checkbox" name="permissoes[<%= mod.id %>][excluir]" value="1" class="checkbox-perm check-excluir" <%= perm.pode_excluir ? 'checked' : '' %> title="Permitir exclusões">
                 </td>
               </tr>

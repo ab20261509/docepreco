@@ -168,6 +168,13 @@ router.get('/usuarios/:id/permissoes', async (req, res, next) => {
   }
 });
 
+function extrairBooleano(valor) {
+  if (Array.isArray(valor)) {
+    return valor.includes('1') || valor.includes('on') || valor.includes('true') ? 1 : 0;
+  }
+  return valor === '1' || valor === 'on' || valor === 'true' ? 1 : 0;
+}
+
 // 4. Salvar Matriz de Permissões do Usuário
 router.post('/usuarios/:id/permissoes', async (req, res, next) => {
   try {
@@ -179,18 +186,33 @@ router.post('/usuarios/:id/permissoes', async (req, res, next) => {
     }
 
     const permissoesBody = req.body.permissoes || {};
+    const novoPerfil = req.body.perfil;
+    const novoStatus = req.body.status;
+    const masterLogadoId = req.session.usuario ? req.session.usuario.id : null;
 
     await db.transaction(async (tx) => {
-      // Limpar permissões anteriores deste usuário
+      // 1. Atualizar Perfil e Status se informados no formulário
+      if (novoPerfil && ['confeiteiro', 'master'].includes(novoPerfil)) {
+        if (usuarioAlvoId !== masterLogadoId) {
+          await tx.run('UPDATE usuarios SET perfil = ? WHERE id = ?', [novoPerfil, usuarioAlvoId]);
+        }
+      }
+      if (novoStatus && ['ativo', 'bloqueado'].includes(novoStatus)) {
+        if (usuarioAlvoId !== masterLogadoId) {
+          await tx.run('UPDATE usuarios SET status = ? WHERE id = ?', [novoStatus, usuarioAlvoId]);
+        }
+      }
+
+      // 2. Limpar permissões anteriores deste usuário
       await tx.run('DELETE FROM permissoes_usuario WHERE usuario_id = ?', [usuarioAlvoId]);
 
-      // Inserir cada módulo com suas opções selecionadas
+      // 3. Inserir cada módulo com suas opções selecionadas
       for (const mod of MODULOS_SISTEMA) {
         const item = permissoesBody[mod.id] || {};
-        const podeVer = item.ver === '1' ? 1 : 0;
-        const podeCriar = item.criar === '1' ? 1 : 0;
-        const podeEditar = item.editar === '1' ? 1 : 0;
-        const podeExcluir = item.excluir === '1' ? 1 : 0;
+        const podeVer = extrairBooleano(item.ver);
+        const podeCriar = extrairBooleano(item.criar);
+        const podeEditar = extrairBooleano(item.editar);
+        const podeExcluir = extrairBooleano(item.excluir);
 
         await tx.run(`
           INSERT INTO permissoes_usuario (usuario_id, modulo, pode_ver, pode_criar, pode_editar, pode_excluir)

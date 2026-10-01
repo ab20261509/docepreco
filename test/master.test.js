@@ -161,7 +161,52 @@ async function run() {
     console.log('✅ Preset Somente Leitura verificado com sucesso');
   }
 
-  // 10. Limpeza final dos dados de teste
+  // 10. Testar persistência via rota /master/usuarios/:id/permissoes
+  {
+    const masterRouter = require('../routes/master');
+    const reqPost = {
+      params: { id: String(confId) },
+      session: { usuario: { id: masterId, perfil: 'master' } },
+      body: {
+        perfil: 'confeiteiro',
+        status: 'ativo',
+        permissoes: {
+          produtos: { ver: '1', criar: '0', editar: ['0', '1'], excluir: '0' },
+          pedidos: { ver: ['0', '1'], criar: ['0', '1'], editar: '0', excluir: '0' }
+        }
+      }
+    };
+    let redirectedUrl = null;
+    const resPost = {
+      redirect: (url) => { redirectedUrl = url; },
+      status: () => resPost,
+      render: () => {}
+    };
+
+    // Obter handler do POST /usuarios/:id/permissoes
+    const layer = masterRouter.stack.find(l => l.route && l.route.path === '/usuarios/:id/permissoes' && l.route.methods.post);
+    assert(layer, 'Rota POST /usuarios/:id/permissoes deve existir');
+    const handler = layer.route.stack[0].handle;
+
+    await handler(reqPost, resPost, (err) => { if (err) throw err; });
+    assert(redirectedUrl && redirectedUrl.includes('sucesso=1'), 'Deve redirecionar com sucesso=1');
+
+    // Verificar se persistiu no banco
+    const perms = await db.all('SELECT modulo, pode_ver, pode_criar, pode_editar, pode_excluir FROM permissoes_usuario WHERE usuario_id = ?', [confId]);
+    const prod = perms.find(p => p.modulo === 'produtos');
+    assert.strictEqual(prod.pode_ver, 1, 'produtos pode_ver deve ser 1');
+    assert.strictEqual(prod.pode_editar, 1, 'produtos pode_editar deve ser 1 (mesmo vindo como array)');
+    assert.strictEqual(prod.pode_criar, 0, 'produtos pode_criar deve ser 0');
+    assert.strictEqual(prod.pode_excluir, 0, 'produtos pode_excluir deve ser 0');
+
+    const ped = perms.find(p => p.modulo === 'pedidos');
+    assert.strictEqual(ped.pode_ver, 1, 'pedidos pode_ver deve ser 1');
+    assert.strictEqual(ped.pode_criar, 1, 'pedidos pode_criar deve ser 1');
+
+    console.log('✅ Persistência da rota POST /master/usuarios/:id/permissoes validada com sucesso');
+  }
+
+  // 11. Limpeza final dos dados de teste
   await db.run("DELETE FROM usuarios WHERE email IN ('master_test@confeitaria.com', 'confeiteiro_test@confeitaria.com', 'bloqueado_test@confeitaria.com')");
   console.log('🧹 Limpeza dos dados de teste concluída');
 
