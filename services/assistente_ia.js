@@ -2,10 +2,26 @@
  * services/assistente_ia.js
  * Assistente Virtual Inteligente Especializado para o Sistema DocePreço.
  * 
- * Restrito ao escopo do sistema de confeitaria e aos processos em execução do usuário.
- * Possui visão integral do banco de dados da loja/usuário (estoque completo, fichas técnicas, produções e pedidos).
- * Suporta Google Gemini API (gemini-1.5-flash) com auditoria de estoque e fallback nativo.
+ * - Restrito ao escopo do sistema de confeitaria e aos processos em execução do usuário.
+ * - Possui visão integral do banco de dados da loja/usuário (estoque completo, fichas técnicas, produções e pedidos).
+ * - Carrega e consulta o Manual Oficial do Sistema (docs/MANUAL_DO_SISTEMA.md).
+ * - Suporta sessões de atendimento com documentação de aprendizado contínuo e feedback (👍 / 👎).
+ * - Suporta Google Gemini API (gemini-1.5-flash) com auditoria de estoque e fallback nativo.
  */
+
+const fs = require('fs');
+const path = require('path');
+
+// Carregar Manual Oficial do Sistema em cache
+let manualSistemaCache = '';
+try {
+  const caminhoManual = path.join(__dirname, '../docs/MANUAL_DO_SISTEMA.md');
+  if (fs.existsSync(caminhoManual)) {
+    manualSistemaCache = fs.readFileSync(caminhoManual, 'utf8');
+  }
+} catch (err) {
+  console.warn('[Assistente IA] Não foi possível ler docs/MANUAL_DO_SISTEMA.md:', err.message);
+}
 
 function calcularFatorEscala(qtdPedida, unPedida, rendimentoBase, unBase) {
   const qPed = Math.max(0.001, parseFloat(qtdPedida) || 1);
@@ -189,6 +205,18 @@ async function coletarContextoUsuario(db, usuarioId) {
     `, [usuarioId, dataLimite]);
   } catch (_) {}
 
+  // 9. Histórico de Aprendizados de Sessões Anteriores Encerradas (Memória Contínua)
+  let aprendizadosPassados = [];
+  try {
+    aprendizadosPassados = await db.all(`
+      SELECT id, titulo, aprendizado_resumo, encerrada_em
+      FROM chat_sessoes
+      WHERE usuario_id = ? AND status = 'encerrada' AND aprendizado_resumo IS NOT NULL
+      ORDER BY encerrada_em DESC
+      LIMIT 5
+    `, [usuarioId]);
+  } catch (_) {}
+
   return {
     usuarioNome: usuario ? usuario.nome : 'Confeiteira',
     dataHoje: hojeIso,
@@ -230,6 +258,12 @@ async function coletarContextoUsuario(db, usuarioId) {
       nome: lr.nome,
       qtd: `${lr.quantidade_atual} ${lr.unidade}`,
       validade: lr.data_validade
+    })),
+    aprendizadosPassados: aprendizadosPassados.map(ap => ({
+      sessaoId: ap.id,
+      titulo: ap.titulo || 'Atendimento Concluído',
+      resumo: ap.aprendizado_resumo,
+      data: ap.encerrada_em
     }))
   };
 }
@@ -243,10 +277,76 @@ function gerarRespostaNativa(mensagem, contexto) {
   // Testar Guardrail para assuntos fora do contexto
   const assuntosProibidos = ['política', 'politica', 'futebol', 'jogo', 'time', 'presidente', 'deputado', 'filme', 'série', 'novela', 'fofoca', 'código python', 'código c++', 'astronomia', 'copa', 'musica', 'música', 'cantor', 'ator', 'eleição', 'eleicao', 'bitcoin', 'dólar'];
   if (assuntosProibidos.some(termo => msgLower.includes(termo))) {
-    return 'Sou o assistente especializado do **DocePreço** para confeitaria e gestão da sua fábrica. Posso te ajudar exclusivamente com dúvidas sobre o sistema, suas receitas, encomendas, estoque e processos de produção da sua confeitaria. 🧁 Como posso ajudar na sua bancada hoje?';
+    return 'Sou o assistente especializado do **DocePreço** para confeitaria e gestão da sua fábrica. Posso te ajudar exclusivamente com dúvidas sobre o uso do sistema, suas receitas, encomendas, estoque e processos de produção da sua confeitaria. 🧁 Como posso ajudar na sua bancada hoje?';
   }
 
-  // 1. Auditoria de Estoque para Produção / Preparo (Pergunta específica sobre disponibilidade)
+  // 1. Dúvidas sobre o Manual do Sistema e Como Usar as Telas
+  // 1.1 Precificação e Cálculo de Preço de Venda
+  if (
+    (msgLower.includes('como') || msgLower.includes('funciona') || msgLower.includes('calcula') || msgLower.includes('calcular')) &&
+    (msgLower.includes('preço') || msgLower.includes('preco') || msgLower.includes('precificar') || msgLower.includes('margem') || msgLower.includes('venda'))
+  ) {
+    return `🧁 **Como o DocePreço calcula o Preço de Venda Sugerido:**\n\n` +
+      `De acordo com a metodologia oficial do sistema, o preço final de cada produto é a soma de quatro pilares:\n\n` +
+      `1. **Custo de Insumos:** Soma proporcional do peso/quantidade de cada ingrediente usado na receita.\n` +
+      `2. **Embalagens & Extras:** Custos diretos de caixas, laços, pratos e descartáveis.\n` +
+      `3. **Mão de Obra Operacional:** \`(Tempo de Preparo em Horas) × (Custo da sua Hora Operacional)\`. Esse custo da hora é obtido na tela de [Custos Fixos](/custos).\n` +
+      `4. **Margem de Lucro (%):** Aplicada sobre o custo total de produção:\n` +
+      `   *Fórmula:* \`Preço Sugerido = Custo Total × (1 + Margem / 100)\`\n\n` +
+      `Você pode cadastrar e recalcular suas fichas técnicas na tela de [Produtos & Precificação](/produtos).`;
+  }
+
+  // 1.2 Modo Cozinha & Tela Dividida & Sequência Inteligente
+  if (
+    msgLower.includes('tela dividida') || msgLower.includes('modo cozinha') || 
+    (msgLower.includes('como') && (msgLower.includes('cozinha') || msgLower.includes('preparo') || msgLower.includes('sequência') || msgLower.includes('sequencia') || msgLower.includes('mistura')))
+  ) {
+    return `🍳 **Como funciona o Modo Cozinha (Motor de Preparo com Tela Dividida):**\n\n` +
+      `O Modo Cozinha foi desenhado para uso prático direto na bancada da confeitaria (celular, tablet ou computador):\n\n` +
+      `• **Layout em Tela Dividida:** No lado esquerdo, você acompanha o passo a passo da receita, com a **Sequência Inteligente de Misturas** (etapas de bater secos, líquidos, descansar ou assar). No lado direito, você tem a pesagem na balança digital e os cronômetros múltiplos de forno/batedeira.\n` +
+      `• **Preparo de Ingredientes:** Cada etapa indica exatamente os ingredientes pesados e os equipamentos necessários para evitar esquecimentos.\n` +
+      `• **Baixa Automática:** Ao finalizar o lote, o sistema calcula o consumo real e baixa o estoque dos insumos proporcionalmente ao rendimento produzido.\n\n` +
+      `Para testar na prática, acesse o [Modo Cozinha & Produção](/producao).`;
+  }
+
+  // 1.3 Custo por Hora e Custos Fixos
+  if (
+    (msgLower.includes('como') || msgLower.includes('o que') || msgLower.includes('onde')) &&
+    (msgLower.includes('custo fixo') || msgLower.includes('custo por hora') || msgLower.includes('pro-labore') || msgLower.includes('hora'))
+  ) {
+    return `🏢 **Como configurar Custos Fixos e Custo por Hora:**\n\n` +
+      `No DocePreço, a mão de obra da confeiteira é valorizada de forma justa:\n\n` +
+      `1. Acesse o menu [Custos Fixos](/custos).\n` +
+      `2. Cadastre todas as despesas mensais da fábrica (energia, aluguel, gás, água, internet e o seu salário/pró-labore desejado).\n` +
+      `3. Defina as **Horas Trabalhadas no Mês** (padrão de 160h para 40h semanais).\n` +
+      `4. O sistema calcula automaticamente: \`Custo/Hora = Total de Despesas Mensais ÷ Horas Mensais\`.\n\n` +
+      `*Seus dados atuais:* Total mensal de **R$ ${contexto.custos.totalMensal.toFixed(2)}** com **${contexto.custos.horasMes}h/mês**, resultando em **R$ ${contexto.custos.custoHora.toFixed(2)}/h**.`;
+  }
+
+  // 1.4 Planejamento de Compras
+  if (
+    (msgLower.includes('como') || msgLower.includes('o que')) &&
+    (msgLower.includes('compras') || msgLower.includes('planejamento') || msgLower.includes('repor') || msgLower.includes('lista de compras'))
+  ) {
+    return `🛒 **Como funciona o Planejamento de Compras:**\n\n` +
+      `O DocePreço analisa automaticamente suas encomendas futuras e seu estoque atual para criar a lista de compras perfeita:\n\n` +
+      `• Ele cruza as encomendas agendadas na [Agenda](/agenda) com as fichas técnicas das receitas.\n` +
+      `• Calcula quanto de cada insumo será gasto nos próximos dias.\n` +
+      `• Compara com o saldo em estoque e gera a **Lista de Compras Inteligente** com a quantidade exata em falta para evitar compras em excesso ou falta de insumos.\n\n` +
+      `Consulte e gere sua lista na tela de [Planejamento de Compras](/compras).`;
+  }
+
+  // 1.5 Encerramento de Atendimento e Aprendizado
+  if (msgLower.includes('encerrar') || msgLower.includes('atendimento') || msgLower.includes('fechar chat') || msgLower.includes('sessão') || msgLower.includes('sessao')) {
+    return `🔴 **Encerramento de Atendimento e Aprendizado:**\n\n` +
+      `Você pode encerrar este atendimento a qualquer momento clicando no botão **"🔴 Encerrar Atendimento"** no topo deste painel.\n\n` +
+      `Ao encerrar:\n` +
+      `1. Eu analiso tudo o que conversamos e os feedbacks (👍/👎) que você deu nas respostas.\n` +
+      `2. Registro uma síntese de aprendizado contínuo para memorizar suas preferências e resolver dúvidas futuras com ainda mais precisão.\n` +
+      `3. A sessão é arquivada e um novo atendimento zerado fica pronto para você!`;
+  }
+
+  // 2. Auditoria de Estoque para Produção / Preparo (Pergunta específica sobre disponibilidade)
   const perguntaEstoqueProducao = (
     msgLower.includes('estoque') || msgLower.includes('ingrediente') || msgLower.includes('disponível') || 
     msgLower.includes('disponivel') || msgLower.includes('falta') || msgLower.includes('suficiente')
@@ -257,10 +357,8 @@ function gerarRespostaNativa(mensagem, contexto) {
 
   if (perguntaEstoqueProducao) {
     if (contexto.producoesAtivas.length === 0) {
-      // Se não há produção ativa, verificar se ele citou o nome de alguma receita
       const prodCitado = contexto.produtos.find(p => msgLower.includes(p.nome.toLowerCase()));
       if (prodCitado) {
-        // Auditar receita base
         const faltantes = [];
         const suficientes = [];
         for (const ing of prodCitado.ingredientes) {
@@ -284,7 +382,6 @@ function gerarRespostaNativa(mensagem, contexto) {
       return `No momento não há nenhuma produção ativa na cozinha para auditar o estoque. Para verificar se há estoque disponível, você pode citar o nome da receita (ex: *"Temos estoque para fazer o Bolo de Cenoura?"*) ou iniciar o lote no [Modo Cozinha](/producao).`;
     }
 
-    // Há produções ativas: auditar o estoque de cada lote em preparo
     const respostas = contexto.producoesAtivas.map(pa => {
       if (pa.temEstoqueSuficiente) {
         const itens = pa.insumosSuficientes.map(i => `  ✓ ${i.nome}: precisa de ${i.necessario} ${i.unidade} (disponível: ${i.disponivel} ${i.unidade})`).join('\n');
@@ -298,7 +395,7 @@ function gerarRespostaNativa(mensagem, contexto) {
     return `🔍 **Auditoria de Estoque para as Produções da Cozinha:**\n\n${respostas.join('\n\n')}\n\nVocê pode gerar a reposição dos insumos faltantes no [Planejamento de Compras](/compras) ou pesar no [Modo Cozinha](/producao).`;
   }
 
-  // 2. Pedidos do Dia / Encomendas
+  // 3. Pedidos do Dia / Encomendas
   if (msgLower.includes('pedido') || msgLower.includes('encomenda') || msgLower.includes('hoje') || msgLower.includes('entrega')) {
     if (contexto.pedidosHoje.length === 0) {
       return `📅 **Hoje (${contexto.dataHoje}):** Você não possui encomendas agendadas para entrega hoje. Há um total de **${contexto.pedidosAbertosCount} pedidos** em andamento para os próximos dias na sua [Agenda](/agenda).`;
@@ -307,7 +404,7 @@ function gerarRespostaNativa(mensagem, contexto) {
     return `📅 **Encomendas para Hoje (${contexto.dataHoje}):**\nVocê tem **${contexto.pedidosHoje.length} pedido(s)** para entrega hoje:\n\n${lista}\n\nVocê pode acompanhar os horários na tela de [Agenda de Entregas](/agenda).`;
   }
 
-  // 3. Produção Geral & Modo Cozinha (sem pergunta de estoque)
+  // 4. Produção Geral & Modo Cozinha (sem pergunta de estoque)
   if (msgLower.includes('cozinha') || msgLower.includes('produção') || msgLower.includes('producao') || msgLower.includes('preparo') || msgLower.includes('forno') || msgLower.includes('timer')) {
     if (contexto.producoesAtivas.length === 0) {
       let txt = `🍳 **Modo Cozinha:** Nenhuma receita está sendo preparada no momento.\n\nPara iniciar uma fornada com pesagem na balança, timers integrados e sequência inteligente de misturas, acesse o [Modo Cozinha & Produção](/producao).`;
@@ -321,7 +418,7 @@ function gerarRespostaNativa(mensagem, contexto) {
     return `🍳 **Lotes em Preparo na Cozinha Agora:**\n${ativas}\n\nAcesse o [Modo Cozinha](/producao) para acompanhar os timers e a pesagem da bancada!`;
   }
 
-  // 4. Estoque Baixo / Insumos em Falta
+  // 5. Estoque Baixo / Insumos em Falta
   if (msgLower.includes('estoque') || msgLower.includes('falta') || msgLower.includes('comprar') || msgLower.includes('insumo') || msgLower.includes('ingrediente')) {
     if (contexto.estoqueBaixo.length === 0) {
       return `✓ **Estoque em Dia:** Nenhum ingrediente está abaixo do estoque mínimo no momento! Todos os seus ${contexto.catalogoCompleto.length} insumos cadastrados possuem saldo seguro. Você pode conferir tudo em [Insumos & Estoque](/ingredientes).`;
@@ -330,7 +427,7 @@ function gerarRespostaNativa(mensagem, contexto) {
     return `⚠️ **Atenção ao Estoque Baixo (${contexto.estoqueBaixo.length} itens):**\n\n${lista}\n\nRecomendamos gerar a [Lista de Compras Inteligente](/compras) para repor esses itens antes das próximas encomendas!`;
   }
 
-  // 5. Validade e Lotes a Vencer
+  // 6. Validade e Lotes a Vencer
   if (msgLower.includes('validade') || msgLower.includes('vencer') || msgLower.includes('vencido') || msgLower.includes('lote')) {
     if (contexto.lotesRisco.length === 0) {
       return `✓ **Validades Seguras:** Não há nenhum lote com prazo de validade vencido ou vencendo nos próximos 7 dias.`;
@@ -339,18 +436,18 @@ function gerarRespostaNativa(mensagem, contexto) {
     return `⏰ **Lotes com Validade Próxima ou Vencida (${contexto.lotesRisco.length}):**\n\n${lista}\n\nPriorize o uso desses insumos nos preparos de hoje para evitar desperdício! Veja em [Insumos](/ingredientes).`;
   }
 
-  // 6. Custos Fixos & Custo por Hora
+  // 7. Custos Fixos & Custo por Hora
   if (msgLower.includes('custo') || msgLower.includes('hora') || msgLower.includes('fixo') || msgLower.includes('salário') || msgLower.includes('pro-labore')) {
     return `🏢 **Seus Custos Fixos Mensais:**\n• Total mensal: **R$ ${contexto.custos.totalMensal.toFixed(2)}** (${contexto.custos.itensCount} despesas cadastradas)\n• Carga horária: **${contexto.custos.horasMes} horas/mês**\n• Custo operacional por hora: **R$ ${contexto.custos.custoHora.toFixed(2)}/h**\n\nEsse valor é somado automaticamente no cálculo do preço das suas receitas com base no tempo de preparo. Você pode ajustar em [Custos Fixos](/custos).`;
   }
 
-  // 7. Receitas & Precificação
+  // 8. Receitas & Precificação
   if (msgLower.includes('receita') || msgLower.includes('produto') || msgLower.includes('preço') || msgLower.includes('preco') || msgLower.includes('margem')) {
     return `🧁 **Suas Receitas Cadastradas (${contexto.produtos.length}):**\nVocê possui **${contexto.produtos.length} produtos** cadastrados com fichas técnicas detalhadas. Cada produto combina o custo dos ingredientes pesados, embalagens, custo/hora proporcional e margem de lucro para formar o preço sugerido ideal.\n\nConsulte suas receitas em [Produtos & Precificação](/produtos).`;
   }
 
   // Resposta Padrão / Ajuda Geral
-  return `Olá, **${contexto.usuarioNome}**! 👋 Sou seu Assistente Virtual no **DocePreço**.\n\nPosso te ajudar com dúvidas sobre o sistema e com informações em tempo real da sua confeitaria:\n\n• 🔍 **"A produção em andamento possui estoque disponível?"**\n• 📅 **"Quais pedidos temos para hoje?"**\n• 🍳 **"O que está em preparo na cozinha agora?"**\n• ⚠️ **"Quais ingredientes estão com estoque baixo?"**\n• ⏰ **"Temos lotes próximos da validade?"**\n• 🏢 **"Como está meu custo por hora e custos fixos?"**\n• 🧁 **"Como o sistema calcula o preço sugerido das receitas?"**\n\nO que você gostaria de consultar ou conferir agora?`;
+  return `Olá, **${contexto.usuarioNome}**! 👋 Sou a DoceIA, sua Assistente Virtual no **DocePreço**.\n\nPosso te ajudar com dúvidas sobre o uso do sistema e com consultas em tempo real da sua confeitaria:\n\n• 📖 **"Como o sistema calcula o preço de venda sugerido?"**\n• 🍳 **"Como funciona a tela dividida no Modo Cozinha?"**\n• 🔍 **"A produção em andamento possui estoque disponível?"**\n• 📅 **"Quais pedidos temos para hoje?"**\n• ⚠️ **"Quais ingredientes estão com estoque baixo?"**\n• ⏰ **"Temos lotes próximos da validade?"**\n• 🛒 **"Como funciona o Planejamento de Compras?"**\n\nVocê também pode avaliar minhas respostas com 👍 ou 👎 para me ajudar a aprender com o seu dia a dia! Como posso te ajudar agora?`;
 }
 
 /**
@@ -361,7 +458,6 @@ async function responderDuvidaSistema(mensagem, historicoRecente, contexto, apiK
     return gerarRespostaNativa(mensagem, contexto);
   }
 
-  // Montar banco de dados completo do usuário para fornecer visibilidade total à IA
   const dadosContextoPrompt = `
 DADOS VIVOS DO BANCO DE DADOS DA CONFEITARIA DO USUÁRIO (${contexto.usuarioNome}):
 - Data de Hoje: ${contexto.dataHoje}
@@ -386,14 +482,21 @@ ${JSON.stringify(contexto.ultimasProducoes)}
 - Total Mensal: R$ ${contexto.custos.totalMensal.toFixed(2)}
 - Carga Horária: ${contexto.custos.horasMes} horas/mês
 - Custo Operacional por Hora: R$ ${contexto.custos.custoHora.toFixed(2)}/h
+
+7. APRENDIZADOS E PREFERÊNCIAS DE ATENDIMENTOS PASSADOS (MEMÓRIA CONTÍNUA):
+${contexto.aprendizadosPassados && contexto.aprendizadosPassados.length > 0 ? JSON.stringify(contexto.aprendizadosPassados) : 'Primeira sessão com o usuário.'}
 `;
+
+  const manualDocumentacaoPrompt = manualSistemaCache
+    ? `\n\nMANUAL OFICIAL DO SISTEMA DOCEPREÇO (CONSULTE PARA EXPLICAR REGRAS, TELAS E FÓRMULAS):\n${manualSistemaCache}\n`
+    : '';
 
   const systemInstruction = `Você é a DoceIA, a assistente virtual inteligente e especializada do sistema "DocePreço" (Software de Gestão, Precificação, Controle de Estoque e Produção para Confeitarias artesanais).
 
 OBJETIVO PRINCIPAL:
-Ajudar a confeiteira com dúvidas práticas sobre como usar as ferramentas do sistema DocePreço e consultar os processos, tarefas e estoque da sua loja em tempo real.
+Ajudar a confeiteira com dúvidas práticas sobre como usar as ferramentas do sistema DocePreço (com base estrita no Manual Oficial do Sistema) e consultar os processos, tarefas, receitas e estoque da sua loja em tempo real.
 
-TREINAMENTO ESPECÍFICO DE AUDITORIA DE ESTOQUE E PRODUÇÃO (MUITO IMPORTANTE):
+TREINAMENTO ESPECÍFICO DE AUDITORIA DE ESTOQUE E PRODUÇÃO:
 Se o usuário perguntar se uma produção ou receita possui estoque disponível para ser preparada (ex: "a produção possui estoque disponível?", "temos estoque para fazer o bolo X?", "consigo produzir Y?"):
 1. VOCÊ DEVE RESPONDER CATEGORICAMENTE se HÁ ou NÃO HÁ estoque suficiente.
 2. Consulte a seção "AUDITORIA DE DISPONIBILIDADE DE ESTOQUE PARA AS PRODUÇÕES EM ANDAMENTO" ou cruze a lista de ingredientes da receita com o "ESTOQUE ATUAL COMPLETO DA LOJA".
@@ -405,6 +508,14 @@ Se o usuário perguntar se uma produção ou receita possui estoque disponível 
    - Liste os ingredientes que serão consumidos e o saldo que restará.
 5. NUNCA apenas repita os dados da produção sem responder com clareza sobre a disponibilidade de estoque!
 
+DÚVIDAS SOBRE O USO DO SISTEMA:
+Use o "MANUAL OFICIAL DO SISTEMA DOCEPREÇO" fornecido abaixo para esclarecer procedimentos:
+- Como funciona a precificação e a margem de lucro.
+- Como cadastrar insumos, lotes e datas de validade.
+- Como operar o Modo Cozinha em tela dividida (receita, pesagem e timers).
+- Como funciona o cálculo de custo por hora e custos fixos.
+- Como o sistema gera a lista de compras automática.
+
 GUARDRAILS E LIMITES ESTRITOS (REGRA INEGOCIÁVEL):
 1. Você responde EXCLUSIVAMENTE sobre o sistema DocePreço, a gestão da confeitaria e os dados da loja do usuário.
 2. Se o usuário perguntar sobre assuntos fora deste escopo (como política, futebol, celebridades, códigos de programação genéricos, receitas que não estejam no sistema, redações escolares ou curiosidades aleatórias), RECUSE EDUCADAMENTE:
@@ -412,6 +523,7 @@ GUARDRAILS E LIMITES ESTRITOS (REGRA INEGOCIÁVEL):
 3. NUNCA invente dados fictícios de pedidos ou estoque. Use estritamente as informações reais do banco de dados da loja injetadas no contexto.
 4. Mantenha um tom acolhedor, profissional, ágil e encorajador. Use formatação markdown limpa (negrito, tópicos).
 
+${manualDocumentacaoPrompt}
 ${dadosContextoPrompt}`;
 
   const contents = [];
@@ -472,8 +584,105 @@ ${dadosContextoPrompt}`;
   }
 }
 
+/**
+ * Sintetiza o atendimento ao encerrar a sessão:
+ * Analisa as dúvidas do usuário, as respostas dadas e os feedbacks (👍/👎),
+ * gerando um título e um aprendizado documentado para o agente reter em atendimentos futuros.
+ */
+async function sintetizarAprendizadoSessao(mensagens, feedbacksStats, apiKey) {
+  // Caso de fallback rápido quando não há mensagens suficientes
+  if (!Array.isArray(mensagens) || mensagens.length === 0) {
+    return {
+      titulo: 'Atendimento Concluído',
+      aprendizadoResumo: 'Sessão aberta sem trocas de mensagens registrada.'
+    };
+  }
+
+  const likes = feedbacksStats ? (feedbacksStats.likes || 0) : 0;
+  const dislikes = feedbacksStats ? (feedbacksStats.dislikes || 0) : 0;
+
+  // Se houver Gemini API Key configurada, gerar síntese profunda com IA
+  if (apiKey) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const historicoTexto = mensagens.map(m => {
+        const fb = m.feedback === 1 ? ' [Feedback do usuário: 👍 Útil]' : (m.feedback === -1 ? ' [Feedback do usuário: 👎 Insatisfatório]' : '');
+        return `${m.papel === 'usuario' ? 'Usuário' : 'DoceIA'}: ${m.conteudo}${fb}`;
+      }).join('\n');
+
+      const promptSintese = `Você é o sintetizador de aprendizado do assistente DocePreço.
+Analise a conversa de atendimento abaixo entre a confeiteira e a assistente virtual:
+
+${historicoTexto}
+
+Gere OBRIGATORIAMENTE um JSON válido com o seguinte formato:
+{
+  "titulo": "Título curto de 3 a 6 palavras resumindo o assunto principal (ex: Dúvidas de Estoque e Forno, Precificação de Bolo)",
+  "aprendizado": "Resumo de 2 a 4 linhas descrevendo o que foi esclarecido, preferências ou dúvidas recorrentes desta confeiteira e lições aprendidas (especialmente considerando se houve respostas avaliadas com 👍 ou 👎)."
+}
+
+Responda APENAS o JSON puro, sem crases de código e sem texto adicional.`;
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: promptSintese }] }],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 350
+          }
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (resp.ok) {
+        const data = await resp.json();
+        let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        raw = raw.trim().replace(/^```json\s*/i, '').replace(/```$/i, '').trim();
+        const parsed = JSON.parse(raw);
+        if (parsed.titulo && parsed.aprendizado) {
+          return {
+            titulo: parsed.titulo.trim(),
+            aprendizadoResumo: parsed.aprendizado.trim()
+          };
+        }
+      }
+    } catch (e) {
+      clearTimeout(timeoutId);
+      console.warn('[Assistente IA] Falha na síntese via Gemini, usando síntese nativa:', e.message);
+    }
+  }
+
+  // Síntese Nativa Heurística (Sem API Key ou em caso de falha de conexão)
+  const textoGeral = mensagens.map(m => m.conteudo.toLowerCase()).join(' ');
+  const temas = [];
+  if (textoGeral.includes('estoque') || textoGeral.includes('ingrediente')) temas.push('Estoque e Insumos');
+  if (textoGeral.includes('produção') || textoGeral.includes('producao') || textoGeral.includes('cozinha') || textoGeral.includes('preparo')) temas.push('Modo Cozinha & Produção');
+  if (textoGeral.includes('pedido') || textoGeral.includes('encomenda') || textoGeral.includes('entrega')) temas.push('Encomendas & Pedidos');
+  if (textoGeral.includes('preço') || textoGeral.includes('preco') || textoGeral.includes('custo') || textoGeral.includes('margem')) temas.push('Custos e Precificação');
+  if (textoGeral.includes('compras') || textoGeral.includes('comprar')) temas.push('Planejamento de Compras');
+
+  const tituloTema = temas.length > 0 ? temas.slice(0, 2).join(' e ') : 'Dúvidas Operacionais do Sistema';
+  let resumo = `Atendimento com ${mensagens.length} mensagem(ns) focado em ${tituloTema}. `;
+  if (likes > 0) resumo += `O usuário avaliou positivamente (${likes} 👍) as orientações fornecidas. `;
+  if (dislikes > 0) resumo += `Houve ${dislikes} resposta(s) marcada(s) como insatisfatória(s) (👎), demandando mais detalhes nas próximas orientações. `;
+  resumo += `Aprendizado arquivado para guiar o contexto dos próximos atendimentos.`;
+
+  return {
+    titulo: `Atendimento: ${tituloTema}`,
+    aprendizadoResumo: resumo
+  };
+}
+
 module.exports = {
   coletarContextoUsuario,
   gerarRespostaNativa,
-  responderDuvidaSistema
+  responderDuvidaSistema,
+  sintetizarAprendizadoSessao
 };

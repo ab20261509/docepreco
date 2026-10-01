@@ -102,7 +102,7 @@
   .drawer-header {
     background: #1e293b;
     color: #ffffff;
-    padding: 1rem 1.15rem;
+    padding: 0.85rem 1.15rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -123,6 +123,37 @@
   .drawer-fechar-btn:hover {
     background: #334155;
     color: #ffffff;
+  }
+
+  .btn-encerrar-atendimento {
+    background: #ef4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.15s ease;
+  }
+  .btn-encerrar-atendimento:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+  }
+
+  /* Banner de Aprendizado Registrado */
+  .drawer-banner-aprendizado {
+    display: none;
+    background: #f0fdf4;
+    border-bottom: 1px solid #bbf7d0;
+    padding: 0.65rem 0.95rem;
+    font-size: 0.78rem;
+    color: #166534;
+    line-height: 1.4;
+    flex-shrink: 0;
   }
 
   /* Área de Mensagens */
@@ -147,7 +178,7 @@
   .drawer-msg {
     display: flex;
     gap: 0.5rem;
-    max-width: 88%;
+    max-width: 90%;
     animation: fadeInMsg 0.15s ease-out;
   }
   .drawer-msg.usuario {
@@ -207,6 +238,53 @@
     margin-top: 0.25rem;
     opacity: 0.75;
     text-align: right;
+  }
+
+  /* Barra de Feedback / Avaliação na Resposta */
+  .chat-feedback-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    padding-top: 0.35rem;
+    border-top: 1px dashed #e2e8f0;
+    font-size: 0.7rem;
+    color: #64748b;
+  }
+  .chat-feedback-botoes {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .btn-feedback-thumb {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    line-height: 1;
+    user-select: none;
+  }
+  .btn-feedback-thumb:hover {
+    background: #e2e8f0;
+    transform: scale(1.08);
+  }
+  .btn-feedback-thumb.ativo-positivo {
+    background: #dcfce7 !important;
+    border-color: #22c55e !important;
+    color: #15803d !important;
+    font-weight: 700;
+  }
+  .btn-feedback-thumb.ativo-negativo {
+    background: #fee2e2 !important;
+    border-color: #ef4444 !important;
+    color: #b91c1c !important;
+    font-weight: 700;
   }
 
   /* Sugestões Rápidas */
@@ -322,14 +400,23 @@
         </div>
       </div>
 
-      <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <button type="button" id="drawerBtnLimpar" title="Limpar conversa" style="background: transparent; border: none; color: #94a3b8; font-size: 0.8rem; cursor: pointer;">
+      <div style="display: flex; align-items: center; gap: 0.4rem;">
+        <button type="button" id="drawerBtnEncerrar" class="btn-encerrar-atendimento" title="Encerrar atendimento e registrar aprendizado para o assistente">
+          🔴 Encerrar
+        </button>
+        <button type="button" id="drawerBtnLimpar" title="Limpar conversa atual" style="background: transparent; border: none; color: #94a3b8; font-size: 0.8rem; cursor: pointer; padding: 0.2rem 0.35rem;">
           🗑️
         </button>
         <button type="button" id="drawerBtnFechar" class="drawer-fechar-btn" title="Fechar painel">
           ✕
         </button>
       </div>
+    </div>
+
+    <!-- Banner Informativo de Aprendizado -->
+    <div id="drawerBannerAprendizado" class="drawer-banner-aprendizado">
+      <strong>✨ Atendimento encerrado e documentado!</strong>
+      <div id="drawerBannerTexto" style="margin-top: 0.2rem;"></div>
     </div>
 
     <!-- Área de Mensagens -->
@@ -339,7 +426,7 @@
         <div class="drawer-msg-balao">
           Olá! 👋 Sou a assistente virtual do <strong>DocePreço</strong>.
           <div style="margin-top: 0.25rem; font-size: 0.8rem; color: #475569;">
-            Pergunte como usar o sistema ou consulte tarefas, encomendas e estoque de hoje!
+            Tire qualquer dúvida sobre como usar o sistema (baseado no nosso manual) ou consulte tarefas, encomendas e estoque de hoje! Avalie minhas respostas com 👍 ou 👎 para me ajudar a aprender com a sua rotina.
           </div>
         </div>
       </div>
@@ -352,23 +439,23 @@
 
     <!-- Sugestões Rápidas com 1 Clique -->
     <div class="drawer-sugestoes">
+      <button type="button" class="drawer-chip" data-pergunta="A produção em andamento possui estoque disponível?">
+        🔍 Estoque da produção
+      </button>
+      <button type="button" class="drawer-chip" data-pergunta="Como funciona a tela dividida no Modo Cozinha?">
+        🍳 Modo Cozinha & Tela Dividida
+      </button>
+      <button type="button" class="drawer-chip" data-pergunta="Como o sistema calcula o preço sugerido das receitas?">
+        🧁 Precificação & Margem
+      </button>
       <button type="button" class="drawer-chip" data-pergunta="Quais encomendas temos para hoje?">
         📅 Encomendas de hoje
-      </button>
-      <button type="button" class="drawer-chip" data-pergunta="O que está em preparo na cozinha agora?">
-        🍳 Produção na cozinha
       </button>
       <button type="button" class="drawer-chip" data-pergunta="Quais ingredientes estão com estoque baixo?">
         ⚠️ Estoque baixo
       </button>
-      <button type="button" class="drawer-chip" data-pergunta="Temos lotes com validade próxima?">
-        ⏰ Validade de insumos
-      </button>
       <button type="button" class="drawer-chip" data-pergunta="Como funciona o cálculo do custo por hora?">
         🏢 Custo por hora
-      </button>
-      <button type="button" class="drawer-chip" data-pergunta="Como calcular o preço sugerido das receitas?">
-        🧁 Preço sugerido
       </button>
     </div>
 
@@ -394,6 +481,9 @@
     const btnEnviar = document.getElementById('drawerBtnEnviar');
     const indicador = document.getElementById('drawerIndicadorDigitando');
     const btnLimpar = document.getElementById('drawerBtnLimpar');
+    const btnEncerrar = document.getElementById('drawerBtnEncerrar');
+    const bannerAprendizado = document.getElementById('drawerBannerAprendizado');
+    const bannerTexto = document.getElementById('drawerBannerTexto');
 
     let historicoCarregado = false;
 
@@ -410,19 +500,74 @@
         .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>');
     }
 
-    function adicionarMensagemDrawer(papel, conteudo, hora) {
+    function adicionarMensagemDrawer(papel, conteudo, hora, msgId, feedbackAtual) {
       const div = document.createElement('div');
       div.className = `drawer-msg ${papel}`;
+
+      let feedbackHtml = '';
+      if (papel === 'assistente' && msgId) {
+        const ativoPositivo = feedbackAtual === 1 ? 'ativo-positivo' : '';
+        const ativoNegativo = feedbackAtual === -1 ? 'ativo-negativo' : '';
+
+        feedbackHtml = `
+          <div class="chat-feedback-container" data-id="${msgId}">
+            <span>Útil para você?</span>
+            <div class="chat-feedback-botoes">
+              <button type="button" class="btn-feedback-thumb btn-thumb-up ${ativoPositivo}" title="Legal! Foi útil" data-val="1">
+                👍 Legal
+              </button>
+              <button type="button" class="btn-feedback-thumb btn-thumb-down ${ativoNegativo}" title="Não ajudou / Ruim" data-val="-1">
+                👎 Ruim
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
       div.innerHTML = `
         <div class="drawer-msg-avatar">${papel === 'usuario' ? '👤' : '🧁'}</div>
         <div class="drawer-msg-balao">
           <div>${formatarTexto(conteudo)}</div>
+          ${feedbackHtml}
           <div class="drawer-msg-hora">${hora || ''}</div>
         </div>
       `;
       containerMsgs.insertBefore(div, indicador);
       rolarFim();
     }
+
+    // Gerenciar cliques nos botões de feedback (👍 / 👎)
+    containerMsgs.addEventListener('click', async (e) => {
+      const btnThumb = e.target.closest('.btn-feedback-thumb');
+      if (!btnThumb) return;
+
+      const container = btnThumb.closest('.chat-feedback-container');
+      if (!container) return;
+
+      const msgId = container.getAttribute('data-id');
+      const val = parseInt(btnThumb.getAttribute('data-val'), 10);
+      const jaAtivo = btnThumb.classList.contains('ativo-positivo') || btnThumb.classList.contains('ativo-negativo');
+      const novoFeedback = jaAtivo ? 0 : val;
+
+      const btnUp = container.querySelector('.btn-thumb-up');
+      const btnDown = container.querySelector('.btn-thumb-down');
+
+      // Atualização otimista
+      btnUp.classList.remove('ativo-positivo');
+      btnDown.classList.remove('ativo-negativo');
+      if (novoFeedback === 1) btnUp.classList.add('ativo-positivo');
+      if (novoFeedback === -1) btnDown.classList.add('ativo-negativo');
+
+      try {
+        await fetch(`/assistente/mensagem/${msgId}/feedback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ feedback: novoFeedback })
+        });
+      } catch (err) {
+        console.error('Erro ao enviar feedback:', err);
+      }
+    });
 
     async function carregarHistoricoDoBanco() {
       if (historicoCarregado) return;
@@ -432,7 +577,7 @@
         if (dados.sucesso && Array.isArray(dados.mensagens)) {
           dados.mensagens.forEach(m => {
             const hora = m.criado_em ? m.criado_em.substring(11, 16) : '';
-            adicionarMensagemDrawer(m.papel, m.conteudo, hora);
+            adicionarMensagemDrawer(m.papel, m.conteudo, hora, m.id, m.feedback);
           });
           historicoCarregado = true;
           rolarFim();
@@ -486,7 +631,7 @@
         const dados = await resp.json();
 
         if (dados.sucesso && dados.resposta) {
-          adicionarMensagemDrawer('assistente', dados.resposta, dados.hora);
+          adicionarMensagemDrawer('assistente', dados.resposta, dados.hora, dados.mensagemId, null);
         } else {
           adicionarMensagemDrawer('assistente', 'Desculpe, ocorreu um erro ao gerar a resposta. Tente novamente.', horaAtual);
         }
@@ -509,17 +654,52 @@
       });
     });
 
+    // Encerrar Atendimento & Documentar Aprendizado
+    btnEncerrar.addEventListener('click', async () => {
+      if (!confirm('Deseja encerrar este atendimento agora?\n\nA assistente irá documentar o que foi resolvido e os seus feedbacks para enriquecer a memória contínua dos próximos atendimentos.')) {
+        return;
+      }
+
+      btnEncerrar.disabled = true;
+      btnEncerrar.textContent = 'Gravando...';
+
+      try {
+        const resp = await fetch('/assistente/encerrar', { method: 'POST' });
+        const dados = await resp.json();
+
+        if (dados.sucesso) {
+          bannerTexto.innerHTML = `<strong>${dados.titulo || 'Atendimento Concluído'}</strong><br>${dados.aprendizadoResumo || 'Sessão documentada com sucesso.'}`;
+          bannerAprendizado.style.display = 'block';
+
+          // Limpar visual das mensagens antigas e deixar pronto para o novo atendimento
+          const msgs = containerMsgs.querySelectorAll('.drawer-msg');
+          msgs.forEach((m, idx) => {
+            if (idx > 0) m.remove();
+          });
+
+          setTimeout(() => {
+            bannerAprendizado.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        } else {
+          alert('Não foi possível encerrar o atendimento.');
+        }
+      } catch (err) {
+        alert('Erro ao conectar ao servidor para encerrar atendimento.');
+      } finally {
+        btnEncerrar.disabled = false;
+        btnEncerrar.innerHTML = '🔴 Encerrar';
+      }
+    });
+
     // Limpar conversa
     btnLimpar.addEventListener('click', async () => {
-      if (!confirm('Deseja limpar as mensagens gravadas deste assistente?')) return;
+      if (!confirm('Deseja limpar as mensagens gravadas deste atendimento?')) return;
       try {
         await fetch('/assistente/historico', { method: 'DELETE' });
-        // Manter apenas a mensagem de boas vindas
         const msgs = containerMsgs.querySelectorAll('.drawer-msg');
         msgs.forEach((m, idx) => {
           if (idx > 0) m.remove();
         });
-        historicoCarregado = true;
       } catch (_) {
         alert('Erro ao limpar histórico.');
       }

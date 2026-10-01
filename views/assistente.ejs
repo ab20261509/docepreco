@@ -1,11 +1,20 @@
 <%- include('partials/topo') %>
 
 <style>
-  .assistente-container {
-    max-width: 920px;
+  .assistente-layout-wrapper {
+    max-width: 1100px;
     margin: 0 auto;
-    padding-bottom: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 310px;
+    gap: 1.25rem;
+    padding-bottom: 2.5rem;
   }
+  @media (max-width: 900px) {
+    .assistente-layout-wrapper {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .assistente-card-chat {
     background: #ffffff;
     border-radius: 16px;
@@ -13,19 +22,52 @@
     border: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
-    height: 75vh;
-    min-height: 520px;
+    height: 78vh;
+    min-height: 560px;
     overflow: hidden;
   }
   .assistente-chat-header {
     background: #1e293b;
     color: #ffffff;
-    padding: 1rem 1.35rem;
+    padding: 0.9rem 1.25rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #334155;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
+
+  .btn-encerrar-chat-pagina {
+    background: #ef4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.15s ease;
+  }
+  .btn-encerrar-chat-pagina:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+  }
+
+  /* Banner de Encerramento e Aprendizado */
+  .chat-banner-aprendizado {
+    display: none;
+    background: #ecfdf5;
+    border-bottom: 2px solid #a7f3d0;
+    padding: 0.85rem 1.25rem;
+    color: #065f46;
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
+
   .assistente-chat-mensagens {
     flex: 1;
     overflow-y: auto;
@@ -47,7 +89,7 @@
   .chat-msg {
     display: flex;
     gap: 0.65rem;
-    max-width: 82%;
+    max-width: 85%;
     animation: fadeInMsg 0.2s ease-out;
   }
   .chat-msg.usuario {
@@ -108,6 +150,53 @@
   }
   .chat-msg.usuario .chat-balao a {
     color: #fef08a;
+  }
+
+  /* Barra de Feedback / Reações na Página */
+  .chat-feedback-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.6rem;
+    padding-top: 0.45rem;
+    border-top: 1px dashed #e2e8f0;
+    font-size: 0.74rem;
+    color: #64748b;
+  }
+  .chat-feedback-botoes {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .btn-feedback-thumb {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.22rem 0.55rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    line-height: 1;
+    user-select: none;
+  }
+  .btn-feedback-thumb:hover {
+    background: #e2e8f0;
+    transform: scale(1.06);
+  }
+  .btn-feedback-thumb.ativo-positivo {
+    background: #dcfce7 !important;
+    border-color: #22c55e !important;
+    color: #15803d !important;
+    font-weight: 700;
+  }
+  .btn-feedback-thumb.ativo-negativo {
+    background: #fee2e2 !important;
+    border-color: #ef4444 !important;
+    color: #b91c1c !important;
+    font-weight: 700;
   }
 
   /* Sugestões Rápidas */
@@ -191,7 +280,47 @@
     cursor: not-allowed;
   }
 
-  /* Indicador de Digitação */
+  /* Painel Lateral de Memória & Aprendizados */
+  .painel-memoria-ia {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    padding: 1.15rem;
+    height: 78vh;
+    min-height: 560px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .painel-memoria-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 0.75rem;
+  }
+  .card-aprendizado-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 3px solid #7c3aed;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+  .card-aprendizado-titulo {
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+  }
+  .card-aprendizado-data {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    margin-top: 0.35rem;
+  }
+
   .digitando-indicador {
     display: none;
     align-self: flex-start;
@@ -212,8 +341,9 @@
   }
 </style>
 
-<div class="assistente-container">
+<div class="assistente-layout-wrapper">
   
+  <!-- Coluna Principal: Chat com DoceIA -->
   <div class="assistente-card-chat">
     <!-- Cabeçalho do Chat -->
     <div class="assistente-chat-header">
@@ -223,8 +353,8 @@
           <h2 style="font-size: 1.15rem; font-weight: 800; margin: 0; color: #ffffff;">
             DoceIA • Assistente da Confeitaria
           </h2>
-          <span style="font-size: 0.76rem; color: #94a3b8;">
-            Tire dúvidas sobre o sistema e consulte suas encomendas e tarefas em tempo real
+          <span style="font-size: 0.74rem; color: #94a3b8;">
+            Tire dúvidas com base no manual do sistema e consulte estoque e pedidos em tempo real
           </span>
         </div>
       </div>
@@ -240,10 +370,20 @@
           </span>
         <% } %>
 
+        <button type="button" class="btn-encerrar-chat-pagina" id="btnEncerrarPagina" title="Encerrar atendimento atual e documentar aprendizado contínuo">
+          🔴 Encerrar Atendimento
+        </button>
+
         <button type="button" class="btn btn-secundario btn-sm" id="btnLimparChatPagina" title="Limpar conversa" style="background: #334155; border-color: #475569; color: #ffffff; padding: 0.25rem 0.6rem; font-size: 0.75rem;">
           🗑️ Limpar
         </button>
       </div>
+    </div>
+
+    <!-- Banner Informativo de Encerramento -->
+    <div id="bannerAprendizadoPagina" class="chat-banner-aprendizado">
+      <strong>✨ Atendimento encerrado e documentado!</strong>
+      <div id="bannerAprendizadoTextoPagina" style="margin-top: 0.25rem;"></div>
     </div>
 
     <!-- Área de Mensagens -->
@@ -257,12 +397,12 @@
             Olá, <strong><%= usuario.nome.split(' ')[0] %></strong>! 👋 Sou sua assistente virtual no <strong>DocePreço</strong>.
           </div>
           <div style="margin-top: 0.35rem; font-size: 0.85rem; color: #475569;">
-            Você pode me perguntar como usar qualquer função do sistema (precificação, modo cozinha, compras, estoque) ou consultar tarefas de hoje!
+            Pergunte como usar qualquer ferramenta do sistema (baseado no manual oficial) ou consulte se sua produção tem estoque, suas entregas de hoje e custos. Avalie as respostas com <strong>👍</strong> ou <strong>👎</strong> para me ajudar a aprender com a sua fábrica!
           </div>
         </div>
       </div>
 
-      <!-- Histórico Salvo no Banco -->
+      <!-- Histórico Salvo no Banco da Sessão Atual -->
       <% if (historico && historico.length > 0) { %>
         <% historico.forEach(msg => { %>
           <div class="chat-msg <%= msg.papel === 'usuario' ? 'usuario' : 'assistente' %>">
@@ -271,6 +411,21 @@
             </div>
             <div class="chat-balao">
               <%- msg.conteudo.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') %>
+              
+              <% if (msg.papel === 'assistente') { %>
+                <div class="chat-feedback-container" data-id="<%= msg.id %>">
+                  <span>Essa resposta foi útil?</span>
+                  <div class="chat-feedback-botoes">
+                    <button type="button" class="btn-feedback-thumb btn-thumb-up <%= msg.feedback === 1 ? 'ativo-positivo' : '' %>" title="Legal! Foi útil" data-val="1">
+                      👍 Legal
+                    </button>
+                    <button type="button" class="btn-feedback-thumb btn-thumb-down <%= msg.feedback === -1 ? 'ativo-negativo' : '' %>" title="Não ajudou / Ruim" data-val="-1">
+                      👎 Ruim
+                    </button>
+                  </div>
+                </div>
+              <% } %>
+
               <div class="chat-hora">
                 <%= msg.criado_em ? msg.criado_em.substring(11, 16) : '' %>
               </div>
@@ -289,23 +444,23 @@
 
     <!-- Sugestões Rápidas de Perguntas -->
     <div class="assistente-sugestoes">
+      <button type="button" class="btn-sugestao-chip" data-pergunta="A produção em andamento possui estoque disponível?">
+        🔍 Estoque da produção
+      </button>
+      <button type="button" class="btn-sugestao-chip" data-pergunta="Como funciona a tela dividida no Modo Cozinha?">
+        🍳 Modo Cozinha & Tela Dividida
+      </button>
+      <button type="button" class="btn-sugestao-chip" data-pergunta="Como o sistema calcula o preço de venda sugerido das receitas?">
+        🧁 Precificação & Margem
+      </button>
       <button type="button" class="btn-sugestao-chip" data-pergunta="Quais encomendas temos para hoje?">
         📅 Encomendas de hoje
-      </button>
-      <button type="button" class="btn-sugestao-chip" data-pergunta="O que está em preparo na cozinha agora?">
-        🍳 Produção na cozinha
       </button>
       <button type="button" class="btn-sugestao-chip" data-pergunta="Quais ingredientes estão com estoque baixo?">
         ⚠️ Estoque baixo
       </button>
-      <button type="button" class="btn-sugestao-chip" data-pergunta="Temos lotes com validade próxima?">
-        ⏰ Validade de insumos
-      </button>
       <button type="button" class="btn-sugestao-chip" data-pergunta="Como funciona o cálculo do custo por hora e custos fixos?">
         🏢 Custo por hora
-      </button>
-      <button type="button" class="btn-sugestao-chip" data-pergunta="Como o sistema calcula o preço de venda sugerido das receitas?">
-        🧁 Preço sugerido
       </button>
     </div>
 
@@ -319,6 +474,39 @@
     </form>
   </div>
 
+  <!-- Coluna Lateral: Memória e Aprendizado Contínuo -->
+  <div class="painel-memoria-ia">
+    <div class="painel-memoria-header">
+      <span style="font-size: 1.3rem;">🧠</span>
+      <div>
+        <strong style="font-size: 0.95rem; display: block; color: #1e293b;">Aprendizado da IA</strong>
+        <span style="font-size: 0.72rem; color: #64748b;">Memória contínua de atendimentos</span>
+      </div>
+    </div>
+
+    <div style="font-size: 0.76rem; color: #475569; line-height: 1.4;">
+      Ao encerrar um atendimento, a DoceIA documenta os tópicos resolvidos e as suas avaliações (👍/👎), acumulando aprendizado para te atender melhor nas próximas sessões.
+    </div>
+
+    <div id="listaAprendizadosContainer" style="display: flex; flex-direction: column; gap: 0.65rem;">
+      <% if (sessoesAnteriores && sessoesAnteriores.length > 0) { %>
+        <% sessoesAnteriores.forEach(s => { %>
+          <div class="card-aprendizado-item">
+            <div class="card-aprendizado-titulo"><%= s.titulo || 'Atendimento Concluído' %></div>
+            <div style="color: #334155;"><%= s.aprendizado_resumo %></div>
+            <div class="card-aprendizado-data">
+              📅 <%= s.encerrada_em ? s.encerrada_em.substring(0, 10).split('-').reverse().join('/') : '' %>
+            </div>
+          </div>
+        <% }); %>
+      <% } else { %>
+        <div style="text-align: center; padding: 1.5rem 0.5rem; color: #94a3b8; font-size: 0.8rem;">
+          Nenhum atendimento anterior documentado ainda. Experimente conversar com a assistente e clicar em <strong>"🔴 Encerrar Atendimento"</strong>!
+        </div>
+      <% } %>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -328,6 +516,10 @@
   const btnEnviar = document.getElementById('btnEnviarPagina');
   const indicadorDigitando = document.getElementById('indicadorDigitandoPagina');
   const btnLimpar = document.getElementById('btnLimparChatPagina');
+  const btnEncerrar = document.getElementById('btnEncerrarPagina');
+  const bannerAprendizado = document.getElementById('bannerAprendizadoPagina');
+  const bannerTexto = document.getElementById('bannerAprendizadoTextoPagina');
+  const listaAprendizados = document.getElementById('listaAprendizadosContainer');
 
   function rolarParaOFim() {
     containerMsgs.scrollTop = containerMsgs.scrollHeight;
@@ -343,19 +535,74 @@
       .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>');
   }
 
-  function adicionarMensagem(papel, conteudo, hora) {
+  function adicionarMensagem(papel, conteudo, hora, msgId, feedbackAtual) {
     const div = document.createElement('div');
     div.className = `chat-msg ${papel}`;
+
+    let feedbackHtml = '';
+    if (papel === 'assistente' && msgId) {
+      const ativoPositivo = feedbackAtual === 1 ? 'ativo-positivo' : '';
+      const ativoNegativo = feedbackAtual === -1 ? 'ativo-negativo' : '';
+
+      feedbackHtml = `
+        <div class="chat-feedback-container" data-id="${msgId}">
+          <span>Essa resposta foi útil?</span>
+          <div class="chat-feedback-botoes">
+            <button type="button" class="btn-feedback-thumb btn-thumb-up ${ativoPositivo}" title="Legal! Foi útil" data-val="1">
+              👍 Legal
+            </button>
+            <button type="button" class="btn-feedback-thumb btn-thumb-down ${ativoNegativo}" title="Não ajudou / Ruim" data-val="-1">
+              👎 Ruim
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
     div.innerHTML = `
       <div class="chat-avatar">${papel === 'usuario' ? '👤' : '🧁'}</div>
       <div class="chat-balao">
         <div>${formatarTextoMarkdown(conteudo)}</div>
+        ${feedbackHtml}
         <div class="chat-hora">${hora || ''}</div>
       </div>
     `;
     containerMsgs.insertBefore(div, indicadorDigitando);
     rolarParaOFim();
   }
+
+  // Event listener de feedback para todas as mensagens (antigas e novas)
+  containerMsgs.addEventListener('click', async (e) => {
+    const btnThumb = e.target.closest('.btn-feedback-thumb');
+    if (!btnThumb) return;
+
+    const container = btnThumb.closest('.chat-feedback-container');
+    if (!container) return;
+
+    const msgId = container.getAttribute('data-id');
+    const val = parseInt(btnThumb.getAttribute('data-val'), 10);
+    const jaAtivo = btnThumb.classList.contains('ativo-positivo') || btnThumb.classList.contains('ativo-negativo');
+    const novoFeedback = jaAtivo ? 0 : val;
+
+    const btnUp = container.querySelector('.btn-thumb-up');
+    const btnDown = container.querySelector('.btn-thumb-down');
+
+    // Atualização otimista imediata
+    btnUp.classList.remove('ativo-positivo');
+    btnDown.classList.remove('ativo-negativo');
+    if (novoFeedback === 1) btnUp.classList.add('ativo-positivo');
+    if (novoFeedback === -1) btnDown.classList.add('ativo-negativo');
+
+    try {
+      await fetch(`/assistente/mensagem/${msgId}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback: novoFeedback })
+      });
+    } catch (err) {
+      console.error('Erro ao enviar feedback:', err);
+    }
+  });
 
   formChat.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -381,7 +628,7 @@
       const dados = await resp.json();
 
       if (dados.sucesso && dados.resposta) {
-        adicionarMensagem('assistente', dados.resposta, dados.hora);
+        adicionarMensagem('assistente', dados.resposta, dados.hora, dados.mensagemId, null);
       } else {
         adicionarMensagem('assistente', 'Desculpe, ocorreu uma instabilidade ao processar a resposta. Tente novamente.', horaAtual);
       }
@@ -404,12 +651,60 @@
     });
   });
 
+  // Encerrar Atendimento & Documentar Aprendizado
+  btnEncerrar.addEventListener('click', async () => {
+    if (!confirm('Deseja encerrar este atendimento agora?\n\nA assistente irá documentar o que foi resolvido e os seus feedbacks (👍/👎) para enriquecer o aprendizado contínuo dos próximos atendimentos.')) {
+      return;
+    }
+
+    btnEncerrar.disabled = true;
+    btnEncerrar.textContent = 'Documentando...';
+
+    try {
+      const resp = await fetch('/assistente/encerrar', { method: 'POST' });
+      const dados = await resp.json();
+
+      if (dados.sucesso) {
+        bannerTexto.innerHTML = `<strong>${dados.titulo || 'Atendimento Concluído'}</strong><br>${dados.aprendizadoResumo || 'Sessão documentada com sucesso.'}`;
+        bannerAprendizado.style.display = 'block';
+
+        // Atualizar a lista de memórias na lateral
+        const cardNovo = document.createElement('div');
+        cardNovo.className = 'card-aprendizado-item';
+        cardNovo.innerHTML = `
+          <div class="card-aprendizado-titulo">${dados.titulo || 'Atendimento Concluído'}</div>
+          <div style="color: #334155;">${dados.aprendizadoResumo || ''}</div>
+          <div class="card-aprendizado-data">📅 Agora mesmo</div>
+        `;
+        listaAprendizados.insertBefore(cardNovo, listaAprendizados.firstChild);
+
+        // Limpar mensagens do atendimento anterior da tela
+        const msgs = containerMsgs.querySelectorAll('.chat-msg');
+        msgs.forEach((m, idx) => {
+          if (idx > 0) m.remove();
+        });
+
+        bannerAprendizado.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        alert('Não foi possível encerrar o atendimento.');
+      }
+    } catch (err) {
+      alert('Erro de conexão ao encerrar atendimento.');
+    } finally {
+      btnEncerrar.disabled = false;
+      btnEncerrar.innerHTML = '🔴 Encerrar Atendimento';
+    }
+  });
+
   // Limpar conversa
   btnLimpar.addEventListener('click', async () => {
-    if (!confirm('Deseja realmente limpar o histórico da conversa?')) return;
+    if (!confirm('Deseja realmente limpar as mensagens deste atendimento?')) return;
     try {
       await fetch('/assistente/historico', { method: 'DELETE' });
-      location.reload();
+      const msgs = containerMsgs.querySelectorAll('.chat-msg');
+      msgs.forEach((m, idx) => {
+        if (idx > 0) m.remove();
+      });
     } catch (_) {
       alert('Erro ao limpar histórico.');
     }
