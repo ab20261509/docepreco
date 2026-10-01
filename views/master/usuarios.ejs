@@ -1,0 +1,301 @@
+<%- include('../partials/topo') %>
+
+<style>
+  .master-container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+  }
+  .master-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #ede1dc;
+  }
+  .master-nav-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.75rem;
+  }
+  .master-tab-btn {
+    padding: 0.55rem 1.15rem;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid var(--cor-borda);
+    background: #ffffff;
+    color: var(--cor-texto);
+    transition: all 0.15s ease;
+  }
+  .master-tab-btn:hover {
+    background: #fdf2f8;
+    color: var(--cor-primaria);
+    border-color: var(--cor-destaque);
+    transform: translateY(-1px);
+  }
+  .master-tab-btn.ativo {
+    background: var(--cor-primaria);
+    color: #ffffff;
+    border-color: var(--cor-primaria);
+    box-shadow: 0 2px 8px rgba(214, 51, 108, 0.3);
+  }
+  .badge-perfil-master {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+  }
+  .badge-perfil-confeiteiro {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+  }
+  .badge-status-ativo {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+  }
+  .badge-status-bloqueado {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+  }
+  .acoes-usuario-grid {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+</style>
+
+<div class="master-container">
+
+  <!-- Cabeçalho Master -->
+  <div class="master-header">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.6rem;">👥</span>
+        <h1 style="font-size: 1.45rem; font-weight: 800; margin: 0; color: var(--cor-texto);">
+          Gestão de Usuários & Confeitarias
+        </h1>
+      </div>
+      <p style="color: var(--cor-texto-suave); font-size: 0.86rem; margin: 0.25rem 0 0 0;">
+        Gerencie contas, controle status de acesso, promova administradores e configure permissões de menus
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem;">
+      <a href="/" class="btn btn-secundario btn-sm">🏠 Voltar à Loja</a>
+    </div>
+  </div>
+
+  <!-- Abas de Navegação Master -->
+  <div class="master-nav-tabs">
+    <a href="/master" class="master-tab-btn <%= activeNav === 'master' ? 'ativo' : '' %>">
+      <span>📊</span> Dashboard Geral
+    </a>
+    <a href="/master/usuarios" class="master-tab-btn <%= activeNav === 'master_usuarios' ? 'ativo' : '' %>">
+      <span>👥</span> Gestão de Usuários & Permissões
+    </a>
+    <a href="/master/configuracoes" class="master-tab-btn <%= activeNav === 'master_configuracoes' ? 'ativo' : '' %>">
+      <span>⚙️</span> Configurações Globais
+    </a>
+  </div>
+
+  <!-- Barra de Filtros e Busca -->
+  <div class="cartao" style="margin-bottom: 1.5rem; padding: 1rem;">
+    <form method="GET" action="/master/usuarios" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+      <div style="flex: 1; min-width: 220px;">
+        <input type="text" name="q" value="<%= termoBusca %>" placeholder="Buscar por nome ou e-mail..." class="input-form" style="width: 100%;">
+      </div>
+
+      <div style="width: 160px;">
+        <select name="perfil" class="input-form" style="width: 100%;">
+          <option value="">Todos os Perfis</option>
+          <option value="master" <%= filtroPerfil === 'master' ? 'selected' : '' %>>🛡️ Master</option>
+          <option value="confeiteiro" <%= filtroPerfil === 'confeiteiro' ? 'selected' : '' %>>🧁 Confeiteiro</option>
+        </select>
+      </div>
+
+      <div style="width: 150px;">
+        <select name="status" class="input-form" style="width: 100%;">
+          <option value="">Todos os Status</option>
+          <option value="ativo" <%= filtroStatus === 'ativo' ? 'selected' : '' %>>Ativo</option>
+          <option value="bloqueado" <%= filtroStatus === 'bloqueado' ? 'selected' : '' %>>Bloqueado</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primario btn-sm">🔍 Filtrar</button>
+      <% if (termoBusca || filtroPerfil || filtroStatus) { %>
+        <a href="/master/usuarios" class="btn btn-secundario btn-sm">Limpar</a>
+      <% } %>
+    </form>
+  </div>
+
+  <!-- Tabela Completa de Usuários -->
+  <div class="cartao">
+    <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-weight: 700; font-size: 1rem;">
+        Confeitarias Cadastradas (<%= usuarios.length %>)
+      </span>
+    </div>
+
+    <div class="tabela-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome / Confeitaria</th>
+            <th>E-mail</th>
+            <th style="text-align: center;">Perfil</th>
+            <th style="text-align: center;">Status</th>
+            <th style="text-align: center;">Receitas</th>
+            <th style="text-align: center;">Pedidos</th>
+            <th style="text-align: center;">Cadastro</th>
+            <th style="text-align: center;">Ações do Master</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (usuarios && usuarios.length > 0) { %>
+            <% usuarios.forEach(u => { %>
+              <tr>
+                <td style="color: var(--cor-texto-suave); font-size: 0.8rem;">#<%= u.id %></td>
+                <td><strong><%= u.nome %></strong></td>
+                <td><%= u.email %></td>
+                <td style="text-align: center;">
+                  <% if (u.perfil === 'master') { %>
+                    <span class="badge-perfil-master">🛡️ Master</span>
+                  <% } else { %>
+                    <span class="badge-perfil-confeiteiro">🧁 Confeiteiro</span>
+                  <% } %>
+                </td>
+                <td style="text-align: center;">
+                  <% if (u.status === 'ativo') { %>
+                    <span class="badge-status-ativo">Ativo</span>
+                  <% } else { %>
+                    <span class="badge-status-bloqueado">Bloqueado</span>
+                  <% } %>
+                </td>
+                <td style="text-align: center; font-weight: 700;"><%= u.total_produtos %></td>
+                <td style="text-align: center; font-weight: 700;"><%= u.total_pedidos %></td>
+                <td style="text-align: center; font-size: 0.78rem; color: var(--cor-texto-suave);">
+                  <%= u.criado_em ? u.criado_em.substring(0, 10).split('-').reverse().join('/') : '' %>
+                </td>
+                <td style="text-align: center;">
+                  <div class="acoes-usuario-grid">
+                    
+                    <!-- 1. Configurar Menus e Permissões -->
+                    <a href="/master/usuarios/<%= u.id %>/permissoes" class="btn btn-secundario btn-sm" title="Definir quem tem acesso ao que, menus visíveis e permissões" style="font-size: 0.74rem; padding: 0.25rem 0.5rem;">
+                      🛡️ Permissões
+                    </a>
+
+                    <!-- 2. Alternar Status (Bloquear / Ativar) -->
+                    <% if (u.id !== usuario.id) { %>
+                      <form method="POST" action="/master/usuarios/<%= u.id %>/status" style="margin: 0;" onsubmit="return confirm('Deseja realmente <%= u.status === 'ativo' ? 'BLOQUEAR o acesso' : 'DESBLOQUEAR' %> deste usuário?');">
+                        <button type="submit" class="btn btn-sm <%= u.status === 'ativo' ? 'btn-perigo' : 'btn-sucesso' %>" style="font-size: 0.74rem; padding: 0.25rem 0.5rem;" title="<%= u.status === 'ativo' ? 'Suspender usuário' : 'Reativar usuário' %>">
+                          <%= u.status === 'ativo' ? '🚫 Bloquear' : '✓ Reativar' %>
+                        </button>
+                      </form>
+
+                      <!-- 3. Alternar Perfil (Master <-> Confeiteiro) -->
+                      <form method="POST" action="/master/usuarios/<%= u.id %>/perfil" style="margin: 0;" onsubmit="return confirm('Deseja alterar o perfil deste usuário para <%= u.perfil === 'master' ? 'CONFEITEIRO' : 'MASTER' %>?');">
+                        <button type="submit" class="btn btn-secundario btn-sm" style="font-size: 0.74rem; padding: 0.25rem 0.5rem;" title="Mudar privilégios">
+                          <%= u.perfil === 'master' ? '⬇️ Rebaixar' : '⬆️ Tornar Master' %>
+                        </button>
+                      </form>
+                    <% } %>
+
+                    <!-- 4. Redefinir Senha -->
+                    <button type="button" class="btn btn-secundario btn-sm btn-redefinir-senha" data-id="<%= u.id %>" data-nome="<%= u.nome %>" style="font-size: 0.74rem; padding: 0.25rem 0.5rem;" title="Definir nova senha">
+                      🔑 Senha
+                    </button>
+
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="9" style="text-align: center; color: var(--cor-texto-suave); padding: 2rem;">
+                Nenhum usuário encontrado com os filtros selecionados.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal para Redefinir Senha -->
+<div id="modalSenha" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99999; align-items: center; justify-content: center;">
+  <div style="background: #ffffff; border-radius: 14px; padding: 1.5rem; width: 380px; max-width: 90vw; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+    <h3 style="margin-top: 0; font-size: 1.1rem; font-weight: 800; color: var(--cor-texto);">🔑 Redefinir Senha do Usuário</h3>
+    <p id="modalNomeUsuario" style="font-size: 0.85rem; color: var(--cor-texto-suave); margin-bottom: 1rem;"></p>
+    
+    <form id="formRedefinirSenha" method="POST">
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.35rem;">Nova Senha (mínimo 8 dígitos):</label>
+        <input type="password" name="nova_senha" required minlength="8" class="input-form" style="width: 100%;" placeholder="Digite a nova senha...">
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+        <button type="button" id="btnCancelarModalSenha" class="btn btn-secundario btn-sm">Cancelar</button>
+        <button type="submit" class="btn btn-primario btn-sm">Salvar Nova Senha</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const modal = document.getElementById('modalSenha');
+  const form = document.getElementById('formRedefinirSenha');
+  const nomeUser = document.getElementById('modalNomeUsuario');
+  const btnCancelar = document.getElementById('btnCancelarModalSenha');
+
+  document.querySelectorAll('.btn-redefinir-senha').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      const nome = btn.getAttribute('data-nome');
+      form.action = `/master/usuarios/${id}/redefinir-senha`;
+      nomeUser.textContent = `Usuário: ${nome} (#${id})`;
+      modal.style.display = 'flex';
+    });
+  });
+
+  btnCancelar.addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.style.display = 'none';
+  });
+</script>
+
+<%- include('../partials/rodape') %>

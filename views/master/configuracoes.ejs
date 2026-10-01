@@ -1,0 +1,182 @@
+<%- include('../partials/topo') %>
+
+<style>
+  .master-container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+  }
+  .master-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #ede1dc;
+  }
+  .master-nav-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.75rem;
+  }
+  .master-tab-btn {
+    padding: 0.55rem 1.15rem;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid var(--cor-borda);
+    background: #ffffff;
+    color: var(--cor-texto);
+    transition: all 0.15s ease;
+  }
+  .master-tab-btn:hover {
+    background: #fdf2f8;
+    color: var(--cor-primaria);
+    border-color: var(--cor-destaque);
+    transform: translateY(-1px);
+  }
+  .master-tab-btn.ativo {
+    background: var(--cor-primaria);
+    color: #ffffff;
+    border-color: var(--cor-primaria);
+    box-shadow: 0 2px 8px rgba(214, 51, 108, 0.3);
+  }
+  .config-item-card {
+    background: #ffffff;
+    border: 1px solid var(--cor-borda);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--sombra);
+  }
+</style>
+
+<div class="master-container">
+
+  <!-- Cabeçalho Master -->
+  <div class="master-header">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.6rem;">⚙️</span>
+        <h1 style="font-size: 1.45rem; font-weight: 800; margin: 0; color: var(--cor-texto);">
+          Configurações Globais do Sistema
+        </h1>
+      </div>
+      <p style="color: var(--cor-texto-suave); font-size: 0.86rem; margin: 0.25rem 0 0 0;">
+        Parâmetros gerais, chave global da IA, avisos de banner e modo de manutenção
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem;">
+      <a href="/" class="btn btn-secundario btn-sm">🏠 Voltar à Loja</a>
+    </div>
+  </div>
+
+  <!-- Abas de Navegação Master -->
+  <div class="master-nav-tabs">
+    <a href="/master" class="master-tab-btn <%= activeNav === 'master' ? 'ativo' : '' %>">
+      <span>📊</span> Dashboard Geral
+    </a>
+    <a href="/master/usuarios" class="master-tab-btn <%= activeNav === 'master_usuarios' ? 'ativo' : '' %>">
+      <span>👥</span> Gestão de Usuários & Permissões
+    </a>
+    <a href="/master/configuracoes" class="master-tab-btn <%= activeNav === 'master_configuracoes' ? 'ativo' : '' %>">
+      <span>⚙️</span> Configurações Globais
+    </a>
+  </div>
+
+  <% if (sucessoMsg) { %>
+    <div style="background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 0.85rem 1.25rem; border-radius: 10px; margin-bottom: 1.5rem; font-weight: 600;">
+      ✓ <%= sucessoMsg %>
+    </div>
+  <% } %>
+
+  <form method="POST" action="/master/configuracoes">
+    
+    <!-- 1. Nome da Plataforma -->
+    <div class="config-item-card">
+      <label style="display: block; font-weight: 700; font-size: 0.95rem; color: var(--cor-texto); margin-bottom: 0.35rem;">
+        🏷️ Nome do Sistema / Marca
+      </label>
+      <p style="font-size: 0.8rem; color: var(--cor-texto-suave); margin-top: 0; margin-bottom: 0.75rem;">
+        Nome exibido na barra superior, títulos de páginas e relatórios do sistema.
+      </p>
+      <input type="text" name="nome_sistema" value="<%= configs.nome_sistema || 'DocePreço' %>" class="input-form" style="max-width: 400px; width: 100%;">
+    </div>
+
+    <!-- 2. Permissão de Novos Cadastros Públicos -->
+    <div class="config-item-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+          <label style="font-weight: 700; font-size: 0.95rem; color: var(--cor-texto); display: block; margin-bottom: 0.2rem;">
+            🚪 Permitir Novos Cadastros de Usuários
+          </label>
+          <span style="font-size: 0.8rem; color: var(--cor-texto-suave);">
+            Quando desativado, o formulário público em <code>/cadastro</code> é bloqueado e novas contas só podem ser criadas pelo Master.
+          </span>
+        </div>
+        <select name="permite_cadastros" class="input-form" style="width: 140px;">
+          <option value="1" <%= configs.permite_cadastros !== '0' ? 'selected' : '' %>>✓ Ativado</option>
+          <option value="0" <%= configs.permite_cadastros === '0' ? 'selected' : '' %>>🚫 Bloqueado</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 3. Modo de Manutenção -->
+    <div class="config-item-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+          <label style="font-weight: 700; font-size: 0.95rem; color: #991b1b; display: block; margin-bottom: 0.2rem;">
+            🛠️ Modo de Manutenção
+          </label>
+          <span style="font-size: 0.8rem; color: var(--cor-texto-suave);">
+            Suspende o acesso de confeiteiros para atualizações ou manutenções na infraestrutura. Somente usuários com perfil Master conseguem entrar.
+          </span>
+        </div>
+        <select name="modo_manutencao" class="input-form" style="width: 140px;">
+          <option value="0" <%= configs.modo_manutencao !== '1' ? 'selected' : '' %>>Desativado</option>
+          <option value="1" <%= configs.modo_manutencao === '1' ? 'selected' : '' %>>⚠️ Ativado</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 4. Banner de Aviso Geral -->
+    <div class="config-item-card">
+      <label style="display: block; font-weight: 700; font-size: 0.95rem; color: var(--cor-texto); margin-bottom: 0.35rem;">
+        📢 Banner de Aviso Geral no Topo
+      </label>
+      <p style="font-size: 0.8rem; color: var(--cor-texto-suave); margin-top: 0; margin-bottom: 0.75rem;">
+        Mensagem exibida em destaque para todas as confeitarias logadas (deixe em branco para ocultar).
+      </p>
+      <input type="text" name="aviso_geral_banner" value="<%= configs.aviso_geral_banner || '' %>" placeholder="Ex: Informamos que o sistema passará por manutenção programada domingo às 23h..." class="input-form" style="width: 100%;">
+    </div>
+
+    <!-- 5. Chave Gemini API Global -->
+    <div class="config-item-card">
+      <label style="display: block; font-weight: 700; font-size: 0.95rem; color: var(--cor-texto); margin-bottom: 0.35rem;">
+        ✨ Chave Global da Google Gemini API (DoceIA)
+      </label>
+      <p style="font-size: 0.8rem; color: var(--cor-texto-suave); margin-top: 0; margin-bottom: 0.75rem;">
+        Chave global de IA utilizada pelo assistente virtual do sistema. Se preenchida, é utilizada automaticamente em toda a plataforma.
+      </p>
+      <input type="password" name="gemini_api_key_global" value="<%= configs.gemini_api_key_global || '' %>" placeholder="AIzaSy..." class="input-form" style="width: 100%; font-family: monospace;">
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+      <a href="/master" class="btn btn-secundario">Cancelar</a>
+      <button type="submit" class="btn btn-primario" style="padding: 0.65rem 1.75rem;">
+        💾 Salvar Configurações Globais
+      </button>
+    </div>
+  </form>
+
+</div>
+
+<%- include('../partials/rodape') %>

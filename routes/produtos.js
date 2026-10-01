@@ -1,7 +1,7 @@
 const express = require('express');
 const XLSX = require('xlsx');
 const db = require('../db');
-const { exigirLogin } = require('../middleware/auth');
+const { exigirLogin, exigirPermissao } = require('../middleware/auth');
 const { custoFixoHora, calcularProduto } = require('../calculo');
 
 const router = express.Router();
@@ -61,7 +61,7 @@ async function getCustoFixoHoraUsuario(uid) {
 }
 
 // Tela de cadastro de novo produto
-router.get('/novo', exigirLogin, async (req, res, next) => {
+router.get('/novo', exigirLogin, exigirPermissao('produtos', 'criar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const { cfHora } = await getCustoFixoHoraUsuario(uid);
@@ -100,7 +100,7 @@ router.get('/novo', exigirLogin, async (req, res, next) => {
 });
 
 // Processar criação de produto
-router.post('/', exigirLogin, async (req, res, next) => {
+router.post('/', exigirLogin, exigirPermissao('produtos', 'criar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const { cfHora } = await getCustoFixoHoraUsuario(uid);
@@ -213,7 +213,7 @@ router.post('/', exigirLogin, async (req, res, next) => {
 });
 
 // Ver e editar produto existente
-router.get('/:id', exigirLogin, async (req, res, next) => {
+router.get('/:id', exigirLogin, exigirPermissao('produtos', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const id = parseInt(req.params.id, 10);
@@ -259,7 +259,7 @@ router.get('/:id', exigirLogin, async (req, res, next) => {
 });
 
 // Atualizar produto existente
-router.post('/:id', exigirLogin, async (req, res, next) => {
+router.post('/:id', exigirLogin, exigirPermissao('produtos', 'editar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const id = parseInt(req.params.id, 10);
@@ -352,7 +352,7 @@ router.post('/:id', exigirLogin, async (req, res, next) => {
 });
 
 // Excluir produto
-router.post('/:id/excluir', exigirLogin, async (req, res, next) => {
+router.post('/:id/excluir', exigirLogin, exigirPermissao('produtos', 'excluir'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const id = parseInt(req.params.id, 10);

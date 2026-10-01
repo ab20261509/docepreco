@@ -1,11 +1,11 @@
 const express = require('express');
 const db = require('../db');
-const { exigirLogin } = require('../middleware/auth');
+const { exigirLogin, exigirPermissao } = require('../middleware/auth');
 const { custoFixoHora } = require('../calculo');
 
 const router = express.Router();
 
-router.get('/', exigirLogin, async (req, res) => {
+router.get('/', exigirLogin, exigirPermissao('custos', 'ver'), async (req, res) => {
   const uid = req.session.usuario.id;
 
   const configRow = await db.get('SELECT horas_mes FROM configuracoes WHERE usuario_id = ?', [uid]);
@@ -26,7 +26,7 @@ router.get('/', exigirLogin, async (req, res) => {
   });
 });
 
-router.post('/', exigirLogin, async (req, res) => {
+router.post('/', exigirLogin, exigirPermissao('custos', 'editar'), async (req, res) => {
   const uid = req.session.usuario.id;
   const horasMes = parseFloat(req.body.horas_mes) || 160;
 
@@ -72,7 +72,7 @@ router.post('/', exigirLogin, async (req, res) => {
 });
 
 // Excluir um item de custo fixo
-router.post('/excluir/:id', exigirLogin, async (req, res) => {
+router.post('/excluir/:id', exigirLogin, exigirPermissao('custos', 'excluir'), async (req, res) => {
   const uid = req.session.usuario.id;
   const id = parseInt(req.params.id, 10);
 

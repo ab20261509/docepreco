@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { exigirLogin } = require('../middleware/auth');
+const { exigirLogin, exigirPermissao } = require('../middleware/auth');
 const { formatarTelefone } = require('./clientes');
 
 const router = express.Router();
@@ -93,7 +93,7 @@ async function anexarItensEFormatacao(pedidos) {
 }
 
 // 1. Painel Principal da Agenda
-router.get('/', exigirLogin, async (req, res, next) => {
+router.get('/', exigirLogin, exigirPermissao('agenda', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const hoje = obterHojeLocal();
@@ -271,7 +271,7 @@ router.get('/', exigirLogin, async (req, res, next) => {
 });
 
 // 2. Avanço Rápido de Status direto pela Agenda
-router.post('/:id/status', exigirLogin, async (req, res, next) => {
+router.post('/:id/status', exigirLogin, exigirPermissao('agenda', 'editar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const pedidoId = parseInt(req.params.id, 10);

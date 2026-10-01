@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { exigirLogin } = require('../middleware/auth');
+const { exigirLogin, exigirPermissao } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -26,7 +26,7 @@ function formatarTelefone(telefone) {
 }
 
 // 1. Listagem de Clientes
-router.get('/', exigirLogin, async (req, res, next) => {
+router.get('/', exigirLogin, exigirPermissao('clientes', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
 
@@ -55,7 +55,7 @@ router.get('/', exigirLogin, async (req, res, next) => {
 });
 
 // 2. Cadastrar Novo Cliente
-router.post('/', exigirLogin, async (req, res) => {
+router.post('/', exigirLogin, exigirPermissao('clientes', 'criar'), async (req, res) => {
   const uid = req.session.usuario.id;
   const nome = (req.body.nome || '').trim();
   const telefone = (req.body.telefone || '').trim();
@@ -84,7 +84,7 @@ router.post('/', exigirLogin, async (req, res) => {
 });
 
 // 3. Editar Cliente Existente
-router.post('/:id/editar', exigirLogin, async (req, res) => {
+router.post('/:id/editar', exigirLogin, exigirPermissao('clientes', 'editar'), async (req, res) => {
   const uid = req.session.usuario.id;
   const id = parseInt(req.params.id, 10);
   const nome = (req.body.nome || '').trim();
@@ -114,7 +114,7 @@ router.post('/:id/editar', exigirLogin, async (req, res) => {
 });
 
 // 4. Excluir Cliente
-router.post('/:id/excluir', exigirLogin, async (req, res) => {
+router.post('/:id/excluir', exigirLogin, exigirPermissao('clientes', 'excluir'), async (req, res) => {
   const uid = req.session.usuario.id;
   const id = parseInt(req.params.id, 10);
 
@@ -128,7 +128,7 @@ router.post('/:id/excluir', exigirLogin, async (req, res) => {
 });
 
 // 5. API de Busca Rápida (para autocomplete em pedidos/orçamentos)
-router.get('/api/buscar', exigirLogin, async (req, res, next) => {
+router.get('/api/buscar', exigirLogin, exigirPermissao('clientes', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const termo = (req.query.q || '').trim();

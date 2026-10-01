@@ -9,19 +9,19 @@
 
   <% if (stats.pedidosHoje > 0 || stats.itensEstoqueBaixo > 0 || stats.lotesRisco > 0) { %>
     <div class="inicio-alertas-rapidos">
-      <% if (stats.pedidosHoje > 0) { %>
+      <% if (stats.pedidosHoje > 0 && pode('agenda', 'ver')) { %>
         <a href="/agenda" class="alerta-rapido-chip alerta-info" title="Ver encomendas com entrega prevista para hoje">
           <span>📅</span>
           <span><strong><%= stats.pedidosHoje %></strong> <%= stats.pedidosHoje === 1 ? 'entrega hoje' : 'entregas hoje' %></span>
         </a>
       <% } %>
-      <% if (stats.itensEstoqueBaixo > 0) { %>
+      <% if (stats.itensEstoqueBaixo > 0 && pode('ingredientes', 'ver')) { %>
         <a href="/ingredientes" class="alerta-rapido-chip alerta-aviso" title="Ver ingredientes com estoque zerado ou abaixo do mínimo">
           <span>⚠️</span>
           <span><strong><%= stats.itensEstoqueBaixo %></strong> <%= stats.itensEstoqueBaixo === 1 ? 'item estoque baixo' : 'itens estoque baixo' %></span>
         </a>
       <% } %>
-      <% if (stats.lotesRisco > 0) { %>
+      <% if (stats.lotesRisco > 0 && pode('ingredientes', 'ver')) { %>
         <a href="/ingredientes" class="alerta-rapido-chip alerta-perigo" title="Ver lotes com validade vencida ou vencendo nos próximos 7 dias">
           <span>⏰</span>
           <span><strong><%= stats.lotesRisco %></strong> <%= stats.lotesRisco === 1 ? 'lote em risco' : 'lotes em risco' %></span>
@@ -31,263 +31,299 @@
   <% } %>
 </div>
 
-<!-- Botões de Acesso Rápido Agrupados -->
+<!-- Botões de Acesso Rápido Agrupados com Controle de Permissões -->
 <div class="container-botoes-agrupados">
   
   <!-- Grupo 1: Atendimento & Cozinha -->
-  <div class="grupo-botoes-home">
-    <div class="grupo-botoes-topo">
-      <span class="grupo-botoes-tag grupo-tag-destaque">⚡ Destaques</span>
-      <span class="grupo-botoes-titulo">Operação da Cozinha & Assistente Inteligente</span>
-    </div>
-    <div class="grid-botoes-grupo">
-      <a href="/producao" class="btn-atalho-compacto btn-atalho-cozinha" title="Modo Cozinha: Pesagem guiada, timers e sequência de misturas">
-        <div class="btn-atalho-icone" style="background: #ffedd5; color: #c2410c;">🍳</div>
-        <div class="btn-atalho-textos">
-          <span class="btn-atalho-nome">Modo Cozinha</span>
-          <span class="btn-atalho-detalhe" style="color: #9a3412; font-weight: 600;">Assistente & Timers</span>
-        </div>
-      </a>
+  <% if (pode('producao', 'ver') || pode('assistente', 'ver')) { %>
+    <div class="grupo-botoes-home">
+      <div class="grupo-botoes-topo">
+        <span class="grupo-botoes-tag grupo-tag-destaque">⚡ Destaques</span>
+        <span class="grupo-botoes-titulo">Operação da Cozinha & Assistente Inteligente</span>
+      </div>
+      <div class="grid-botoes-grupo">
+        <% if (pode('producao', 'ver')) { %>
+          <a href="/producao" class="btn-atalho-compacto btn-atalho-cozinha" title="Modo Cozinha: Pesagem guiada, timers e sequência de misturas">
+            <div class="btn-atalho-icone" style="background: #ffedd5; color: #c2410c;">🍳</div>
+            <div class="btn-atalho-textos">
+              <span class="btn-atalho-nome">Modo Cozinha</span>
+              <span class="btn-atalho-detalhe" style="color: #9a3412; font-weight: 600;">Assistente & Timers</span>
+            </div>
+          </a>
+        <% } %>
 
-      <a href="/assistente" class="btn-atalho-compacto btn-atalho-ia" title="Tire dúvidas sobre o sistema e consulte tarefas de hoje">
-        <div class="btn-atalho-icone" style="background: #f3e8ff; color: #7c3aed;">💬</div>
-        <div class="btn-atalho-textos">
-          <span class="btn-atalho-nome">Assistente IA</span>
-          <span class="btn-atalho-detalhe" style="color: #6b21a8; font-weight: 600;">Dúvidas & Estoque</span>
-        </div>
-      </a>
+        <% if (pode('assistente', 'ver')) { %>
+          <a href="/assistente" class="btn-atalho-compacto btn-atalho-ia" title="Tire dúvidas sobre o sistema e consulte tarefas de hoje">
+            <div class="btn-atalho-icone" style="background: #f3e8ff; color: #7c3aed;">💬</div>
+            <div class="btn-atalho-textos">
+              <span class="btn-atalho-nome">Assistente IA</span>
+              <span class="btn-atalho-detalhe" style="color: #6b21a8; font-weight: 600;">Dúvidas & Estoque</span>
+            </div>
+          </a>
+        <% } %>
+      </div>
     </div>
-  </div>
+  <% } %>
 
   <!-- Grupo 2: Produção & Fichas Técnicas -->
-  <div class="grupo-botoes-home">
-    <div class="grupo-botoes-topo">
-      <span class="grupo-botoes-tag grupo-tag-fabrica">🏭 Produção</span>
-      <span class="grupo-botoes-titulo">Fichas Técnicas, Estoque & Custos</span>
-    </div>
-    <div class="grid-botoes-grupo">
-      <a href="/produtos/novo" class="btn-atalho-compacto" title="Cadastre uma nova receita com custos e margem">
-        <div class="btn-atalho-icone card-icone-receita">🧁</div>
-        <div class="btn-atalho-textos">
-          <span class="btn-atalho-nome">Nova Receita</span>
-          <span class="btn-atalho-detalhe">Cadastrar Produto</span>
-        </div>
-      </a>
+  <% if (pode('produtos', 'criar') || pode('ingredientes', 'ver') || pode('custos', 'ver')) { %>
+    <div class="grupo-botoes-home">
+      <div class="grupo-botoes-topo">
+        <span class="grupo-botoes-tag grupo-tag-fabrica">🏭 Produção</span>
+        <span class="grupo-botoes-titulo">Fichas Técnicas, Estoque & Custos</span>
+      </div>
+      <div class="grid-botoes-grupo">
+        <% if (pode('produtos', 'criar')) { %>
+          <a href="/produtos/novo" class="btn-atalho-compacto" title="Cadastre uma nova receita com custos e margem">
+            <div class="btn-atalho-icone card-icone-receita">🧁</div>
+            <div class="btn-atalho-textos">
+              <span class="btn-atalho-nome">Nova Receita</span>
+              <span class="btn-atalho-detalhe">Cadastrar Produto</span>
+            </div>
+          </a>
+        <% } %>
 
-      <a href="/ingredientes" class="btn-atalho-compacto" title="Controle de saldo em estoque, compras e validades">
-        <div class="btn-atalho-icone card-icone-insumos">🥣</div>
-        <div class="btn-atalho-textos">
-          <span class="btn-atalho-nome">Insumos & Estoque</span>
-          <span class="btn-atalho-detalhe">
-            <% if (stats.itensEstoqueBaixo > 0) { %>
-              <span style="color: #b91c1c; font-weight: 700;">⚠️ <%= stats.itensEstoqueBaixo %> em alerta</span>
-            <% } else { %>
-              <span style="color: #15803d;">✓ Estoque em dia</span>
-            <% } %>
-          </span>
-        </div>
-      </a>
+        <% if (pode('ingredientes', 'ver')) { %>
+          <a href="/ingredientes" class="btn-atalho-compacto" title="Controle de saldo em estoque, compras e validades">
+            <div class="btn-atalho-icone card-icone-insumos">🥣</div>
+            <div class="btn-atalho-textos">
+              <span class="btn-atalho-nome">Insumos & Estoque</span>
+              <span class="btn-atalho-detalhe">
+                <% if (stats.itensEstoqueBaixo > 0) { %>
+                  <span style="color: #b91c1c; font-weight: 700;">⚠️ <%= stats.itensEstoqueBaixo %> em alerta</span>
+                <% } else { %>
+                  <span style="color: #15803d;">✓ Estoque em dia</span>
+                <% } %>
+              </span>
+            </div>
+          </a>
+        <% } %>
 
-      <a href="/custos" class="btn-atalho-compacto" title="Configurar despesas mensais e apurar custo da hora">
-        <div class="btn-atalho-icone card-icone-custos">🏢</div>
-        <div class="btn-atalho-textos">
-          <span class="btn-atalho-nome">Custos Fixos</span>
-          <span class="btn-atalho-detalhe"><%= formatMoney(cfHora) %>/hora</span>
-        </div>
-      </a>
+        <% if (pode('custos', 'ver')) { %>
+          <a href="/custos" class="btn-atalho-compacto" title="Configurar despesas mensais e apurar custo da hora">
+            <div class="btn-atalho-icone card-icone-custos">🏢</div>
+            <div class="btn-atalho-textos">
+              <span class="btn-atalho-nome">Custos Fixos</span>
+              <span class="btn-atalho-detalhe"><%= formatMoney(cfHora) %>/hora</span>
+            </div>
+          </a>
+        <% } %>
+      </div>
     </div>
-  </div>
+  <% } %>
 
   <!-- Grupo 3: Comercial & Vendas -->
-  <div class="grupo-botoes-home">
-    <div class="grupo-botoes-topo">
-      <span class="grupo-botoes-tag grupo-tag-comercial">🛍️ Comercial</span>
-      <span class="grupo-botoes-titulo">Vendas, Encomendas & Clientes</span>
+  <% if (pode('agenda', 'ver') || pode('pedidos', 'ver') || pode('compras', 'ver') || pode('clientes', 'ver')) { %>
+    <div class="grupo-botoes-home">
+      <div class="grupo-botoes-topo">
+        <span class="grupo-botoes-tag grupo-tag-comercial">🛍️ Comercial</span>
+        <span class="grupo-botoes-titulo">Vendas, Encomendas & Clientes</span>
+      </div>
+      <div class="grid-botoes-grupo">
+        <% if (pode('agenda', 'ver')) { %>
+          <a href="/agenda" class="btn-atalho-compacto" title="Cronograma de encomendas e calendário mensal">
+            <div class="btn-atalho-icone card-icone-agenda">📅</div>
+            <div class="btn-atalho-textos">
+              <span class="btn-atalho-nome">Agenda de Entregas</span>
+              <span class="btn-atalho-detalhe">
+                <% if (stats.pedidosHoje > 0) { %>
+                  <span style="color: #0369a1; font-weight: 700;">📦 <%= stats.pedidosHoje %> hoje</span>
+                <% } else { %>
+                  <span>0 entregas hoje</span>
+                <% } %>
+              </span>
+            </div>
+          </a>
+        <% } %>
+
+        <% if (pode('pedidos', 'ver')) { %>
+          <a href="/pedidos" class="btn-atalho-compacto" title="Orçamentos, controle de produção e WhatsApp">
+            <div class="btn-atalho-icone card-icone-pedidos">📝</div>
+            <div class="btn-atalho-textos">
+              <span class="btn-atalho-nome">Pedidos & Orçamentos</span>
+              <span class="btn-atalho-detalhe"><%= stats.pedidosAbertos %> em andamento</span>
+            </div>
+          </a>
+        <% } %>
+
+        <% if (pode('compras', 'ver')) { %>
+          <a href="/compras" class="btn-atalho-compacto" title="Lista de compras inteligente para atender suas encomendas">
+            <div class="btn-atalho-icone card-icone-compras">🛒</div>
+            <div class="btn-atalho-textos">
+              <span class="btn-atalho-nome">Lista de Compras</span>
+              <span class="btn-atalho-detalhe">Planejamento Inteligente</span>
+            </div>
+          </a>
+        <% } %>
+
+        <% if (pode('clientes', 'ver')) { %>
+          <a href="/clientes" class="btn-atalho-compacto" title="Contatos, histórico e WhatsApp">
+            <div class="btn-atalho-icone card-icone-clientes">👥</div>
+            <div class="btn-atalho-textos">
+              <span class="btn-atalho-nome">Clientes</span>
+              <span class="btn-atalho-detalhe"><%= stats.totalClientes %> cadastrado(s)</span>
+            </div>
+          </a>
+        <% } %>
+      </div>
     </div>
-    <div class="grid-botoes-grupo">
-      <a href="/agenda" class="btn-atalho-compacto" title="Cronograma de encomendas e calendário mensal">
-        <div class="btn-atalho-icone card-icone-agenda">📅</div>
-        <div class="btn-atalho-textos">
-          <span class="btn-atalho-nome">Agenda de Entregas</span>
-          <span class="btn-atalho-detalhe">
-            <% if (stats.pedidosHoje > 0) { %>
-              <span style="color: #0369a1; font-weight: 700;">📦 <%= stats.pedidosHoje %> hoje</span>
-            <% } else { %>
-              <span>0 entregas hoje</span>
-            <% } %>
-          </span>
-        </div>
-      </a>
-
-      <a href="/pedidos" class="btn-atalho-compacto" title="Orçamentos, controle de produção e WhatsApp">
-        <div class="btn-atalho-icone card-icone-pedidos">📝</div>
-        <div class="btn-atalho-textos">
-          <span class="btn-atalho-nome">Pedidos & Orçamentos</span>
-          <span class="btn-atalho-detalhe"><%= stats.pedidosAbertos %> em andamento</span>
-        </div>
-      </a>
-
-      <a href="/compras" class="btn-atalho-compacto" title="Lista de compras inteligente para atender suas encomendas">
-        <div class="btn-atalho-icone card-icone-compras">🛒</div>
-        <div class="btn-atalho-textos">
-          <span class="btn-atalho-nome">Lista de Compras</span>
-          <span class="btn-atalho-detalhe">Planejamento Inteligente</span>
-        </div>
-      </a>
-
-      <a href="/clientes" class="btn-atalho-compacto" title="Contatos, histórico e WhatsApp">
-        <div class="btn-atalho-icone card-icone-clientes">👥</div>
-        <div class="btn-atalho-textos">
-          <span class="btn-atalho-nome">Clientes</span>
-          <span class="btn-atalho-detalhe"><%= stats.totalClientes %> cadastrado(s)</span>
-        </div>
-      </a>
-    </div>
-  </div>
+  <% } %>
 
 </div>
 
-<!-- Visão do Painel de Precificação Logo Abaixo dos Botões Agrupados -->
-<div class="secao-precificacao-home">
-  
-  <div class="secao-precificacao-cabecalho">
-    <div>
-      <h2 style="font-size: 1.25rem; font-weight: 800; color: var(--cor-texto); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-        <span>📊</span> Painel de Precificação & Receitas
-      </h2>
-      <p style="color: var(--cor-texto-suave); font-size: 0.82rem; margin: 0.2rem 0 0 0;">
-        Fichas técnicas ativas, custos por unidade e preços sugeridos com margem de lucro
-      </p>
-    </div>
-
-    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-      <a href="/custos" class="btn btn-secundario btn-sm">🏢 Custos Fixos</a>
-      <a href="/produtos/novo" class="btn btn-primario btn-sm">➕ Nova Receita</a>
-    </div>
-  </div>
-
-  <!-- KPIs de Precificação -->
-  <div class="grid-kpis" style="margin-bottom: 1.25rem;">
-    <div class="kpi-card">
-      <div class="kpi-card-conteudo">
-        <span class="kpi-rotulo">Custos Fixos Mensais</span>
-        <span class="kpi-valor"><%= formatMoney(totalFixos) %></span>
-        <span class="kpi-subtexto">Despesas da estrutura</span>
+<!-- Visão do Painel de Precificação (se o usuário puder ver produtos) -->
+<% if (pode('produtos', 'ver')) { %>
+  <div class="secao-precificacao-home">
+    
+    <div class="secao-precificacao-cabecalho">
+      <div>
+        <h2 style="font-size: 1.25rem; font-weight: 800; color: var(--cor-texto); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <span>📊</span> Painel de Precificação & Receitas
+        </h2>
+        <p style="color: var(--cor-texto-suave); font-size: 0.82rem; margin: 0.2rem 0 0 0;">
+          Fichas técnicas ativas, custos por unidade e preços sugeridos com margem de lucro
+        </p>
       </div>
-    </div>
 
-    <div class="kpi-card">
-      <div class="kpi-card-conteudo">
-        <span class="kpi-rotulo">Horas Mensais</span>
-        <span class="kpi-valor"><%= horasMes %> h/mês</span>
-        <span class="kpi-subtexto">Jornada de produção</span>
-      </div>
-    </div>
-
-    <div class="kpi-card">
-      <div class="kpi-card-conteudo">
-        <span class="kpi-rotulo">Custo Fixo por Hora</span>
-        <span class="kpi-valor"><%= formatMoney(cfHora) %>/h</span>
-        <span class="kpi-subtexto">Mão de obra proporcional</span>
-      </div>
-    </div>
-
-    <div class="kpi-card">
-      <div class="kpi-card-conteudo">
-        <span class="kpi-rotulo">Receitas Cadastradas</span>
-        <span class="kpi-valor" id="total-produtos-kpi"><%= resumo.length %></span>
-        <span class="kpi-subtexto">Fichas técnicas ativas</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tabela do Resumo de Precificação -->
-  <div class="cartao">
-    <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-      <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <span style="font-weight: 700;">📋 Resumo de Produtos e Lucros</span>
-        <% if (resumo.length > 0) { %>
-          <span class="badge-contador" id="contador-produtos"><%= resumo.length %></span>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <% if (pode('custos', 'ver')) { %>
+          <a href="/custos" class="btn btn-secundario btn-sm">🏢 Custos Fixos</a>
+        <% } %>
+        <% if (pode('produtos', 'criar')) { %>
+          <a href="/produtos/novo" class="btn btn-primario btn-sm">➕ Nova Receita</a>
         <% } %>
       </div>
-      <% if (resumo.length > 0) { %>
-        <div class="busca-input-wrapper">
-          <span class="busca-icone">🔍</span>
-          <input type="text" id="filtro-produtos" placeholder="Buscar receita..." class="input-busca-tabela" autocomplete="off" style="width: 190px !important;">
+    </div>
+
+    <!-- KPIs de Precificação -->
+    <div class="grid-kpis" style="margin-bottom: 1.25rem;">
+      <div class="kpi-card">
+        <div class="kpi-card-conteudo">
+          <span class="kpi-rotulo">Custos Fixos Mensais</span>
+          <span class="kpi-valor"><%= formatMoney(totalFixos) %></span>
+          <span class="kpi-subtexto">Despesas da estrutura</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card-conteudo">
+          <span class="kpi-rotulo">Horas Mensais</span>
+          <span class="kpi-valor"><%= horasMes %> h/mês</span>
+          <span class="kpi-subtexto">Jornada de produção</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card-conteudo">
+          <span class="kpi-rotulo">Custo Fixo por Hora</span>
+          <span class="kpi-valor"><%= formatMoney(cfHora) %>/h</span>
+          <span class="kpi-subtexto">Mão de obra proporcional</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-card-conteudo">
+          <span class="kpi-rotulo">Receitas Cadastradas</span>
+          <span class="kpi-valor" id="total-produtos-kpi"><%= resumo.length %></span>
+          <span class="kpi-subtexto">Fichas técnicas ativas</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela do Resumo de Precificação -->
+    <div class="cartao">
+      <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-weight: 700;">📋 Resumo de Produtos e Lucros</span>
+          <% if (resumo.length > 0) { %>
+            <span class="badge-contador" id="contador-produtos"><%= resumo.length %></span>
+          <% } %>
+        </div>
+        <% if (resumo.length > 0) { %>
+          <div class="busca-input-wrapper">
+            <span class="busca-icone">🔍</span>
+            <input type="text" id="filtro-produtos" placeholder="Buscar receita..." class="input-busca-tabela" autocomplete="off" style="width: 190px !important;">
+          </div>
+        <% } %>
+      </div>
+
+      <% if (resumo.length === 0) { %>
+        <div style="text-align: center; padding: 2.5rem 1rem;">
+          <span style="font-size: 2.8rem; display: block; margin-bottom: 0.75rem;">🎂</span>
+          <h3 style="margin-bottom: 0.5rem;">Nenhuma receita cadastrada ainda</h3>
+          <p style="color: var(--cor-texto-suave); margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto; font-size: 0.88rem;">
+            Cadastre sua primeira receita (ex: Brigadeiro Gourmet, Bolo de Cenoura) para calcular os custos reais dos insumos e o preço sugerido ideal com margem de lucro.
+          </p>
+          <% if (pode('produtos', 'criar')) { %>
+            <a href="/produtos/novo" class="btn btn-primario">Cadastrar Minha Primeira Receita</a>
+          <% } %>
+        </div>
+      <% } else { %>
+        <div class="tabela-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th style="text-align: center;">Rendimento</th>
+                <th style="text-align: right;">Custo / Unid</th>
+                <th style="text-align: right;">Preço Sugerido</th>
+                <th style="text-align: right;">Lucro / Unid</th>
+                <th style="text-align: center;">% Lucro</th>
+                <th style="text-align: right;">Lucro / Lote</th>
+                <th style="text-align: center;">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% resumo.forEach(item => { %>
+                <tr class="linha-produto" data-nome="<%= item.produto.nome.toLowerCase() %>">
+                  <td>
+                    <a href="/produtos/<%= item.produto.id %>" style="font-weight: 600; color: var(--cor-primaria); text-decoration: none;">
+                      <%= item.produto.nome %>
+                    </a>
+                    <div style="font-size: 0.75rem; color: var(--cor-texto-suave);">
+                      <%= item.totalIngredientes %> ingrediente(s) &bull; <%= item.produto.tempo_horas %>h de preparo
+                    </div>
+                  </td>
+                  <td style="text-align: center; font-weight: 600;">
+                    <%= item.produto.rendimento %> <%= item.produto.unidade || 'un' %>
+                  </td>
+                  <% if (item.calculo) { %>
+                    <td style="text-align: right;"><%= formatMoney(item.calculo.custoUnit) %></td>
+                    <td style="text-align: right; font-weight: 700; color: var(--cor-primaria);"><%= formatMoney(item.calculo.preco) %></td>
+                    <td style="text-align: right; font-weight: 600; color: var(--cor-verde);"><%= formatMoney(item.calculo.lucroUnit) %></td>
+                    <td style="text-align: center;">
+                      <span style="background-color: var(--cor-verde-fundo); color: var(--cor-verde); padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
+                        <%= formatPercent(item.calculo.percLucro) %>
+                      </span>
+                    </td>
+                    <td style="text-align: right; font-weight: 600;"><%= formatMoney(item.calculo.lucroLote) %></td>
+                  <% } else { %>
+                    <td colspan="5" style="color: var(--cor-alerta); font-size: 0.85rem; text-align: center;">
+                      Erro no cálculo: <%= item.erroCalculo || 'Verifique margem e taxas' %>
+                    </td>
+                  <% } %>
+                  <td style="text-align: center; white-space: nowrap;">
+                    <div class="tabela-acoes-container">
+                      <% if (pode('produtos', 'editar')) { %>
+                        <a href="/produtos/<%= item.produto.id %>" class="btn-icone" title="Editar Ficha Técnica" aria-label="Editar produto">✏️</a>
+                      <% } %>
+                      <% if (pode('produtos', 'excluir')) { %>
+                        <form method="POST" action="/produtos/<%= item.produto.id %>/excluir" style="margin: 0;" onsubmit="return confirm('Deseja realmente excluir este produto?');">
+                          <button type="submit" class="btn-icone btn-icone-perigo" aria-label="Excluir produto" title="Excluir produto">🗑️</button>
+                        </form>
+                      <% } %>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
         </div>
       <% } %>
     </div>
 
-    <% if (resumo.length === 0) { %>
-      <div style="text-align: center; padding: 2.5rem 1rem;">
-        <span style="font-size: 2.8rem; display: block; margin-bottom: 0.75rem;">🎂</span>
-        <h3 style="margin-bottom: 0.5rem;">Nenhuma receita cadastrada ainda</h3>
-        <p style="color: var(--cor-texto-suave); margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto; font-size: 0.88rem;">
-          Cadastre sua primeira receita (ex: Brigadeiro Gourmet, Bolo de Cenoura) para calcular os custos reais dos insumos e o preço sugerido ideal com margem de lucro.
-        </p>
-        <a href="/produtos/novo" class="btn btn-primario">Cadastrar Minha Primeira Receita</a>
-      </div>
-    <% } else { %>
-      <div class="tabela-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Produto</th>
-              <th style="text-align: center;">Rendimento</th>
-              <th style="text-align: right;">Custo / Unid</th>
-              <th style="text-align: right;">Preço Sugerido</th>
-              <th style="text-align: right;">Lucro / Unid</th>
-              <th style="text-align: center;">% Lucro</th>
-              <th style="text-align: right;">Lucro / Lote</th>
-              <th style="text-align: center;">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% resumo.forEach(item => { %>
-              <tr class="linha-produto" data-nome="<%= item.produto.nome.toLowerCase() %>">
-                <td>
-                  <a href="/produtos/<%= item.produto.id %>" style="font-weight: 600; color: var(--cor-primaria); text-decoration: none;">
-                    <%= item.produto.nome %>
-                  </a>
-                  <div style="font-size: 0.75rem; color: var(--cor-texto-suave);">
-                    <%= item.totalIngredientes %> ingrediente(s) &bull; <%= item.produto.tempo_horas %>h de preparo
-                  </div>
-                </td>
-                <td style="text-align: center; font-weight: 600;">
-                  <%= item.produto.rendimento %> <%= item.produto.unidade || 'un' %>
-                </td>
-                <% if (item.calculo) { %>
-                  <td style="text-align: right;"><%= formatMoney(item.calculo.custoUnit) %></td>
-                  <td style="text-align: right; font-weight: 700; color: var(--cor-primaria);"><%= formatMoney(item.calculo.preco) %></td>
-                  <td style="text-align: right; font-weight: 600; color: var(--cor-verde);"><%= formatMoney(item.calculo.lucroUnit) %></td>
-                  <td style="text-align: center;">
-                    <span style="background-color: var(--cor-verde-fundo); color: var(--cor-verde); padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
-                      <%= formatPercent(item.calculo.percLucro) %>
-                    </span>
-                  </td>
-                  <td style="text-align: right; font-weight: 600;"><%= formatMoney(item.calculo.lucroLote) %></td>
-                <% } else { %>
-                  <td colspan="5" style="color: var(--cor-alerta); font-size: 0.85rem; text-align: center;">
-                    Erro no cálculo: <%= item.erroCalculo || 'Verifique margem e taxas' %>
-                  </td>
-                <% } %>
-                <td style="text-align: center; white-space: nowrap;">
-                  <div class="tabela-acoes-container">
-                    <a href="/produtos/<%= item.produto.id %>" class="btn-icone" title="Editar Ficha Técnica" aria-label="Editar produto">✏️</a>
-                    <form method="POST" action="/produtos/<%= item.produto.id %>/excluir" style="margin: 0;" onsubmit="return confirm('Deseja realmente excluir este produto?');">
-                      <button type="submit" class="btn-icone btn-icone-perigo" aria-label="Excluir produto" title="Excluir produto">🗑️</button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      </div>
-    <% } %>
   </div>
-
-</div>
+<% } %>
 
 <script>
   const filtroInput = document.getElementById('filtro-produtos');

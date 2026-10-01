@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { exigirLogin } = require('../middleware/auth');
+const { exigirLogin, exigirPermissao } = require('../middleware/auth');
 const assistenteIa = require('../services/assistente_ia');
 
 const router = express.Router();
@@ -33,7 +33,7 @@ async function obterOuCriarSessaoAtiva(dbInstance, usuarioId) {
 }
 
 // 1. Tela Completa do Assistente
-router.get('/', exigirLogin, async (req, res, next) => {
+router.get('/', exigirLogin, exigirPermissao('assistente', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const sessao = await obterOuCriarSessaoAtiva(db, uid);
@@ -71,7 +71,7 @@ router.get('/', exigirLogin, async (req, res, next) => {
 });
 
 // 2. Obter Histórico e Sessão Ativa via JSON (para o Drawer Flutuante)
-router.get('/historico', exigirLogin, async (req, res) => {
+router.get('/historico', exigirLogin, exigirPermissao('assistente', 'ver'), async (req, res) => {
   try {
     const uid = req.session.usuario.id;
     const sessao = await obterOuCriarSessaoAtiva(db, uid);
@@ -92,7 +92,7 @@ router.get('/historico', exigirLogin, async (req, res) => {
 });
 
 // 3. Enviar Mensagem e Obter Resposta da IA (associada à sessão ativa)
-router.post('/mensagem', exigirLogin, async (req, res) => {
+router.post('/mensagem', exigirLogin, exigirPermissao('assistente', 'criar'), async (req, res) => {
   try {
     const uid = req.session.usuario.id;
     const mensagem = (req.body.mensagem || '').trim();
@@ -150,7 +150,7 @@ router.post('/mensagem', exigirLogin, async (req, res) => {
 });
 
 // 4. Feedback de Avaliação da Resposta (👍 / 👎)
-router.post('/mensagem/:id/feedback', exigirLogin, async (req, res) => {
+router.post('/mensagem/:id/feedback', exigirLogin, exigirPermissao('assistente', 'criar'), async (req, res) => {
   try {
     const uid = req.session.usuario.id;
     const msgId = parseInt(req.params.id, 10);
@@ -183,7 +183,7 @@ router.post('/mensagem/:id/feedback', exigirLogin, async (req, res) => {
 });
 
 // 5. Encerrar Atendimento com Documentação de Aprendizado Contínuo
-router.post('/encerrar', exigirLogin, async (req, res) => {
+router.post('/encerrar', exigirLogin, exigirPermissao('assistente', 'editar'), async (req, res) => {
   try {
     const uid = req.session.usuario.id;
     const sessao = await db.get(`
@@ -246,7 +246,7 @@ router.post('/encerrar', exigirLogin, async (req, res) => {
 });
 
 // 6. Consultar Sessões Anteriores Encerradas
-router.get('/sessoes', exigirLogin, async (req, res) => {
+router.get('/sessoes', exigirLogin, exigirPermissao('assistente', 'ver'), async (req, res) => {
   try {
     const uid = req.session.usuario.id;
     const sessoes = await db.all(`
@@ -265,7 +265,7 @@ router.get('/sessoes', exigirLogin, async (req, res) => {
 });
 
 // 7. Limpar Histórico de Mensagens da Sessão
-router.delete('/historico', exigirLogin, async (req, res) => {
+router.delete('/historico', exigirLogin, exigirPermissao('assistente', 'excluir'), async (req, res) => {
   try {
     const uid = req.session.usuario.id;
     const sessao = await obterOuCriarSessaoAtiva(db, uid);

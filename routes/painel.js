@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { exigirLogin } = require('../middleware/auth');
+const { exigirLogin, exigirPermissao } = require('../middleware/auth');
 const { custoFixoHora, calcularProduto } = require('../calculo');
 
 const router = express.Router();
@@ -98,7 +98,7 @@ router.get('/', exigirLogin, async (req, res, next) => {
 });
 
 // 2. Painel de Precificação e Produtos Cadastrados (Rota dedicada)
-router.get(['/produtos', '/painel'], exigirLogin, async (req, res, next) => {
+router.get(['/produtos', '/painel'], exigirLogin, exigirPermissao('produtos', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const precificacao = await carregarDadosPrecificacao(uid);

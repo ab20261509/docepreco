@@ -1,0 +1,272 @@
+<%- include('../partials/topo') %>
+
+<style>
+  .master-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+  }
+  .master-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #ede1dc;
+  }
+  .usuario-info-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.15rem 1.35rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .presets-container {
+    background: #ffffff;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+  .btn-preset {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn-preset:hover {
+    background: #7c3aed;
+    border-color: #6d28d9;
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+  .tabela-permissoes-matriz th, .tabela-permissoes-matriz td {
+    padding: 0.85rem 1rem;
+  }
+  .checkbox-perm {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--cor-primaria);
+  }
+</style>
+
+<div class="master-container">
+
+  <!-- Cabeçalho -->
+  <div class="master-header">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.6rem;">🛡️</span>
+        <h1 style="font-size: 1.45rem; font-weight: 800; margin: 0; color: var(--cor-texto);">
+          Configurar Menus & Permissões
+        </h1>
+      </div>
+      <p style="color: var(--cor-texto-suave); font-size: 0.86rem; margin: 0.25rem 0 0 0;">
+        Defina individualmente quais menus serão exibidos e o que este usuário tem permissão para cadastrar, editar ou excluir
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem;">
+      <a href="/master/usuarios" class="btn btn-secundario btn-sm">← Voltar à Lista de Usuários</a>
+    </div>
+  </div>
+
+  <% if (sucessoMsg) { %>
+    <div style="background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 0.85rem 1.25rem; border-radius: 10px; margin-bottom: 1.5rem; font-weight: 600;">
+      ✓ <%= sucessoMsg %>
+    </div>
+  <% } %>
+
+  <!-- Card do Usuário Selecionado -->
+  <div class="usuario-info-card">
+    <div>
+      <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 800; color: #64748b; letter-spacing: 0.5px;">USUÁRIO SELECIONADO</span>
+      <h2 style="font-size: 1.25rem; font-weight: 800; color: #1e293b; margin: 0.2rem 0;">
+        <%= usuarioAlvo.nome %> <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">(#<%= usuarioAlvo.id %>)</span>
+      </h2>
+      <div style="font-size: 0.85rem; color: #475569;">
+        E-mail: <strong><%= usuarioAlvo.email %></strong> &bull; Perfil Atual: 
+        <strong><%= usuarioAlvo.perfil === 'master' ? '🛡️ Master (Acesso Total)' : '🧁 Confeiteiro' %></strong>
+      </div>
+    </div>
+
+    <% if (usuarioAlvo.perfil === 'master') { %>
+      <div style="background: #fef3c7; border: 1px solid #fde68a; color: #92400e; padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.82rem; font-weight: 700; max-width: 380px;">
+        ℹ️ Este usuário possui perfil <strong>Master</strong>. Por padrão da plataforma, Masters possuem acesso irrestrito a todos os menus, inclusões, edições e exclusões.
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Presets Rápidos de 1 Clique -->
+  <div class="presets-container">
+    <strong style="font-size: 0.82rem; color: #334155;">⚡ Preenchimento Rápido por Função:</strong>
+    <button type="button" class="btn-preset" id="btnPresetTudo">✓ Confeiteiro Completo (Tudo Liberado)</button>
+    <button type="button" class="btn-preset" id="btnPresetCozinha">🍳 Operador de Cozinha (Apenas Preparo & Estoque)</button>
+    <button type="button" class="btn-preset" id="btnPresetVendas">🛍️ Atendente de Vendas (Pedidos, Clientes & Agenda)</button>
+    <button type="button" class="btn-preset" id="btnPresetLeitura">👁️ Apenas Visualização (Sem Criar/Editar/Excluir)</button>
+    <button type="button" class="btn-preset" id="btnPresetLimpar" style="color: #991b1b;">✕ Desmarcar Tudo</button>
+  </div>
+
+  <!-- Formulário da Matriz de Permissões -->
+  <form method="POST" action="/master/usuarios/<%= usuarioAlvo.id %>/permissoes">
+    <div class="cartao" style="padding: 0; overflow: hidden; margin-bottom: 2rem;">
+      <div class="cartao-titulo" style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--cor-borda);">
+        <strong style="font-size: 0.98rem;">Matriz de Acesso aos Menus e Ações Granulares</strong>
+      </div>
+
+      <div class="tabela-container">
+        <table class="tabela-permissoes-matriz">
+          <thead>
+            <tr style="background: #f8fafc;">
+              <th style="width: 40%;">Módulo do Sistema</th>
+              <th style="text-align: center; width: 15%;">👁️ Exibir no Menu<br><small style="font-weight: 500; font-size: 0.72rem; color: var(--cor-texto-suave);">Acessar tela</small></th>
+              <th style="text-align: center; width: 15%;">➕ Inserir<br><small style="font-weight: 500; font-size: 0.72rem; color: var(--cor-texto-suave);">Novos cadastros</small></th>
+              <th style="text-align: center; width: 15%;">✏️ Editar<br><small style="font-weight: 500; font-size: 0.72rem; color: var(--cor-texto-suave);">Alterar dados</small></th>
+              <th style="text-align: center; width: 15%;">🗑️ Excluir<br><small style="font-weight: 500; font-size: 0.72rem; color: var(--cor-texto-suave);">Apagar registros</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% modulos.forEach(mod => { %>
+              <% 
+                const perm = mapaPerms[mod.id] || { pode_ver: true, pode_criar: true, pode_editar: true, pode_excluir: true };
+              %>
+              <tr class="linha-modulo-perm" data-mod="<%= mod.id %>">
+                <td>
+                  <strong style="color: var(--cor-texto); font-size: 0.9rem;"><%= mod.nome %></strong>
+                  <div style="font-size: 0.76rem; color: var(--cor-texto-suave); margin-top: 0.15rem;"><%= mod.desc %></div>
+                </td>
+                
+                <!-- 1. Exibir no Menu / Visualizar -->
+                <td style="text-align: center;">
+                  <input type="hidden" name="permissoes[<%= mod.id %>][ver]" value="0">
+                  <input type="checkbox" name="permissoes[<%= mod.id %>][ver]" value="1" class="checkbox-perm check-ver" <%= perm.pode_ver ? 'checked' : '' %> title="Exibir menu e permitir acesso">
+                </td>
+
+                <!-- 2. Cadastrar / Inserir -->
+                <td style="text-align: center;">
+                  <input type="hidden" name="permissoes[<%= mod.id %>][criar]" value="0">
+                  <input type="checkbox" name="permissoes[<%= mod.id %>][criar]" value="1" class="checkbox-perm check-criar" <%= perm.pode_criar ? 'checked' : '' %> title="Permitir cadastrar novos">
+                </td>
+
+                <!-- 3. Editar -->
+                <td style="text-align: center;">
+                  <input type="hidden" name="permissoes[<%= mod.id %>][editar]" value="0">
+                  <input type="checkbox" name="permissoes[<%= mod.id %>][editar]" value="1" class="checkbox-perm check-editar" <%= perm.pode_editar ? 'checked' : '' %> title="Permitir editar registros">
+                </td>
+
+                <!-- 4. Excluir -->
+                <td style="text-align: center;">
+                  <input type="hidden" name="permissoes[<%= mod.id %>][excluir]" value="0">
+                  <input type="checkbox" name="permissoes[<%= mod.id %>][excluir]" value="1" class="checkbox-perm check-excluir" <%= perm.pode_excluir ? 'checked' : '' %> title="Permitir exclusões">
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+      <a href="/master/usuarios" class="btn btn-secundario">Cancelar</a>
+      <button type="submit" class="btn btn-primario" style="padding: 0.65rem 1.75rem; font-size: 0.95rem;">
+        💾 Salvar Configurações de Permissão
+      </button>
+    </div>
+  </form>
+
+</div>
+
+<script>
+  // Presets Rápidos
+  const linhas = document.querySelectorAll('.linha-modulo-perm');
+
+  function setLinha(modId, ver, criar, editar, excluir) {
+    const linha = document.querySelector(`.linha-modulo-perm[data-mod="${modId}"]`);
+    if (!linha) return;
+    linha.querySelector('.check-ver').checked = Boolean(ver);
+    linha.querySelector('.check-criar').checked = Boolean(criar);
+    linha.querySelector('.check-editar').checked = Boolean(editar);
+    linha.querySelector('.check-excluir').checked = Boolean(excluir);
+  }
+
+  // 1. Tudo Liberado
+  document.getElementById('btnPresetTudo').addEventListener('click', () => {
+    linhas.forEach(l => {
+      l.querySelectorAll('.checkbox-perm').forEach(c => c.checked = true);
+    });
+  });
+
+  // 2. Limpar Tudo
+  document.getElementById('btnPresetLimpar').addEventListener('click', () => {
+    linhas.forEach(l => {
+      l.querySelectorAll('.checkbox-perm').forEach(c => c.checked = false);
+    });
+  });
+
+  // 3. Apenas Leitura
+  document.getElementById('btnPresetLeitura').addEventListener('click', () => {
+    linhas.forEach(l => {
+      l.querySelector('.check-ver').checked = true;
+      l.querySelector('.check-criar').checked = false;
+      l.querySelector('.check-editar').checked = false;
+      l.querySelector('.check-excluir').checked = false;
+    });
+  });
+
+  // 4. Operador de Cozinha (Produção, Insumos e Produtos)
+  document.getElementById('btnPresetCozinha').addEventListener('click', () => {
+    linhas.forEach(l => {
+      const mod = l.getAttribute('data-mod');
+      if (mod === 'producao') {
+        setLinha('producao', true, true, true, false);
+      } else if (mod === 'ingredientes') {
+        setLinha('ingredientes', true, true, true, false);
+      } else if (mod === 'produtos') {
+        setLinha('produtos', true, false, false, false);
+      } else if (mod === 'assistente') {
+        setLinha('assistente', true, true, false, false);
+      } else {
+        setLinha(mod, false, false, false, false);
+      }
+    });
+  });
+
+  // 5. Atendente de Vendas (Pedidos, Clientes, Agenda e Assistente)
+  document.getElementById('btnPresetVendas').addEventListener('click', () => {
+    linhas.forEach(l => {
+      const mod = l.getAttribute('data-mod');
+      if (mod === 'pedidos') {
+        setLinha('pedidos', true, true, true, false);
+      } else if (mod === 'clientes') {
+        setLinha('clientes', true, true, true, false);
+      } else if (mod === 'agenda') {
+        setLinha('agenda', true, false, true, false);
+      } else if (mod === 'produtos') {
+        setLinha('produtos', true, false, false, false); // apenas consulta preços
+      } else if (mod === 'assistente') {
+        setLinha('assistente', true, true, false, false);
+      } else {
+        setLinha(mod, false, false, false, false);
+      }
+    });
+  });
+</script>
+
+<%- include('../partials/rodape') %>

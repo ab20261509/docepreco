@@ -146,7 +146,14 @@ const db = {
           .filter(s => s.length > 0);
 
         for (const stmt of statements) {
-          await client.execute(stmt);
+          try {
+            await client.execute(stmt);
+          } catch (err) {
+            if (err.message && err.message.includes('duplicate column name')) {
+              continue;
+            }
+            throw err;
+          }
         }
 
         await client.execute({

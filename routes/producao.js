@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { exigirLogin } = require('../middleware/auth');
+const { exigirLogin, exigirPermissao } = require('../middleware/auth');
 const chefIa = require('../services/chef_ia');
 
 const router = express.Router();
@@ -45,7 +45,7 @@ function calcularFatorEscala(qtdPedida, unPedida, rendimentoBase, unBase) {
 }
 
 // 1. Hub Central da Cozinha
-router.get('/', exigirLogin, async (req, res, next) => {
+router.get('/', exigirLogin, exigirPermissao('producao', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
 
@@ -163,7 +163,7 @@ router.get('/', exigirLogin, async (req, res, next) => {
 });
 
 // 2. Assistente de Preparo "Modo Cozinha"
-router.get('/preparar', exigirLogin, async (req, res, next) => {
+router.get('/preparar', exigirLogin, exigirPermissao('producao', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const producaoId = req.query.producao_id ? parseInt(req.query.producao_id, 10) : null;
@@ -314,7 +314,7 @@ router.get('/preparar', exigirLogin, async (req, res, next) => {
 });
 
 // 3. Iniciar Novo Preparo
-router.post('/iniciar', exigirLogin, async (req, res, next) => {
+router.post('/iniciar', exigirLogin, exigirPermissao('producao', 'criar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const produtoId = parseInt(req.body.produto_id, 10);
@@ -349,7 +349,7 @@ router.post('/iniciar', exigirLogin, async (req, res, next) => {
 });
 
 // 4. Concluir Preparo
-router.post('/:id/concluir', exigirLogin, async (req, res, next) => {
+router.post('/:id/concluir', exigirLogin, exigirPermissao('producao', 'editar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const id = parseInt(req.params.id, 10);
@@ -411,7 +411,7 @@ router.post('/:id/concluir', exigirLogin, async (req, res, next) => {
 });
 
 // 5. Cancelar Preparo
-router.post('/:id/cancelar', exigirLogin, async (req, res, next) => {
+router.post('/:id/cancelar', exigirLogin, exigirPermissao('producao', 'editar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const id = parseInt(req.params.id, 10);
@@ -430,7 +430,7 @@ router.post('/:id/cancelar', exigirLogin, async (req, res, next) => {
 });
 
 // 6. Gerar Passo a Passo com IA ou Motor Culinário
-router.post('/produto/:id/gerar-passos-ia', exigirLogin, async (req, res) => {
+router.post('/produto/:id/gerar-passos-ia', exigirLogin, exigirPermissao('producao', 'editar'), async (req, res) => {
   try {
     const uid = req.session.usuario.id;
     const produtoId = parseInt(req.params.id, 10);
@@ -452,7 +452,7 @@ router.post('/produto/:id/gerar-passos-ia', exigirLogin, async (req, res) => {
 });
 
 // 7. Salvar Passo a Passo / Modo de Preparo no Produto
-router.post('/produto/:id/salvar-modo-preparo', exigirLogin, async (req, res) => {
+router.post('/produto/:id/salvar-modo-preparo', exigirLogin, exigirPermissao('producao', 'editar'), async (req, res) => {
   try {
     const uid = req.session.usuario.id;
     const produtoId = parseInt(req.params.id, 10);

@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { exigirLogin } = require('../middleware/auth');
+const { exigirLogin, exigirPermissao } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -53,7 +53,7 @@ function calcularStatusValidade(dataValidade, statusCompra) {
 }
 
 // Listagem de todos os ingredientes com indicadores de estoque e alertas de validade
-router.get('/', exigirLogin, async (req, res, next) => {
+router.get('/', exigirLogin, exigirPermissao('ingredientes', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
 
@@ -141,7 +141,7 @@ router.get('/', exigirLogin, async (req, res, next) => {
 });
 
 // Cadastrar novo ingrediente
-router.post('/', exigirLogin, async (req, res, next) => {
+router.post('/', exigirLogin, exigirPermissao('ingredientes', 'criar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const nome = (req.body.nome || '').trim();
@@ -192,7 +192,7 @@ router.post('/', exigirLogin, async (req, res, next) => {
 });
 
 // Detalhes do ingrediente com a Grade de Compras, Validades e Histórico
-router.get('/:id', exigirLogin, async (req, res, next) => {
+router.get('/:id', exigirLogin, exigirPermissao('ingredientes', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const id = parseInt(req.params.id, 10);
@@ -249,7 +249,7 @@ router.get('/:id', exigirLogin, async (req, res, next) => {
 });
 
 // Grade de Compras: Lançar nova compra com Data de Validade
-router.post('/:id/compras', exigirLogin, async (req, res, next) => {
+router.post('/:id/compras', exigirLogin, exigirPermissao('ingredientes', 'criar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const id = parseInt(req.params.id, 10);
@@ -299,7 +299,7 @@ router.post('/:id/compras', exigirLogin, async (req, res, next) => {
 });
 
 // Ação de Descarte / Baixa por Validade ou Perda
-router.post('/compras/:compraId/descartar', exigirLogin, async (req, res, next) => {
+router.post('/compras/:compraId/descartar', exigirLogin, exigirPermissao('ingredientes', 'editar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const compraId = parseInt(req.params.compraId, 10);
@@ -337,7 +337,7 @@ router.post('/compras/:compraId/descartar', exigirLogin, async (req, res, next) 
 });
 
 // Editar uma compra existente (recalcula volume de estoque e preço)
-router.post('/compras/:compraId/editar', exigirLogin, async (req, res, next) => {
+router.post('/compras/:compraId/editar', exigirLogin, exigirPermissao('ingredientes', 'editar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const compraId = parseInt(req.params.compraId, 10);
@@ -390,7 +390,7 @@ router.post('/compras/:compraId/editar', exigirLogin, async (req, res, next) => 
 });
 
 // Excluir uma compra lançada por engano
-router.post('/compras/:compraId/excluir', exigirLogin, async (req, res, next) => {
+router.post('/compras/:compraId/excluir', exigirLogin, exigirPermissao('ingredientes', 'excluir'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const compraId = parseInt(req.params.compraId, 10);
@@ -422,7 +422,7 @@ router.post('/compras/:compraId/excluir', exigirLogin, async (req, res, next) =>
 });
 
 // Ajuste manual de estoque (inventário / quebras)
-router.post('/:id/ajuste-estoque', exigirLogin, async (req, res, next) => {
+router.post('/:id/ajuste-estoque', exigirLogin, exigirPermissao('ingredientes', 'editar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const id = parseInt(req.params.id, 10);
@@ -441,7 +441,7 @@ router.post('/:id/ajuste-estoque', exigirLogin, async (req, res, next) => {
 });
 
 // Editar dados básicos do ingrediente
-router.post('/:id/editar', exigirLogin, async (req, res, next) => {
+router.post('/:id/editar', exigirLogin, exigirPermissao('ingredientes', 'editar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const id = parseInt(req.params.id, 10);
@@ -478,7 +478,7 @@ router.post('/:id/editar', exigirLogin, async (req, res, next) => {
 });
 
 // Excluir ingrediente
-router.post('/:id/excluir', exigirLogin, async (req, res, next) => {
+router.post('/:id/excluir', exigirLogin, exigirPermissao('ingredientes', 'excluir'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const id = parseInt(req.params.id, 10);
@@ -491,7 +491,7 @@ router.post('/:id/excluir', exigirLogin, async (req, res, next) => {
 });
 
 // Endpoint JSON para integração com formulário de produtos
-router.get('/api/lista', exigirLogin, async (req, res, next) => {
+router.get('/api/lista', exigirLogin, exigirPermissao('ingredientes', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const itens = await db.all(`

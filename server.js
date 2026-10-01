@@ -47,7 +47,7 @@ app.use(session({
 }));
 
 // Disponibiliza o usuário logado e utilitários de formatação para todas as views
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   res.locals.usuario = req.session.usuario || null;
   res.locals.formatMoney = (val) => {
     const num = Number(val) || 0;
@@ -57,11 +57,27 @@ app.use((req, res, next) => {
     const num = Number(val) || 0;
     return (num * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
   };
+
+  // Carregar banner de aviso global se configurado
+  try {
+    const avisoRow = await db.get("SELECT valor FROM configuracoes_globais WHERE chave = 'aviso_geral_banner'");
+    res.locals.avisoGeralBanner = avisoRow && avisoRow.valor ? avisoRow.valor : '';
+    const nomeSisRow = await db.get("SELECT valor FROM configuracoes_globais WHERE chave = 'nome_sistema'");
+    res.locals.nomeSistema = nomeSisRow && nomeSisRow.valor ? nomeSisRow.valor : 'DocePreço';
+  } catch (_) {
+    res.locals.avisoGeralBanner = '';
+    res.locals.nomeSistema = 'DocePreço';
+  }
+
   next();
 });
 
+// Middleware de Permissões Granulares por Módulo (RBAC)
+app.use(require('./middleware/auth').carregarPermissoes);
+
 // Rotas do sistema
 app.use('/', require('./routes/auth'));
+app.use('/master', require('./routes/master'));
 app.use('/', require('./routes/painel'));
 app.use('/custos', require('./routes/custos'));
 app.use('/produtos', require('./routes/produtos'));
@@ -115,4 +131,6 @@ async function iniciarServidor() {
   });
 }
 
-iniciarServidor();
+if (require.main === module) {
+  iniciarServidor();
+}

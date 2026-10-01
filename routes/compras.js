@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { exigirLogin } = require('../middleware/auth');
+const { exigirLogin, exigirPermissao } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -330,7 +330,7 @@ async function calcularPlanejamentoCompras(uid, options = {}) {
 }
 
 // 1. Tela Principal de Compras e Planejamento Unificado
-router.get('/', exigirLogin, async (req, res, next) => {
+router.get('/', exigirLogin, exigirPermissao('compras', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
 
@@ -375,7 +375,7 @@ router.get('/', exigirLogin, async (req, res, next) => {
 });
 
 // 2. Dar Baixa no Estoque pela Produção Selecionada
-router.post('/baixa-producao', exigirLogin, async (req, res) => {
+router.post('/baixa-producao', exigirLogin, exigirPermissao('compras', 'editar'), async (req, res) => {
   const uid = req.session.usuario.id;
   const periodo = req.body.periodo || 'semana';
 

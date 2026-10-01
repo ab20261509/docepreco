@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { exigirLogin } = require('../middleware/auth');
+const { exigirLogin, exigirPermissao } = require('../middleware/auth');
 const { custoFixoHora, calcularProduto } = require('../calculo');
 const { formatarTelefone, gerarLinkWhatsApp: helperLinkWhatsApp } = require('./clientes');
 
@@ -164,7 +164,7 @@ function gerarTextoWhatsApp(pedido, itens) {
 }
 
 // 1. Listagem de Pedidos
-router.get('/', exigirLogin, async (req, res, next) => {
+router.get('/', exigirLogin, exigirPermissao('pedidos', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const statusFiltro = (req.query.status || 'todos').toLowerCase();
@@ -272,7 +272,7 @@ router.get('/', exigirLogin, async (req, res, next) => {
 });
 
 // 2. Formulário de Novo Pedido / Orçamento
-router.get('/novo', exigirLogin, async (req, res, next) => {
+router.get('/novo', exigirLogin, exigirPermissao('pedidos', 'criar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const clientes = await db.all('SELECT id, nome, telefone, endereco, bairro, cidade FROM clientes WHERE usuario_id = ? ORDER BY nome ASC', [uid]);
@@ -295,7 +295,7 @@ router.get('/novo', exigirLogin, async (req, res, next) => {
 });
 
 // 3. Salvar Novo Pedido / Orçamento
-router.post('/', exigirLogin, async (req, res) => {
+router.post('/', exigirLogin, exigirPermissao('pedidos', 'criar'), async (req, res) => {
   const uid = req.session.usuario.id;
   
   const clienteId = req.body.cliente_id ? parseInt(req.body.cliente_id, 10) : null;
@@ -412,7 +412,7 @@ router.post('/', exigirLogin, async (req, res) => {
 });
 
 // 4. Detalhes do Pedido com Mensagem WhatsApp
-router.get('/:id', exigirLogin, async (req, res, next) => {
+router.get('/:id', exigirLogin, exigirPermissao('pedidos', 'ver'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const id = parseInt(req.params.id, 10);
@@ -467,7 +467,7 @@ router.get('/:id', exigirLogin, async (req, res, next) => {
 });
 
 // 5. Formulário de Edição de Pedido
-router.get('/:id/editar', exigirLogin, async (req, res, next) => {
+router.get('/:id/editar', exigirLogin, exigirPermissao('pedidos', 'editar'), async (req, res, next) => {
   try {
     const uid = req.session.usuario.id;
     const id = parseInt(req.params.id, 10);
@@ -496,7 +496,7 @@ router.get('/:id/editar', exigirLogin, async (req, res, next) => {
 });
 
 // 6. Atualizar Pedido Existente
-router.post('/:id/editar', exigirLogin, async (req, res) => {
+router.post('/:id/editar', exigirLogin, exigirPermissao('pedidos', 'editar'), async (req, res) => {
   const uid = req.session.usuario.id;
   const id = parseInt(req.params.id, 10);
 
@@ -620,7 +620,7 @@ router.post('/:id/editar', exigirLogin, async (req, res) => {
 });
 
 // 7. Atualização Rápida de Status
-router.post('/:id/status', exigirLogin, async (req, res) => {
+router.post('/:id/status', exigirLogin, exigirPermissao('pedidos', 'editar'), async (req, res) => {
   const uid = req.session.usuario.id;
   const id = parseInt(req.params.id, 10);
   const novoStatus = (req.body.novo_status || '').trim();
@@ -648,7 +648,7 @@ router.post('/:id/status', exigirLogin, async (req, res) => {
 });
 
 // 8. Excluir Pedido
-router.post('/:id/excluir', exigirLogin, async (req, res) => {
+router.post('/:id/excluir', exigirLogin, exigirPermissao('pedidos', 'excluir'), async (req, res) => {
   const uid = req.session.usuario.id;
   const id = parseInt(req.params.id, 10);
 

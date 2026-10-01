@@ -1,0 +1,255 @@
+<%- include('../partials/topo') %>
+
+<style>
+  .master-container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+  }
+  .master-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #ede1dc;
+  }
+  .master-nav-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.75rem;
+  }
+  .master-tab-btn {
+    padding: 0.55rem 1.15rem;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid var(--cor-borda);
+    background: #ffffff;
+    color: var(--cor-texto);
+    transition: all 0.15s ease;
+  }
+  .master-tab-btn:hover {
+    background: #fdf2f8;
+    color: var(--cor-primaria);
+    border-color: var(--cor-destaque);
+    transform: translateY(-1px);
+  }
+  .master-tab-btn.ativo {
+    background: var(--cor-primaria);
+    color: #ffffff;
+    border-color: var(--cor-primaria);
+    box-shadow: 0 2px 8px rgba(214, 51, 108, 0.3);
+  }
+  .grid-master-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .master-kpi-card {
+    background: #ffffff;
+    border: 1px solid var(--cor-borda);
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: var(--sombra);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  .master-kpi-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--cor-primaria);
+  }
+  .master-kpi-valor {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: var(--cor-texto);
+    margin: 0.25rem 0;
+  }
+  .badge-perfil-master {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+  }
+  .badge-perfil-confeiteiro {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+  }
+  .badge-status-ativo {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+  }
+  .badge-status-bloqueado {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+  }
+</style>
+
+<div class="master-container">
+
+  <!-- Cabeçalho Master -->
+  <div class="master-header">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.6rem;">🛡️</span>
+        <h1 style="font-size: 1.45rem; font-weight: 800; margin: 0; color: var(--cor-texto);">
+          Painel de Controle Master
+        </h1>
+      </div>
+      <p style="color: var(--cor-texto-suave); font-size: 0.86rem; margin: 0.25rem 0 0 0;">
+        Administração global de confeitarias, matriz de permissões e parâmetros do sistema
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem;">
+      <a href="/" class="btn btn-secundario btn-sm">🏠 Voltar à Loja</a>
+    </div>
+  </div>
+
+  <!-- Abas de Navegação Master -->
+  <div class="master-nav-tabs">
+    <a href="/master" class="master-tab-btn <%= activeNav === 'master' ? 'ativo' : '' %>">
+      <span>📊</span> Dashboard Geral
+    </a>
+    <a href="/master/usuarios" class="master-tab-btn <%= activeNav === 'master_usuarios' ? 'ativo' : '' %>">
+      <span>👥</span> Gestão de Usuários & Permissões
+    </a>
+    <a href="/master/configuracoes" class="master-tab-btn <%= activeNav === 'master_configuracoes' ? 'ativo' : '' %>">
+      <span>⚙️</span> Configurações Globais
+    </a>
+  </div>
+
+  <!-- KPIs de Visão Global da Plataforma -->
+  <div class="grid-master-kpis">
+    <div class="master-kpi-card" style="border-top-color: #3b82f6;">
+      <span style="font-size: 0.8rem; font-weight: 700; color: #64748b;">TOTAL DE CONFEITARIAS</span>
+      <span class="master-kpi-valor" style="color: #1e3a8a;"><%= kpis.totalUsuarios %></span>
+      <span style="font-size: 0.76rem; color: #166534; font-weight: 600;">
+        ✓ <%= kpis.usuariosAtivos %> ativas &bull; ⚠️ <%= kpis.usuariosBloqueados %> bloqueadas
+      </span>
+    </div>
+
+    <div class="master-kpi-card" style="border-top-color: #8b5cf6;">
+      <span style="font-size: 0.8rem; font-weight: 700; color: #64748b;">RECEITAS NA PLATAFORMA</span>
+      <span class="master-kpi-valor" style="color: #5b21b6;"><%= kpis.totalReceitas %></span>
+      <span style="font-size: 0.76rem; color: var(--cor-texto-suave);">Fichas técnicas cadastradas</span>
+    </div>
+
+    <div class="master-kpi-card" style="border-top-color: #10b981;">
+      <span style="font-size: 0.8rem; font-weight: 700; color: #64748b;">ENCOMENDAS & PEDIDOS</span>
+      <span class="master-kpi-valor" style="color: #065f46;"><%= kpis.totalPedidos %></span>
+      <span style="font-size: 0.76rem; color: #047857; font-weight: 700;">
+        <%= formatMoney(kpis.volumeTotal) %> movimentados
+      </span>
+    </div>
+
+    <div class="master-kpi-card" style="border-top-color: #f59e0b;">
+      <span style="font-size: 0.8rem; font-weight: 700; color: #64748b;">CLIENTES & COZINHA</span>
+      <span class="master-kpi-valor" style="color: #92400e;"><%= kpis.totalClientes %></span>
+      <span style="font-size: 0.76rem; color: var(--cor-texto-suave);">
+        <%= kpis.totalProducoes %> fornadas concluídas
+      </span>
+    </div>
+  </div>
+
+  <!-- Tabela de Últimos Usuários Cadastrados -->
+  <div class="cartao" style="margin-bottom: 2rem;">
+    <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-weight: 700; font-size: 1rem;">📋 Usuários Cadastrados Recentemente</span>
+      <a href="/master/usuarios" class="btn btn-secundario btn-sm">Ver Todos os Usuários →</a>
+    </div>
+
+    <div class="tabela-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuário / Confeitaria</th>
+            <th>E-mail</th>
+            <th style="text-align: center;">Perfil</th>
+            <th style="text-align: center;">Status</th>
+            <th style="text-align: center;">Receitas</th>
+            <th style="text-align: center;">Pedidos</th>
+            <th style="text-align: center;">Cadastro</th>
+            <th style="text-align: center;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (ultimosUsuarios && ultimosUsuarios.length > 0) { %>
+            <% ultimosUsuarios.forEach(u => { %>
+              <tr>
+                <td><strong><%= u.nome %></strong></td>
+                <td><%= u.email %></td>
+                <td style="text-align: center;">
+                  <% if (u.perfil === 'master') { %>
+                    <span class="badge-perfil-master">🛡️ Master</span>
+                  <% } else { %>
+                    <span class="badge-perfil-confeiteiro">🧁 Confeiteiro</span>
+                  <% } %>
+                </td>
+                <td style="text-align: center;">
+                  <% if (u.status === 'ativo') { %>
+                    <span class="badge-status-ativo">Ativo</span>
+                  <% } else { %>
+                    <span class="badge-status-bloqueado">Bloqueado</span>
+                  <% } %>
+                </td>
+                <td style="text-align: center; font-weight: 700;"><%= u.total_produtos %></td>
+                <td style="text-align: center; font-weight: 700;"><%= u.total_pedidos %></td>
+                <td style="text-align: center; font-size: 0.78rem; color: var(--cor-texto-suave);">
+                  <%= u.criado_em ? u.criado_em.substring(0, 10).split('-').reverse().join('/') : '' %>
+                </td>
+                <td style="text-align: center;">
+                  <a href="/master/usuarios/<%= u.id %>/permissoes" class="btn btn-secundario btn-sm" title="Configurar Menus e Permissões">
+                    ⚙️ Permissões
+                  </a>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="8" style="text-align: center; color: var(--cor-texto-suave); padding: 1.5rem;">
+                Nenhum usuário cadastrado.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<%- include('../partials/rodape') %>
