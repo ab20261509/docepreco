@@ -6,10 +6,10 @@ const helmet = require('helmet');
 const db = require('./db');
 
 const app = express();
-const producao = process.env.NODE_ENV === 'production';
+const producao = process.env.NODE_ENV === 'production' || Boolean(process.env.RENDER);
 const sessionSecret = process.env.SESSION_SECRET || 'confeitaria_super_secreta_padrao_2026';
 
-if (producao) {
+if (producao || process.env.RENDER) {
   app.set('trust proxy', 1);
 }
 
@@ -126,8 +126,9 @@ async function iniciarServidor() {
   }
 
   const porta = process.env.PORT || 3000;
-  app.listen(porta, () => {
-    console.log(`🧁 Confeitaria rodando em http://localhost:${porta}`);
+  const host = process.env.HOST || '0.0.0.0';
+  app.listen(porta, host, () => {
+    console.log(`🧁 Confeitaria rodando em http://${host}:${porta}`);
   });
 }
 
