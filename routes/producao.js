@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { exigirLogin } = require('../middleware/auth');
+const chefIa = require('../services/chef_ia');
 
 const router = express.Router();
 
@@ -268,6 +269,30 @@ router.get('/preparar', exigirLogin, async (req, res, next) => {
       `, [producaoAtual.pedido_id]);
     }
 
+    let sequenciaSalva = null;
+    if (produto.modo_preparo) {
+      try {
+        sequenciaSalva = JSON.parse(produto.modo_preparo);
+      } catch (_) {
+        sequenciaSalva = {
+          fonte: 'manual',
+          tipo_receita: 'Instruções da Receita',
+          passos: [
+            {
+              ordem: 1,
+              titulo: '1. Instruções Salvas da Receita',
+              instrucao: produto.modo_preparo,
+              equipamento: null,
+              tempo_timer_min: null,
+              temperatura: null,
+              ponto_visual: null,
+              dica_chef: null
+            }
+          ]
+        };
+      }
+    }
+
     res.render('producao_preparar', {
       produto,
       producao: producaoAtual,
@@ -278,6 +303,8 @@ router.get('/preparar', exigirLogin, async (req, res, next) => {
       qtdFinal,
       unidadeFinal,
       tempoEstimadoMin: producaoAtual ? producaoAtual.tempo_estimado_min : Math.round((produto.tempo_horas || 0) * 60),
+      sequenciaSalva,
+      temApiKey: Boolean((process.env.GEMINI_API_KEY || '').trim()),
       activeNav: 'producao',
       activeModulo: 'fabrica'
     });
@@ -399,6 +426,46 @@ router.post('/:id/cancelar', exigirLogin, async (req, res, next) => {
     res.redirect('/producao');
   } catch (err) {
     next(err);
+  }
+});
+
+// 6. Gerar Passo a Passo com IA ou Motor Culinário
+router.post('/produto/:id/gerar-passos-ia', exigirLogin, async (req, res) => {
+  try {
+    const uid = req.session.usuario.id;
+    const produtoId = parseInt(req.params.id, 10);
+    const fator = Math.max(0.01, parseFloat(req.body.fator) || 1);
+
+    const produto = await db.get('SELECT * FROM produtos WHERE id = ? AND usuario_id = ?', [produtoId, uid]);
+    if (!produto) {
+      return res.status(404).json({ sucesso: false, erro: 'Receita não encontrada.' });
+    }
+
+    const ingredientes = await db.all('SELECT * FROM ingredientes WHERE produto_id = ? ORDER BY id ASC', [produtoId]);
+    const resultado = await chefIa.obterSequenciaPreparo(produto, ingredientes, produto.rendimento, fator);
+
+    res.json({ sucesso: true, sequencia: resultado });
+  } catch (err) {
+    console.error('Erro ao gerar passos com IA:', err);
+    res.status(500).json({ sucesso: false, erro: 'Erro interno ao gerar passos.' });
+  }
+});
+
+// 7. Salvar Passo a Passo / Modo de Preparo no Produto
+router.post('/produto/:id/salvar-modo-preparo', exigirLogin, async (req, res) => {
+  try {
+    const uid = req.session.usuario.id;
+    const produtoId = parseInt(req.params.id, 10);
+    const modoPreparo = req.body.modo_preparo !== undefined ? req.body.modo_preparo : '';
+
+    const conteudoParaSalvar = typeof modoPreparo === 'object' ? JSON.stringify(modoPreparo) : String(modoPreparo);
+
+    await db.run('UPDATE produtos SET modo_preparo = ? WHERE id = ? AND usuario_id = ?', [conteudoParaSalvar, produtoId, uid]);
+
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error('Erro ao salvar modo de preparo:', err);
+    res.status(500).json({ sucesso: false, erro: 'Erro ao salvar modo de preparo.' });
   }
 });
 

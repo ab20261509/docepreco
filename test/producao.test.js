@@ -134,6 +134,37 @@ async function run() {
   assert.strictEqual(producoesBruna.length, 0, 'Bruna não deve ver produções de Carla');
   console.log('✅ Isolamento multi-tenant do módulo de produção validado com sucesso!');
 
+  // 9. Testar Motor de Inteligência Culinária (chef_ia)
+  const chefIa = require('../services/chef_ia');
+  const seqBolo = chefIa.gerarSequenciaNativa(
+    { nome: 'Bolo de Cenoura Fofo', rendimento: 1 },
+    [
+      { nome: 'Cenouras médias', qtd_usada: 3 },
+      { nome: 'Ovos', qtd_usada: 4 },
+      { nome: 'Óleo', qtd_usada: 200 },
+      { nome: 'Açúcar', qtd_usada: 300 },
+      { nome: 'Farinha de trigo', qtd_usada: 350 },
+      { nome: 'Fermento químico', qtd_usada: 15 }
+    ],
+    1,
+    1.5
+  );
+  assert.ok(seqBolo.passos.length >= 4, 'Bolo de cenoura deve gerar pelo menos 4 passos estruturados');
+  assert.strictEqual(seqBolo.tipo_receita, 'Massa Direta de Liquidificador');
+  const passoForno = seqBolo.passos.find(p => p.equipamento === 'forno' && p.tempo_timer_min > 0);
+  assert.ok(passoForno, 'Deve incluir etapa de forneamento com timer sugerido');
+  console.log('✅ Inteligência Culinária (Heurística de Liquidificador & Bolos) validada com sucesso!');
+
+  // 10. Testar persistência de modo_preparo no banco (Migração 008)
+  const modoPreparoJson = JSON.stringify(seqBolo);
+  await db.run("UPDATE produtos SET modo_preparo = ? WHERE id = ? AND usuario_id = ?", [modoPreparoJson, produtoId, uid1]);
+  
+  const prodComPassos = await db.get("SELECT modo_preparo FROM produtos WHERE id = ?", [produtoId]);
+  assert.ok(prodComPassos.modo_preparo !== null, 'modo_preparo deve estar preenchido');
+  const parsed = JSON.parse(prodComPassos.modo_preparo);
+  assert.strictEqual(parsed.tipo_receita, 'Massa Direta de Liquidificador');
+  console.log('✅ Persistência e integridade da coluna modo_preparo validadas com sucesso!');
+
   // Limpeza
   await db.run("DELETE FROM usuarios WHERE id IN (?, ?)", [uid1, uid2]);
   console.log('🎉 Todos os testes do Módulo de Produção & Modo Cozinha foram concluídos com 100% de sucesso!\n');
