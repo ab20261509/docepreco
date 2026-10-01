@@ -353,7 +353,7 @@ router.post('/:id/excluir', exigirLogin, async (req, res, next) => {
     const id = parseInt(req.params.id, 10);
 
     await db.run('DELETE FROM produtos WHERE id = ? AND usuario_id = ?', [id, uid]);
-    res.redirect('/');
+    res.redirect('/produtos');
   } catch (err) {
     next(err);
   }

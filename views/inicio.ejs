@@ -1,0 +1,182 @@
+<%- include('partials/topo') %>
+
+<!-- Banner de Boas-Vindas com Alertas Rápidos -->
+<div class="inicio-hero">
+  <div class="inicio-hero-texto">
+    <h1>Olá, <%= usuario.nome.split(' ')[0] %>! 👋</h1>
+    <p>Bem-vinda ao seu sistema de gestão e precificação. Escolha uma das opções abaixo para começar:</p>
+  </div>
+
+  <% if (stats.pedidosHoje > 0 || stats.itensEstoqueBaixo > 0 || stats.lotesRisco > 0) { %>
+    <div class="inicio-alertas-rapidos">
+      <% if (stats.pedidosHoje > 0) { %>
+        <a href="/agenda" class="alerta-rapido-chip alerta-info" title="Ver encomendas com entrega prevista para hoje">
+          <span>📅</span>
+          <span><strong><%= stats.pedidosHoje %></strong> <%= stats.pedidosHoje === 1 ? 'entrega hoje' : 'entregas hoje' %></span>
+        </a>
+      <% } %>
+      <% if (stats.itensEstoqueBaixo > 0) { %>
+        <a href="/ingredientes" class="alerta-rapido-chip alerta-aviso" title="Ver ingredientes com estoque zerado ou abaixo do mínimo">
+          <span>⚠️</span>
+          <span><strong><%= stats.itensEstoqueBaixo %></strong> <%= stats.itensEstoqueBaixo === 1 ? 'item estoque baixo' : 'itens estoque baixo' %></span>
+        </a>
+      <% } %>
+      <% if (stats.lotesRisco > 0) { %>
+        <a href="/ingredientes" class="alerta-rapido-chip alerta-perigo" title="Ver lotes com validade vencida ou vencendo nos próximos 7 dias">
+          <span>⏰</span>
+          <span><strong><%= stats.lotesRisco %></strong> <%= stats.lotesRisco === 1 ? 'lote em risco' : 'lotes em risco' %></span>
+        </a>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+
+<!-- Módulo 1: Fábrica & Produção -->
+<div class="inicio-secao secao-fabrica">
+  <div class="inicio-secao-cabecalho">
+    <span class="inicio-secao-tag">🏭 Fábrica</span>
+    <h2 class="inicio-secao-titulo">Produção & Fichas Técnicas</h2>
+  </div>
+
+  <div class="grid-menu-rapido">
+    <!-- 1. Produtos e Precificação -->
+    <a href="/produtos" class="card-menu-acao">
+      <div class="card-menu-topo">
+        <div class="card-menu-icone card-icone-produtos">📊</div>
+        <div class="card-menu-info">
+          <h3>Produtos & Precificação</h3>
+          <p>Consulte suas receitas cadastradas, custos calculados por unidade e preços sugeridos com margem.</p>
+        </div>
+      </div>
+      <div class="card-menu-rodape">
+        <span class="card-menu-badge badge-destaque"><%= stats.totalProdutos %> <%= stats.totalProdutos === 1 ? 'receita' : 'receitas' %></span>
+        <span class="card-menu-link-texto">Abrir <span>→</span></span>
+      </div>
+    </a>
+
+    <!-- 2. Cadastrar Novo Produto -->
+    <a href="/produtos/novo" class="card-menu-acao">
+      <div class="card-menu-topo">
+        <div class="card-menu-icone card-icone-receita">🧁</div>
+        <div class="card-menu-info">
+          <h3>Nova Receita / Produto</h3>
+          <p>Cadastre uma nova receita com ingredientes, tempo de forno, embalagens e obtenha o preço de venda ideal.</p>
+        </div>
+      </div>
+      <div class="card-menu-rodape">
+        <span class="card-menu-badge">Criar Receita</span>
+        <span class="card-menu-link-texto">Cadastrar <span>→</span></span>
+      </div>
+    </a>
+
+    <!-- 3. Insumos e Estoque -->
+    <a href="/ingredientes" class="card-menu-acao">
+      <div class="card-menu-topo">
+        <div class="card-menu-icone card-icone-insumos">🥣</div>
+        <div class="card-menu-info">
+          <h3>Insumos & Estoque</h3>
+          <p>Controle saldo em estoque, compras recentes, alertas de validades e registro de baixas/descarte.</p>
+        </div>
+      </div>
+      <div class="card-menu-rodape">
+        <% if (stats.itensEstoqueBaixo > 0) { %>
+          <span class="card-menu-badge badge-alerta">⚠️ <%= stats.itensEstoqueBaixo %> em alerta</span>
+        <% } else { %>
+          <span class="card-menu-badge badge-sucesso">✓ Estoque em dia</span>
+        <% } %>
+        <span class="card-menu-link-texto">Acessar <span>→</span></span>
+      </div>
+    </a>
+
+    <!-- 4. Custos Fixos -->
+    <a href="/custos" class="card-menu-acao">
+      <div class="card-menu-topo">
+        <div class="card-menu-icone card-icone-custos">🏢</div>
+        <div class="card-menu-info">
+          <h3>Custos Fixos Mensais</h3>
+          <p>Configure despesas fixas (aluguel, luz, gás, pró-labore) e horas trabalhadas para apurar o custo/hora.</p>
+        </div>
+      </div>
+      <div class="card-menu-rodape">
+        <span class="card-menu-badge"><%= formatMoney(stats.totalCustosFixos) %>/mês</span>
+        <span class="card-menu-link-texto">Ajustar <span>→</span></span>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- Módulo 2: Comercial & Vendas -->
+<div class="inicio-secao secao-comercial">
+  <div class="inicio-secao-cabecalho">
+    <span class="inicio-secao-tag">🛍️ Comercial</span>
+    <h2 class="inicio-secao-titulo">Vendas, Encomendas & Clientes</h2>
+  </div>
+
+  <div class="grid-menu-rapido">
+    <!-- 5. Agenda de Entregas -->
+    <a href="/agenda" class="card-menu-acao">
+      <div class="card-menu-topo">
+        <div class="card-menu-icone card-icone-agenda">📅</div>
+        <div class="card-menu-info">
+          <h3>Agenda de Entregas</h3>
+          <p>Cronograma operacional do dia, próximos dias da semana e visão do calendário mensal de encomendas.</p>
+        </div>
+      </div>
+      <div class="card-menu-rodape">
+        <% if (stats.pedidosHoje > 0) { %>
+          <span class="card-menu-badge badge-destaque">📦 <%= stats.pedidosHoje %> para hoje</span>
+        <% } else { %>
+          <span class="card-menu-badge">0 entregas hoje</span>
+        <% } %>
+        <span class="card-menu-link-texto">Ver Agenda <span>→</span></span>
+      </div>
+    </a>
+
+    <!-- 6. Pedidos & Orçamentos -->
+    <a href="/pedidos" class="card-menu-acao">
+      <div class="card-menu-topo">
+        <div class="card-menu-icone card-icone-pedidos">📝</div>
+        <div class="card-menu-info">
+          <h3>Pedidos & Orçamentos</h3>
+          <p>Crie orçamentos, acompanhe status de produção, controle recebimento de sinais e envie mensagens no WhatsApp.</p>
+        </div>
+      </div>
+      <div class="card-menu-rodape">
+        <span class="card-menu-badge badge-destaque"><%= stats.pedidosAbertos %> em andamento</span>
+        <span class="card-menu-link-texto">Gerenciar <span>→</span></span>
+      </div>
+    </a>
+
+    <!-- 7. Planejamento de Compras -->
+    <a href="/compras" class="card-menu-acao">
+      <div class="card-menu-topo">
+        <div class="card-menu-icone card-icone-compras">🛒</div>
+        <div class="card-menu-info">
+          <h3>Planejamento de Compras</h3>
+          <p>Lista de compras inteligente unificada: calcule insumos necessários por encomendas, estoque mínimo ou histórico.</p>
+        </div>
+      </div>
+      <div class="card-menu-rodape">
+        <span class="card-menu-badge">Lista Inteligente</span>
+        <span class="card-menu-link-texto">Calcular <span>→</span></span>
+      </div>
+    </a>
+
+    <!-- 8. Clientes -->
+    <a href="/clientes" class="card-menu-acao">
+      <div class="card-menu-topo">
+        <div class="card-menu-icone card-icone-clientes">👥</div>
+        <div class="card-menu-info">
+          <h3>Cadastro de Clientes</h3>
+          <p>Mantenha sua base de contatos, histórico, endereços de entrega e inicie conversas no WhatsApp com 1 clique.</p>
+        </div>
+      </div>
+      <div class="card-menu-rodape">
+        <span class="card-menu-badge"><%= stats.totalClientes %> <%= stats.totalClientes === 1 ? 'cliente' : 'clientes' %></span>
+        <span class="card-menu-link-texto">Acessar <span>→</span></span>
+      </div>
+    </a>
+  </div>
+</div>
+
+<%- include('partials/rodape') %>

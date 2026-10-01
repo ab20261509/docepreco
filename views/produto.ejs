@@ -22,7 +22,7 @@
     <p style="color: var(--cor-texto-suave);">Partes 2 e 3 da planilha &bull; Calcule custos de ingredientes, embalagens, tempo e margem</p>
   </div>
   <div style="display: flex; gap: 0.75rem;">
-    <a href="/" class="btn btn-secundario">← Voltar ao Painel</a>
+    <a href="/produtos" class="btn btn-secundario">← Voltar aos Produtos</a>
     <% if (modo === 'editar') { %>
       <form method="POST" action="/produtos/<%= produto.id %>/excluir" style="margin: 0;" onsubmit="return confirm('Deseja realmente excluir este produto?');">
         <button type="submit" class="btn btn-perigo">Excluir Produto</button>

@@ -9,34 +9,21 @@
 <body>
   <header class="topo">
     <div class="topo-conteudo">
-      <a href="/" class="logo">
-        <span class="icone">🧁</span>
-        <span>Doce Preço</span>
-      </a>
+      <div style="display: flex; align-items: center; gap: 0.85rem;">
+        <a href="/" class="logo" title="Ir para o Início">
+          <span class="icone">🧁</span>
+          <span>Doce Preço</span>
+        </a>
+
+        <% if (usuario) { %>
+          <a href="/" class="btn-topo-inicio" title="Menu Principal">
+            <span style="font-size: 1rem;">🏠</span>
+            <span>Início</span>
+          </a>
+        <% } %>
+      </div>
 
       <% if (usuario) { %>
-        <nav class="menu">
-          <!-- Módulo Fábrica -->
-          <div class="menu-grupo">
-            <span class="menu-modulo-rotulo">🏭 Fábrica</span>
-            <a href="/" class="<%= (typeof activeNav !== 'undefined' && activeNav === 'painel') ? 'ativo' : '' %>" title="Painel de Precificação e Produtos">📊 Painel</a>
-            <a href="/ingredientes" class="<%= (typeof activeNav !== 'undefined' && activeNav === 'ingredientes') ? 'ativo' : '' %>" title="Catálogo de Insumos e Estoque">🥣 Insumos</a>
-            <a href="/custos" class="<%= (typeof activeNav !== 'undefined' && activeNav === 'custos') ? 'ativo' : '' %>" title="Despesas Fixas da Cozinha">🏢 Custos</a>
-            <a href="/produtos/novo" class="<%= (typeof activeNav !== 'undefined' && activeNav === 'novo_produto') ? 'ativo' : '' %>" title="Criar Nova Receita">➕ Receita</a>
-          </div>
-
-          <span class="menu-divisor"></span>
-
-          <!-- Módulo Comercial -->
-          <div class="menu-grupo">
-            <span class="menu-modulo-rotulo">🛍️ Comercial</span>
-            <a href="/agenda" class="<%= (typeof activeNav !== 'undefined' && activeNav === 'agenda') ? 'ativo' : '' %>" title="Cronograma e Entregas">📅 Agenda</a>
-            <a href="/pedidos" class="<%= (typeof activeNav !== 'undefined' && activeNav === 'pedidos') ? 'ativo' : '' %>" title="Gestão de Pedidos e Orçamentos">📝 Pedidos</a>
-            <a href="/compras" class="<%= (typeof activeNav !== 'undefined' && activeNav === 'compras') ? 'ativo' : '' %>" title="Planejamento e Lista de Compras">🛒 Compras</a>
-            <a href="/clientes" class="<%= (typeof activeNav !== 'undefined' && activeNav === 'clientes') ? 'ativo' : '' %>" title="Base de Clientes e WhatsApp">👥 Clientes</a>
-          </div>
-        </nav>
-
         <div class="usuario-info">
           <span>Olá, <strong class="usuario-nome"><%= usuario.nome %></strong></span>
           <form method="POST" action="/logout" style="margin: 0;">
