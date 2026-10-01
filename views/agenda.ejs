@@ -176,6 +176,11 @@
                     💬 Avisar: "Pedido Pronto!"
                   </a>
                 <% } %>
+                <% if (p.status === 'producao' || p.status === 'confirmado') { %>
+                  <a href="/producao/preparar?pedido_id=<%= p.id %>" class="btn btn-sm" style="background: #fff7ed; border: 1px solid #fdba74; color: #c2410c; font-weight: 700;" title="Abrir assistente no Modo Cozinha">
+                    🍳 Modo Cozinha
+                  </a>
+                <% } %>
                 <a href="/pedidos/<%= p.id %>" class="btn btn-secundario btn-sm" title="Ver Detalhes do Pedido">
                   👁️ Ver Pedido
                 </a>

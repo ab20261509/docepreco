@@ -1,0 +1,622 @@
+<%- include('partials/topo') %>
+
+<style>
+  .modo-cozinha-container {
+    max-width: 1050px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+  }
+  .modo-cozinha-header {
+    background: #1e293b;
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .cronometro-cozinha {
+    background: #0f172a;
+    border: 2px solid #334155;
+    border-radius: 10px;
+    padding: 0.65rem 1.15rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .cronometro-digitos {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #38bdf8;
+    letter-spacing: 2px;
+  }
+  .card-ingrediente-balanca {
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1rem 1.15rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    user-select: none;
+  }
+  .card-ingrediente-balanca:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+  }
+  .card-ingrediente-balanca.pesado {
+    background: #f0fdf4;
+    border-color: #86efac;
+    opacity: 0.85;
+  }
+  .card-ingrediente-balanca.pesado .nome-ing {
+    text-decoration: line-through;
+    color: #166534;
+  }
+  .btn-check-pesado {
+    background: #f8fafc;
+    border: 2px solid #cbd5e1;
+    color: #475569;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.15s ease;
+  }
+  .card-ingrediente-balanca.pesado .btn-check-pesado {
+    background: #22c55e;
+    border-color: #16a34a;
+    color: #ffffff;
+  }
+  .barra-progresso-wrapper {
+    background: #e2e8f0;
+    border-radius: 999px;
+    height: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  .barra-progresso-fill {
+    background: linear-gradient(90deg, #10b981, #059669);
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .card-timer-ativo {
+    background: #ffffff;
+    border: 2px solid #fdba74;
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card-timer-ativo.alarme-disparado {
+    border-color: #ef4444;
+    background: #fef2f2;
+    animation: piscarAlarme 1s infinite alternate;
+  }
+  @keyframes piscarAlarme {
+    from { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    to { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  }
+  .digitos-timer {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #c2410c;
+    text-align: center;
+    margin: 0.35rem 0;
+  }
+  .card-timer-ativo.alarme-disparado .digitos-timer {
+    color: #dc2626;
+  }
+</style>
+
+<div class="modo-cozinha-container">
+  
+  <!-- Cabeçalho do Modo Cozinha -->
+  <div class="modo-cozinha-header">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+        <span style="font-size: 1.3rem;">🍰</span>
+        <h1 style="font-size: 1.45rem; font-weight: 800; color: #ffffff; margin: 0;">
+          <%= produto.nome %>
+        </h1>
+        <span style="background: #3b82f6; color: #ffffff; font-size: 0.78rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 999px;">
+          Lote: <%= qtdFinal %> <%= unidadeFinal %>
+        </span>
+      </div>
+
+      <div style="font-size: 0.85rem; color: #94a3b8; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <span>Fator: <strong><%= fator.toFixed(2) %>x</strong> da receita</span>
+        <span>•</span>
+        <span>Tempo estimado: <strong><%= tempoEstimadoMin %> min</strong></span>
+        <% if (pedido) { %>
+          <span>•</span>
+          <span style="color: #38bdf8; font-weight: 600;">
+            📦 Encomenda #<%= pedido.id %> (<%= pedido.cliente_nome || 'Cliente' %>)
+          </span>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Cronômetro Geral da Cozinha -->
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <div class="cronometro-cozinha">
+        <span style="font-size: 1.1rem;">⏱️</span>
+        <div>
+          <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Tempo na Cozinha</div>
+          <div class="cronometro-digitos" id="relogioGeral">00:00:00</div>
+        </div>
+      </div>
+      <a href="/producao" class="btn btn-secundario btn-sm" style="color: #cbd5e1; border-color: #475569;" title="Voltar ao Hub da Cozinha">
+        ← Sair
+      </a>
+    </div>
+  </div>
+
+  <!-- 1. Mise en Place: Checklist de Pesagem na Balança -->
+  <div class="cartao" style="margin-bottom: 1.5rem;">
+    <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.25rem;">🥣</span>
+        <div>
+          <strong style="font-size: 1.05rem;">Mise en Place & Pesagem de Ingredientes</strong>
+          <span style="display: block; font-size: 0.8rem; color: var(--cor-texto-suave); font-weight: normal;">
+            Pese cada ingrediente na balança e marque como conferido:
+          </span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.4rem;">
+        <button type="button" class="btn btn-secundario btn-sm" id="btnMarcarTodos">
+          ✓ Marcar Todos
+        </button>
+        <button type="button" class="btn btn-secundario btn-sm" id="btnDesmarcarTodos">
+          Desmarcar
+        </button>
+      </div>
+    </div>
+
+    <!-- Barra de Progresso da Pesagem -->
+    <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--cor-texto);">
+      <span>Progresso dos Ingredientes Pesados:</span>
+      <span id="textoProgressoPesagem">0 de <%= ingredientes.length %> pesados (0%)</span>
+    </div>
+    <div class="barra-progresso-wrapper">
+      <div class="barra-progresso-fill" id="barraProgressoPesagem"></div>
+    </div>
+
+    <!-- Grade de Ingredientes Interativos -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 0.75rem;">
+      <% ingredientes.forEach((ing, idx) => { %>
+        <div class="card-ingrediente-balanca" data-index="<%= idx %>">
+          <div>
+            <div class="nome-ing" style="font-size: 1rem; font-weight: 700; color: var(--cor-texto);">
+              <%= ing.nome %>
+            </div>
+            <div style="font-size: 1.25rem; font-weight: 900; color: var(--cor-primaria); margin-top: 0.15rem;">
+              <%= ing.qtdEscalada %> <span style="font-size: 0.95rem; font-weight: 600;">(g/ml/un)</span>
+            </div>
+            <% if (ing.estoqueDisponivel !== null) { %>
+              <div style="font-size: 0.75rem; color: <%= ing.estoqueDisponivel >= ing.qtdEscalada ? '#166534' : '#b91c1c' %>; font-weight: 600; margin-top: 2px;">
+                Estoque: <%= ing.estoqueDisponivel %> disp.
+              </div>
+            <% } %>
+          </div>
+
+          <button type="button" class="btn-check-pesado">
+            <span class="icone-check">⚖️</span>
+            <span class="texto-check">Pesar</span>
+          </button>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+
+  <!-- 2. Central de Timers da Cozinha (Forno, Geladeira, Batedeira) -->
+  <div class="cartao" style="margin-bottom: 1.5rem;">
+    <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.25rem;">⏱️</span>
+        <div>
+          <strong style="font-size: 1.05rem;">Timers Inteligentes da Cozinha</strong>
+          <span style="display: block; font-size: 0.8rem; color: var(--cor-texto-suave); font-weight: normal;">
+            Programe o forno, resfriamento na geladeira ou ponto de fogo com alarme sonoro:
+          </span>
+        </div>
+      </div>
+      
+      <!-- Botão para Testar o Alarme Sonoro -->
+      <button type="button" class="btn btn-secundario btn-sm" id="btnTestarSom" title="Testar o alarme sonoro de confeitaria">
+        🔊 Testar Alarme
+      </button>
+    </div>
+
+    <!-- Presets Rápidos com 1 Clique -->
+    <div style="margin-bottom: 1rem;">
+      <span style="font-size: 0.8rem; font-weight: 700; color: var(--cor-texto-suave); text-transform: uppercase; display: block; margin-bottom: 0.4rem;">
+        Atalhos de Timer Recomendados:
+      </span>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secundario btn-sm btn-preset-timer" data-nome="Forno 180°C" data-minutos="35">
+          🔥 Forno 35 min
+        </button>
+        <button type="button" class="btn btn-secundario btn-sm btn-preset-timer" data-nome="Forno 180°C" data-minutos="45">
+          🔥 Forno 45 min
+        </button>
+        <button type="button" class="btn btn-secundario btn-sm btn-preset-timer" data-nome="Forno 180°C" data-minutos="55">
+          🔥 Forno 55 min
+        </button>
+        <button type="button" class="btn btn-secundario btn-sm btn-preset-timer" data-nome="Geladeira / Resfriamento" data-minutos="30">
+          ❄️ Geladeira 30 min
+        </button>
+        <button type="button" class="btn btn-secundario btn-sm btn-preset-timer" data-nome="Geladeira / Descanso" data-minutos="60">
+          ❄️ Geladeira 1h
+        </button>
+        <button type="button" class="btn btn-secundario btn-sm btn-preset-timer" data-nome="Ponto de Fogo / Batedeira" data-minutos="12">
+          🥣 Batedeira 12 min
+        </button>
+        <button type="button" class="btn btn-primario btn-sm" id="btnAbrirCustomTimer">
+          ➕ Timer Personalizado
+        </button>
+      </div>
+    </div>
+
+    <!-- Formulário Dinâmico de Timer Personalizado (Oculto inicialmente) -->
+    <div id="blocoCustomTimer" style="display: none; background: #fafafa; border: 1px dashed var(--cor-borda); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem;">
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 0.6rem; align-items: end;">
+        <div>
+          <label class="rotulo" for="customTimerNome">Nome do Timer</label>
+          <input type="text" id="customTimerNome" class="input" placeholder="Ex: Forno Red Velvet, Descanso Massa..." value="Timer">
+        </div>
+        <div>
+          <label class="rotulo" for="customTimerMin">Minutos</label>
+          <input type="number" id="customTimerMin" class="input" min="0" max="999" value="20" style="text-align: center; font-weight: 700;">
+        </div>
+        <div>
+          <label class="rotulo" for="customTimerSeg">Segundos</label>
+          <input type="number" id="customTimerSeg" class="input" min="0" max="59" value="0" style="text-align: center; font-weight: 700;">
+        </div>
+        <div>
+          <button type="button" class="btn btn-primario" id="btnDispararCustomTimer" style="height: 38px; font-weight: 700;">
+            ▶ Iniciar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grade de Timers Ativos -->
+    <div id="containerTimersAtivos" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+      <div id="vazioTimersMsg" style="grid-column: 1 / -1; text-align: center; padding: 1.5rem; color: var(--cor-texto-suave); font-size: 0.88rem;">
+        Nenhum timer ativo no momento. Use os atalhos acima para disparar um alarme de forno ou geladeira!
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Finalização & Registro de Histórico -->
+  <div class="cartao" style="background: #faf5ff; border: 1px solid #d8b4fe;">
+    <div class="cartao-titulo" style="display: flex; align-items: center; gap: 0.5rem;">
+      <span style="font-size: 1.25rem;">🏁</span>
+      <strong style="color: #6b21a8; font-size: 1.05rem;">Conclusão do Lote & Atualização de Estoque</strong>
+    </div>
+
+    <form method="POST" action="/producao/<%= producao.id %>/concluir" id="formConcluirPreparo">
+      <input type="hidden" name="tempo_real_min" id="inputTempoRealMin" value="0">
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+        <div>
+          <label class="rotulo" for="observacoesPreparo">Observações do Preparo / Fornada (Opcional)</label>
+          <textarea id="observacoesPreparo" name="observacoes" class="input" rows="2" placeholder="Ex: Massa muito fofa, assou em 45 min a 180°C. Recheio firme."></textarea>
+        </div>
+
+        <div style="display: flex; flex-direction: column; justify-content: center; gap: 0.5rem; background: #ffffff; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #e9d5ff;">
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; font-weight: 600; cursor: pointer; color: var(--cor-texto); margin: 0;">
+            <input type="checkbox" name="dar_baixa_estoque" value="1" checked style="width: 18px; height: 18px;">
+            <span>Dar baixa automática dos ingredientes pesados no estoque</span>
+          </label>
+
+          <% if (pedido) { %>
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; font-weight: 600; cursor: pointer; color: var(--cor-texto); margin: 0;">
+              <input type="checkbox" name="avancar_pedido" value="1" checked style="width: 18px; height: 18px;">
+              <span>Avançar encomenda #<%= pedido.id %> para 'Entregue / Concluído'</span>
+            </label>
+          <% } %>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <span style="font-size: 0.85rem; color: #7e22ce;">
+          ⏱️ Tempo total registrado até agora: <strong id="textoTempoTotalConcluir">0 min</strong>
+        </span>
+
+        <button type="submit" class="btn btn-primario" style="background: #9333ea; border-color: #7e22ce; font-weight: 700; padding: 0.75rem 1.5rem; font-size: 1rem;">
+          🏁 Concluir e Registrar no Histórico →
+        </button>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<!-- Script do Modo Cozinha: Cronômetro, Checklist, Timers e Web Audio API -->
+<script>
+  // 1. Áudio Sintetizado Nativo via Web Audio API (sem downloads externos)
+  let audioCtx = null;
+  function obterAudioContext() {
+    if (!audioCtx) {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) {
+        audioCtx = new AudioCtxClass();
+      }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    return audioCtx;
+  }
+
+  function tocarBeepConfeitaria() {
+    try {
+      const ctx = obterAudioContext();
+      if (!ctx) return;
+
+      const agora = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      // Acorde agradável em sino: 587Hz (D5) -> 880Hz (A5)
+      osc.frequency.setValueAtTime(587.33, agora);
+      osc.frequency.exponentialRampToValueAtTime(880.00, agora + 0.15);
+
+      gain.gain.setValueAtTime(0.3, agora);
+      gain.gain.exponentialRampToValueAtTime(0.001, agora + 0.45);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(agora);
+      osc.stop(agora + 0.45);
+    } catch (_) {}
+  }
+
+  // Tocar sequência de 3 beeps de alarme
+  function tocarAlarmeFimTimer() {
+    tocarBeepConfeitaria();
+    setTimeout(tocarBeepConfeitaria, 250);
+    setTimeout(tocarBeepConfeitaria, 500);
+  }
+
+  document.getElementById('btnTestarSom').addEventListener('click', () => {
+    tocarAlarmeFimTimer();
+  });
+
+  // 2. Cronômetro Geral da Cozinha
+  let segundosDecorridos = 0;
+  const relogioGeral = document.getElementById('relogioGeral');
+  const inputTempoRealMin = document.getElementById('inputTempoRealMin');
+  const textoTempoTotalConcluir = document.getElementById('textoTempoTotalConcluir');
+
+  function formatarDoisDigitos(num) {
+    return String(num).padStart(2, '0');
+  }
+
+  setInterval(() => {
+    segundosDecorridos++;
+    const h = Math.floor(segundosDecorridos / 3600);
+    const m = Math.floor((segundosDecorridos % 3600) / 60);
+    const s = segundosDecorridos % 60;
+    relogioGeral.textContent = `${formatarDoisDigitos(h)}:${formatarDoisDigitos(m)}:${formatarDoisDigitos(s)}`;
+
+    const minutosReal = Math.max(1, Math.round(segundosDecorridos / 60));
+    inputTempoRealMin.value = minutosReal;
+    textoTempoTotalConcluir.textContent = `${minutosReal} min (${relogioGeral.textContent})`;
+  }, 1000);
+
+  // 3. Mise en Place: Checklist de Ingredientes
+  const cardsIngredientes = document.querySelectorAll('.card-ingrediente-balanca');
+  const barraProgresso = document.getElementById('barraProgressoPesagem');
+  const textoProgresso = document.getElementById('textoProgressoPesagem');
+  const totalIngredientes = cardsIngredientes.length;
+
+  function atualizarProgresso() {
+    const pesados = document.querySelectorAll('.card-ingrediente-balanca.pesado').length;
+    const pct = totalIngredientes > 0 ? Math.round((pesados / totalIngredientes) * 100) : 100;
+
+    barraProgresso.style.width = pct + '%';
+    textoProgresso.textContent = `${pesados} de ${totalIngredientes} pesados (${pct}%)`;
+  }
+
+  cardsIngredientes.forEach(card => {
+    card.addEventListener('click', function() {
+      this.classList.toggle('pesado');
+      const btn = this.querySelector('.btn-check-pesado');
+      const icone = btn.querySelector('.icone-check');
+      const texto = btn.querySelector('.texto-check');
+
+      if (this.classList.contains('pesado')) {
+        icone.textContent = '✓';
+        texto.textContent = 'Pesado!';
+        tocarBeepConfeitaria();
+      } else {
+        icone.textContent = '⚖️';
+        texto.textContent = 'Pesar';
+      }
+      atualizarProgresso();
+    });
+  });
+
+  document.getElementById('btnMarcarTodos').addEventListener('click', () => {
+    cardsIngredientes.forEach(card => {
+      card.classList.add('pesado');
+      const btn = card.querySelector('.btn-check-pesado');
+      btn.querySelector('.icone-check').textContent = '✓';
+      btn.querySelector('.texto-check').textContent = 'Pesado!';
+    });
+    tocarBeepConfeitaria();
+    atualizarProgresso();
+  });
+
+  document.getElementById('btnDesmarcarTodos').addEventListener('click', () => {
+    cardsIngredientes.forEach(card => {
+      card.classList.remove('pesado');
+      const btn = card.querySelector('.btn-check-pesado');
+      btn.querySelector('.icone-check').textContent = '⚖️';
+      btn.querySelector('.texto-check').textContent = 'Pesar';
+    });
+    atualizarProgresso();
+  });
+
+  // 4. Timers Inteligentes
+  const containerTimers = document.getElementById('containerTimersAtivos');
+  const vazioTimersMsg = document.getElementById('vazioTimersMsg');
+  let idTimerSeq = 0;
+
+  function criarTimer(nome, segundosTotais) {
+    idTimerSeq++;
+    const timerId = idTimerSeq;
+
+    if (vazioTimersMsg) vazioTimersMsg.style.display = 'none';
+
+    let segundosRestantes = segundosTotais;
+    let intervalo = null;
+    let alarmeLoop = null;
+
+    const card = document.createElement('div');
+    card.className = 'card-timer-ativo';
+    card.id = 'timer_card_' + timerId;
+
+    card.innerHTML = `
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <strong style="color: var(--cor-texto); font-size: 0.95rem;">${nome}</strong>
+          <span style="font-size: 0.75rem; background: #ffedd5; color: #c2410c; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700;">Ativo</span>
+        </div>
+        <div class="digitos-timer">00:00</div>
+        <div class="barra-progresso-wrapper" style="height: 6px; margin-bottom: 0.5rem;">
+          <div class="barra-progresso-fill barra-timer" style="background: #f97316; width: 100%;"></div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.4rem; justify-content: space-between; margin-top: 0.5rem;">
+        <button type="button" class="btn btn-secundario btn-sm btn-pausar-timer" style="flex: 1;">Pausar</button>
+        <button type="button" class="btn btn-secundario btn-sm btn-cancelar-timer" title="Remover timer">✕</button>
+      </div>
+    `;
+
+    containerTimers.appendChild(card);
+
+    const elDigitos = card.querySelector('.digitos-timer');
+    const elBarra = card.querySelector('.barra-timer');
+    const btnPausar = card.querySelector('.btn-pausar-timer');
+    const btnCancelar = card.querySelector('.btn-cancelar-timer');
+
+    function renderizarTimer() {
+      const m = Math.floor(segundosRestantes / 60);
+      const s = segundosRestantes % 60;
+      elDigitos.textContent = `${formatarDoisDigitos(m)}:${formatarDoisDigitos(s)}`;
+
+      const pct = (segundosRestantes / segundosTotais) * 100;
+      elBarra.style.width = pct + '%';
+    }
+
+    renderizarTimer();
+
+    function iniciarContagem() {
+      intervalo = setInterval(() => {
+        if (segundosRestantes > 0) {
+          segundosRestantes--;
+          renderizarTimer();
+        } else {
+          // Fim do timer! Disparar alarme
+          clearInterval(intervalo);
+          intervalo = null;
+          card.classList.add('alarme-disparado');
+          elDigitos.textContent = '00:00';
+
+          // Tocar alarme em loop a cada 2.5s até desligar
+          tocarAlarmeFimTimer();
+          alarmeLoop = setInterval(tocarAlarmeFimTimer, 2500);
+
+          btnPausar.textContent = '🔕 Desligar Alarme';
+          btnPausar.className = 'btn btn-primario btn-sm btn-pausar-timer';
+          btnPausar.style.background = '#dc2626';
+          btnPausar.style.borderColor = '#b91c1c';
+          btnPausar.style.fontWeight = '800';
+        }
+      }, 1000);
+    }
+
+    iniciarContagem();
+
+    btnPausar.addEventListener('click', () => {
+      if (alarmeLoop) {
+        clearInterval(alarmeLoop);
+        alarmeLoop = null;
+        card.classList.remove('alarme-disparado');
+        btnPausar.textContent = 'Concluído';
+        btnPausar.disabled = true;
+        return;
+      }
+
+      if (intervalo) {
+        clearInterval(intervalo);
+        intervalo = null;
+        btnPausar.textContent = 'Continuar';
+      } else if (segundosRestantes > 0) {
+        iniciarContagem();
+        btnPausar.textContent = 'Pausar';
+      }
+    });
+
+    btnCancelar.addEventListener('click', () => {
+      if (intervalo) clearInterval(intervalo);
+      if (alarmeLoop) clearInterval(alarmeLoop);
+      card.remove();
+
+      if (containerTimers.querySelectorAll('.card-timer-ativo').length === 0) {
+        if (vazioTimersMsg) vazioTimersMsg.style.display = 'block';
+      }
+    });
+  }
+
+  // Ouvintes dos Presets de Timer
+  document.querySelectorAll('.btn-preset-timer').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const nome = this.getAttribute('data-nome') || 'Timer';
+      const min = parseInt(this.getAttribute('data-minutos'), 10) || 10;
+      criarTimer(nome, min * 60);
+    });
+  });
+
+  // Timer Personalizado
+  const blocoCustom = document.getElementById('blocoCustomTimer');
+  document.getElementById('btnAbrirCustomTimer').addEventListener('click', () => {
+    blocoCustom.style.display = blocoCustom.style.display === 'none' ? 'block' : 'none';
+  });
+
+  document.getElementById('btnDispararCustomTimer').addEventListener('click', () => {
+    const nome = (document.getElementById('customTimerNome').value || 'Timer Personalizado').trim();
+    const min = parseInt(document.getElementById('customTimerMin').value, 10) || 0;
+    const seg = parseInt(document.getElementById('customTimerSeg').value, 10) || 0;
+    const totalSeg = (min * 60) + seg;
+
+    if (totalSeg > 0) {
+      criarTimer(nome, totalSeg);
+      blocoCustom.style.display = 'none';
+    }
+  });
+</script>
+
+<%- include('partials/rodape') %>

@@ -1,0 +1,340 @@
+<%- include('partials/topo') %>
+
+<% if (sucessoConclusao) { %>
+  <div class="alerta alerta-sucesso">
+    <span>✅</span>
+    <span><strong>Parabéns!</strong> Preparo concluído com sucesso e registrado no histórico da cozinha!</span>
+  </div>
+<% } %>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem; flex-wrap: wrap; gap: 0.75rem;">
+  <div>
+    <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--cor-texto); display: flex; align-items: center; gap: 0.5rem;">
+      <span>🍳</span> <span>Central de Produção & Cozinha</span>
+    </h1>
+    <p style="color: var(--cor-texto-suave); font-size: 0.85rem; margin: 0;">
+      Acompanhe a fila de encomendas, prepare receitas com pesagem guiada e consulte o histórico de execução.
+    </p>
+  </div>
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <a href="/" class="btn btn-secundario btn-sm">🏠 Início</a>
+    <a href="/agenda" class="btn btn-secundario btn-sm">📅 Agenda de Entregas</a>
+    <a href="/compras" class="btn btn-secundario btn-sm">🛒 Compras de Insumos</a>
+  </div>
+</div>
+
+<!-- KPIs da Cozinha -->
+<div class="grid-kpis" style="margin-bottom: 1.25rem;">
+  <div class="kpi-card">
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Preparos este Mês</span>
+      <span class="kpi-valor"><%= kpis.totalConcluidosMes %></span>
+      <span class="kpi-subtexto">Lotes finalizados com sucesso</span>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Tempo Médio Real</span>
+      <span class="kpi-valor"><%= kpis.tempoMedioMin %> min</span>
+      <span class="kpi-subtexto">Duração média de preparo</span>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-card-conteudo">
+      <span class="kpi-rotulo">Receitas na Fila</span>
+      <span class="kpi-valor" style="color: #ea580c;"><%= kpis.totalNaFila %></span>
+      <span class="kpi-subtexto">Aguardando produção na cozinha</span>
+    </div>
+  </div>
+</div>
+
+<!-- Preparos em Andamento (se houver) -->
+<% if (producoesAtivas && producoesAtivas.length > 0) { %>
+  <div class="cartao" style="margin-bottom: 1.25rem; border-left: 4px solid #f97316; background: #fffaf0;">
+    <div class="cartao-titulo" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.2rem; animation: pulse 1.5s infinite;">⏱️</span>
+        <strong style="color: #9a3412;">Lotes em Preparo Agora na Cozinha</strong>
+      </div>
+      <span class="badge-alerta"><%= producoesAtivas.length %> em andamento</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 0.75rem;">
+      <% producoesAtivas.forEach(pa => { %>
+        <div style="background: #ffffff; border: 1px solid #fed7aa; border-radius: 8px; padding: 0.85rem; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
+              <strong style="font-size: 1rem; color: var(--cor-texto);"><%= pa.nome_receita %></strong>
+              <span style="font-size: 0.75rem; background: #ffedd5; color: #c2410c; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700;">
+                <%= pa.quantidade_produzida %> <%= pa.unidade %>
+              </span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--cor-texto-suave);">
+              Iniciado em <%= pa.iniciadoEmFmt %> &bull; Estimado: <%= pa.tempo_estimado_min %> min
+            </div>
+            <% if (pa.pedido_id) { %>
+              <div style="font-size: 0.78rem; color: #0284c7; margin-top: 0.25rem; font-weight: 600;">
+                📦 Encomenda #<%= pa.pedido_id %>
+              </div>
+            <% } %>
+          </div>
+          <div style="margin-top: 0.75rem; display: flex; gap: 0.4rem;">
+            <a href="/producao/preparar?producao_id=<%= pa.id %>" class="btn btn-primario btn-sm" style="flex: 1; text-align: center; font-weight: 700;">
+              ▶ Continuar Preparo
+            </a>
+            <form method="POST" action="/producao/<%= pa.id %>/cancelar" style="margin: 0;" onsubmit="return confirm('Deseja cancelar este preparo?');">
+              <button type="submit" class="btn btn-secundario btn-sm" title="Cancelar preparo">✕</button>
+            </form>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+<% } %>
+
+<!-- Bloco Principal Dividido: Fila de Encomendas vs Preparo Rápido Avulso -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+  
+  <!-- Coluna 1: Fila da Cozinha (Encomendas Pendentes) -->
+  <div class="cartao" style="margin-bottom: 0;">
+    <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 0.45rem;">
+        <span>📋</span>
+        <span style="font-weight: 700;">Fila de Encomendas para Produzir</span>
+      </div>
+      <% if (filaPedidos.length > 0) { %>
+        <span class="badge-contador"><%= filaPedidos.length %> pedidos</span>
+      <% } %>
+    </div>
+
+    <% if (filaPedidos.length === 0) { %>
+      <div style="text-align: center; padding: 2.5rem 1rem; color: var(--cor-texto-suave);">
+        <div style="font-size: 2.2rem; margin-bottom: 0.4rem;">🎉</div>
+        <p style="font-weight: 700; color: var(--cor-texto); margin-bottom: 0.25rem;">Nenhuma encomenda pendente na fila!</p>
+        <p style="font-size: 0.85rem; max-width: 320px; margin: 0 auto;">
+          Todas as encomendas confirmadas foram preparadas. Você pode iniciar um preparo avulso ao lado para reforçar o estoque ou pronta-entrega.
+        </p>
+      </div>
+    <% } else { %>
+      <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+        <% filaPedidos.forEach(pedido => { %>
+          <div style="border: 1px solid var(--cor-borda); border-radius: 8px; padding: 0.85rem; background: #fafafa;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.45rem; flex-wrap: wrap; gap: 0.4rem;">
+              <div>
+                <strong style="color: var(--cor-texto); font-size: 0.95rem;">Pedido #<%= pedido.pedido_id %> &bull; <%= pedido.clienteNome %></strong>
+                <div style="font-size: 0.78rem; color: var(--cor-texto-suave);">
+                  📅 Entrega: <%= pedido.dataEntregaFmt %> <%= pedido.horario_entrega ? 'às ' + pedido.horario_entrega : '' %>
+                </div>
+              </div>
+              <span class="status-pilula <%= pedido.status === 'producao' ? 'status-producao' : 'status-confirmado' %>" style="font-size: 0.72rem;">
+                <%= pedido.status === 'producao' ? '🟠 Em Produção' : '🟡 Confirmado' %>
+              </span>
+            </div>
+
+            <!-- Lista de Itens Fabricados deste Pedido -->
+            <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem;">
+              <% pedido.itens.forEach(item => { %>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid #eee; border-radius: 6px; padding: 0.5rem 0.65rem;">
+                  <div>
+                    <span style="font-weight: 700; font-size: 0.88rem; color: var(--cor-primaria);"><%= item.quantidade %> <%= item.unidade %></span>
+                    <span style="font-weight: 600; font-size: 0.88rem; color: var(--cor-texto); margin-left: 0.25rem;"><%= item.descricao %></span>
+                    <% if (item.observacao) { %>
+                      <div style="font-size: 0.75rem; color: var(--cor-texto-suave); font-style: italic;">
+                        Obs: <%= item.observacao %>
+                      </div>
+                    <% } %>
+                  </div>
+                  <a href="/producao/preparar?pedido_id=<%= pedido.pedido_id %>&produto_id=<%= item.produto_id %>&quantidade=<%= item.quantidade %>&unidade=<%= item.unidade %>" class="btn btn-primario btn-sm" style="font-weight: 700; font-size: 0.8rem; white-space: nowrap;">
+                    👩‍🍳 Preparar
+                  </a>
+                </div>
+              <% }); %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Coluna 2: Preparo Rápido de Receita Avulsa -->
+  <div class="cartao" style="margin-bottom: 0;">
+    <div class="cartao-titulo">
+      <div style="display: flex; align-items: center; gap: 0.45rem;">
+        <span>🧁</span>
+        <span style="font-weight: 700;">Preparo Avulso / Pronta-Entrega</span>
+      </div>
+    </div>
+
+    <p style="font-size: 0.85rem; color: var(--cor-texto-suave); margin-bottom: 1rem;">
+      Deseja produzir uma receita para estoque ou vitrine? Selecione o produto e a quantidade desejada:
+    </p>
+
+    <% if (!produtos || produtos.length === 0) { %>
+      <div style="text-align: center; padding: 2rem 1rem;">
+        <p style="color: var(--cor-texto-suave); font-size: 0.88rem;">Você ainda não possui receitas cadastradas na Fábrica.</p>
+        <a href="/produtos/novo" class="btn btn-primario btn-sm">➕ Cadastrar Receita</a>
+      </div>
+    <% } else { %>
+      <form method="GET" action="/producao/preparar" style="display: flex; flex-direction: column; gap: 0.85rem;">
+        <div>
+          <label class="rotulo" for="selectProdutoAvulso">Selecione a Receita *</label>
+          <select id="selectProdutoAvulso" name="produto_id" class="input" required style="font-weight: 600;">
+            <option value="">-- Escolha uma Receita da Fábrica --</option>
+            <% produtos.forEach(p => { %>
+              <option value="<%= p.id %>" data-rendimento="<%= p.rendimento %>" data-unidade="<%= p.unidade || 'un' %>" data-tempo="<%= p.tempo_horas %>">
+                <%= p.nome %> (Rendimento: <%= p.rendimento %> <%= p.unidade || 'un' %>)
+              </option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div>
+            <label class="rotulo" for="inputQtdAvulso">Quantidade Alvo *</label>
+            <input type="number" step="0.01" min="0.01" id="inputQtdAvulso" name="quantidade" class="input" value="1" required style="text-align: center; font-weight: 700;">
+          </div>
+          <div>
+            <label class="rotulo" for="selectUnidadeAvulso">Unidade *</label>
+            <select id="selectUnidadeAvulso" name="unidade" class="input" style="font-weight: 600; text-align: center;">
+              <option value="un">un (Unidades)</option>
+              <option value="kg">kg (Quilos)</option>
+              <option value="g">g (Gramas)</option>
+              <option value="fatia">fatia (Fatias)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="infoPreparoAvulso" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 0.6rem 0.8rem; font-size: 0.8rem; color: #166534; display: none;">
+          <span>✓</span> <span id="textoInfoPreparo"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primario" style="margin-top: 0.5rem; font-weight: 700; padding: 0.65rem 1rem;">
+          👩‍🍳 Iniciar no Modo Cozinha →
+        </button>
+      </form>
+    <% } %>
+  </div>
+
+</div>
+
+<!-- Histórico dos Últimos Preparos Realizados -->
+<div class="cartao">
+  <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+    <div style="display: flex; align-items: center; gap: 0.45rem;">
+      <span>📜</span>
+      <span style="font-weight: 700;">Histórico dos Últimos Preparos na Cozinha</span>
+    </div>
+    <% if (historico.length > 0) { %>
+      <span class="badge-contador"><%= historico.length %> registros</span>
+    <% } %>
+  </div>
+
+  <% if (historico.length === 0) { %>
+    <div style="text-align: center; padding: 2rem 1rem; color: var(--cor-texto-suave);">
+      <p style="margin: 0; font-size: 0.88rem;">Nenhum preparo concluído ainda. Ao finalizar uma receita no Modo Cozinha, o tempo e observações serão arquivados aqui.</p>
+    </div>
+  <% } else { %>
+    <div class="tabela-responsiva">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Receita / Lote</th>
+            <th>Origem</th>
+            <th style="text-align: center;">Tempo Planejado</th>
+            <th style="text-align: center;">Tempo Real</th>
+            <th style="text-align: center;">Desempenho</th>
+            <th>Data & Horário</th>
+            <th>Observações do Confeiteiro</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% historico.forEach(h => { %>
+            <tr>
+              <td>
+                <strong style="color: var(--cor-texto); font-size: 0.9rem;"><%= h.nome_receita %></strong>
+                <div style="font-size: 0.78rem; color: var(--cor-primaria); font-weight: 700;">
+                  <%= h.quantidade_produzida %> <%= h.unidade %>
+                </div>
+              </td>
+              <td>
+                <% if (h.pedido_id) { %>
+                  <a href="/pedidos/<%= h.pedido_id %>" style="color: #0284c7; font-weight: 600; text-decoration: none; font-size: 0.85rem;">
+                    📦 Pedido #<%= h.pedido_id %>
+                  </a>
+                <% } else { %>
+                  <span style="font-size: 0.78rem; background: #f3f4f6; color: #4b5563; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;">Avulso</span>
+                <% } %>
+              </td>
+              <td style="text-align: center; font-size: 0.85rem; color: var(--cor-texto-suave);">
+                <%= h.tempo_estimado_min %> min
+              </td>
+              <td style="text-align: center; font-weight: 700; font-size: 0.9rem; color: var(--cor-texto);">
+                <%= h.tempo_real_min !== null ? h.tempo_real_min + ' min' : '---' %>
+              </td>
+              <td style="text-align: center;">
+                <% if (h.status === 'cancelado') { %>
+                  <span style="background: #fee2e2; color: #991b1b; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">Cancelado</span>
+                <% } else if (h.tempo_real_min !== null && h.tempo_estimado_min > 0) { 
+                     const diff = h.tempo_real_min - h.tempo_estimado_min;
+                %>
+                  <% if (diff <= -5) { %>
+                    <span style="background: #dcfce7; color: #166534; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">
+                      ⚡ <%= Math.abs(diff) %> min mais rápido
+                    </span>
+                  <% } else if (diff >= 10) { %>
+                    <span style="background: #fef3c7; color: #92400e; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">
+                      ⚠️ +<%= diff %> min que o previsto
+                    </span>
+                  <% } else { %>
+                    <span style="background: #e0f2fe; color: #0369a1; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">
+                      ✓ No prazo esperado
+                    </span>
+                  <% } %>
+                <% } else { %>
+                  <span style="color: var(--cor-texto-suave); font-size: 0.8rem;">---</span>
+                <% } %>
+              </td>
+              <td style="font-size: 0.82rem; color: var(--cor-texto-suave);">
+                <%= h.concluidoEmFmt || h.iniciadoEmFmt %>
+              </td>
+              <td style="font-size: 0.82rem; color: #374151; max-width: 250px;">
+                <%= h.observacoes || '<em style="color:#9ca3af">Sem observações</em>' %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<script>
+  // Sincronizar unidade e quantidade padrão ao escolher receita no formulário avulso
+  const selectProd = document.getElementById('selectProdutoAvulso');
+  const inputQtd = document.getElementById('inputQtdAvulso');
+  const selectUn = document.getElementById('selectUnidadeAvulso');
+  const infoBloco = document.getElementById('infoPreparoAvulso');
+  const textoInfo = document.getElementById('textoInfoPreparo');
+
+  if (selectProd) {
+    selectProd.addEventListener('change', function() {
+      const opt = this.options[this.selectedIndex];
+      if (this.value) {
+        const rend = opt.getAttribute('data-rendimento') || '1';
+        const un = opt.getAttribute('data-unidade') || 'un';
+        const tempo = parseFloat(opt.getAttribute('data-tempo')) || 0;
+        inputQtd.value = rend;
+        selectUn.value = un;
+
+        infoBloco.style.display = 'block';
+        textoInfo.textContent = `Rendimento base: ${rend} ${un} • Tempo médio na ficha técnica: ${tempo}h (${Math.round(tempo * 60)} min)`;
+      } else {
+        infoBloco.style.display = 'none';
+      }
+    });
+  }
+</script>
+
+<%- include('partials/rodape') %>

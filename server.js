@@ -70,6 +70,7 @@ app.use('/clientes', require('./routes/clientes'));
 app.use('/pedidos', require('./routes/pedidos'));
 app.use('/agenda', require('./routes/agenda'));
 app.use('/compras', require('./routes/compras').router);
+app.use('/producao', require('./routes/producao'));
 
 // Rota 404
 app.use((req, res) => {
