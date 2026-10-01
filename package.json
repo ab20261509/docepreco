@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "seed:master": "node scripts/seed_master.js",
     "test": "node test/calculo.test.js && node test/integration.test.js && node test/excel.test.js && node test/estoque.test.js && node test/validade.test.js && node test/edicao_compras.test.js && node test/clientes.test.js && node test/pedidos.test.js && node test/agenda.test.js && node test/compras.test.js && node test/migrations.test.js && node test/inicio.test.js && node test/producao.test.js && node test/assistente.test.js && node test/master.test.js"
   },
   "engines": {
