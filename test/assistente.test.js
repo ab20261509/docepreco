@@ -28,11 +28,17 @@ async function run() {
   const p1 = await db.run("INSERT INTO produtos (usuario_id, nome, rendimento, unidade, tempo_horas, margem_pct) VALUES (?, 'Torta Holandesa', 1, 'un', 1.5, 45)", [uid1]);
   const prodId = p1.lastInsertRowid;
 
-  // C. Insumo com estoque baixo
+  // C. Insumo com estoque baixo (150g)
   await db.run(`
     INSERT INTO ingredientes_catalogo (usuario_id, nome, unidade, estoque_atual, estoque_minimo, preco_atual, qtd_embalagem_padrao)
     VALUES (?, 'Chocolate Meio Amargo Nobre', 'g', 150, 500, 35, 1000)
   `, [uid1]);
+
+  // Adicionar ingrediente na receita (300g por unidade base)
+  await db.run(`
+    INSERT INTO ingredientes (produto_id, nome, qtd_usada, preco_pacote, qtd_pacote)
+    VALUES (?, 'Chocolate Meio Amargo Nobre', 300, 35, 1000)
+  `, [prodId]);
 
   // D. Pedido para Hoje
   await db.run(`
@@ -76,7 +82,13 @@ async function run() {
 
   const respEstoque = assistenteIa.gerarRespostaNativa('Quais ingredientes estão com estoque baixo?', contexto);
   assert.ok(respEstoque.includes('Chocolate Meio Amargo Nobre'), 'Resposta de estoque deve citar o insumo em alerta');
-  console.log('✅ Respostas inteligentes baseadas em tarefas e dados do confeiteiro validadas com sucesso!');
+
+  // Testar a pergunta específica do usuário: se a produção possui estoque disponível para preparo
+  const respEstoqueProducao = assistenteIa.gerarRespostaNativa('A produção possui o estoque disponível para ser preparado?', contexto);
+  assert.ok(respEstoqueProducao.includes('NÃO há estoque suficiente'), 'Deve identificar que falta estoque para a produção');
+  assert.ok(respEstoqueProducao.includes('Chocolate Meio Amargo Nobre'), 'Deve citar o ingrediente faltante');
+  assert.ok(respEstoqueProducao.includes('faltam 450'), 'Deve calcular a quantidade exata que falta comprar');
+  console.log('✅ Auditoria de estoque para produção (pergunta do confeiteiro) validada com 100% de precisão!');
 
   // 6. Testar Persistência de Mensagens no Banco e Isolamento Multi-tenant
   await db.run("INSERT INTO chat_mensagens (usuario_id, papel, conteudo) VALUES (?, 'usuario', 'O que temos para hoje?')", [uid1]);
