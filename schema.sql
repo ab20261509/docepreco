@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS produtos (
   mao_obra_extra  REAL NOT NULL DEFAULT 0 CHECK (mao_obra_extra >= 0), -- item D
   margem_pct      REAL NOT NULL DEFAULT 40 CHECK (margem_pct >= 0),
   taxas_pct       REAL NOT NULL DEFAULT 5  CHECK (taxas_pct >= 0),
+  unidade         TEXT NOT NULL DEFAULT 'un',
   atualizado_em   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -143,8 +144,11 @@ CREATE TABLE IF NOT EXISTS pedido_itens (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   pedido_id      INTEGER NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
   produto_id     INTEGER REFERENCES produtos(id) ON DELETE SET NULL,
+  item_pai_id    INTEGER REFERENCES pedido_itens(id) ON DELETE CASCADE,
+  tipo_item      TEXT NOT NULL DEFAULT 'produto',
   descricao      TEXT NOT NULL,
   quantidade     REAL NOT NULL CHECK (quantidade > 0),
+  unidade        TEXT NOT NULL DEFAULT 'un',
   preco_unitario REAL NOT NULL CHECK (preco_unitario >= 0),
   subtotal       REAL NOT NULL CHECK (subtotal >= 0),
   observacao     TEXT
@@ -152,6 +156,8 @@ CREATE TABLE IF NOT EXISTS pedido_itens (
 
 CREATE INDEX IF NOT EXISTS idx_pedido_itens_pedido  ON pedido_itens(pedido_id);
 CREATE INDEX IF NOT EXISTS idx_pedido_itens_produto ON pedido_itens(produto_id);
+CREATE INDEX IF NOT EXISTS idx_pedido_itens_pai     ON pedido_itens(item_pai_id);
+CREATE INDEX IF NOT EXISTS idx_pedido_itens_tipo    ON pedido_itens(tipo_item);
 
 
 

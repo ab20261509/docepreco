@@ -80,12 +80,15 @@ async function calcularPlanejamentoCompras(uid, options = {}) {
         pi.pedido_id,
         pi.produto_id,
         pi.quantidade AS qtd_pedida,
+        pi.unidade AS unidade_pedida,
+        pi.tipo_item,
         pi.descricao AS item_descricao,
         p.nome AS produto_nome,
-        p.rendimento
+        p.rendimento,
+        p.unidade AS produto_unidade
       FROM pedido_itens pi
       LEFT JOIN produtos p ON pi.produto_id = p.id
-      WHERE pi.pedido_id IN (${placeholders}) AND pi.produto_id IS NOT NULL
+      WHERE pi.pedido_id IN (${placeholders}) AND pi.produto_id IS NOT NULL AND (pi.tipo_item IS NULL OR pi.tipo_item = 'produto')
     `, pedidoIds);
 
     const produtoIds = [...new Set(itensPedidos.map(it => it.produto_id).filter(Boolean))];
@@ -103,7 +106,17 @@ async function calcularPlanejamentoCompras(uid, options = {}) {
 
     itensPedidos.forEach(it => {
       const rendimento = it.rendimento > 0 ? it.rendimento : 1;
-      const fatorLote = it.qtd_pedida / rendimento;
+      const unPed = (it.unidade_pedida || 'un').toLowerCase();
+      const unProd = (it.produto_unidade || 'un').toLowerCase();
+
+      let qtdEfetiva = it.qtd_pedida;
+      if (unProd === 'kg' && unPed === 'g') {
+        qtdEfetiva = it.qtd_pedida / 1000;
+      } else if (unProd === 'g' && unPed === 'kg') {
+        qtdEfetiva = it.qtd_pedida * 1000;
+      }
+
+      const fatorLote = qtdEfetiva / rendimento;
 
       const ings = ingredientesPorProduto[it.produto_id] || [];
       ings.forEach(ing => {

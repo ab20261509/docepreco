@@ -99,8 +99,8 @@
                   <%= item.totalIngredientes %> ingrediente(s) &bull; <%= item.produto.tempo_horas %>h de preparo
                 </div>
               </td>
-              <td style="text-align: center;">
-                <%= item.produto.rendimento %> un
+              <td style="text-align: center; font-weight: 600;">
+                <%= item.produto.rendimento %> <%= item.produto.unidade || 'un' %>
               </td>
               <% if (item.calculo) { %>
                 <td style="text-align: right;"><%= formatMoney(item.calculo.custoUnit) %></td>

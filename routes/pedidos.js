@@ -56,6 +56,7 @@ async function buscarProdutosComPreco(usuarioId) {
       id: p.id,
       nome: p.nome,
       rendimento: p.rendimento,
+      unidade: p.unidade || 'un',
       precoSugerido
     };
   }));
@@ -74,9 +75,59 @@ function gerarTextoWhatsApp(pedido, itens) {
   texto += '📦 *Forma de Recebimento*: ' + tipo + endereco + '\n\n';
   
   texto += '🎂 *ITENS:*\n';
-  itens.forEach(item => {
+
+  // Separar itens principais e extras vinculados
+  const extrasPorPai = {};
+  const itensPrincipais = [];
+
+  itens.forEach(it => {
+    if (it.item_pai_id) {
+      if (!extrasPorPai[it.item_pai_id]) {
+        extrasPorPai[it.item_pai_id] = [];
+      }
+      extrasPorPai[it.item_pai_id].push(it);
+    } else {
+      itensPrincipais.push(it);
+    }
+  });
+
+  itensPrincipais.forEach(item => {
     const obs = item.observacao ? ' _(' + item.observacao + ')_' : '';
-    texto += '• *' + item.quantidade + 'x* ' + item.descricao + ' — ' + formatarMoeda(item.preco_unitario) + ' un = *' + formatarMoeda(item.subtotal) + '*' + obs + '\n';
+    const un = (item.unidade || 'un').toLowerCase();
+    let prefixoQtd = '*' + item.quantidade + 'x* ';
+    let sufixoPreco = ' un';
+
+    if (un === 'kg') {
+      prefixoQtd = '*' + item.quantidade + ' kg* ';
+      sufixoPreco = '/kg';
+    } else if (un === 'g') {
+      prefixoQtd = '*' + item.quantidade + ' g* ';
+      sufixoPreco = '';
+    } else if (un === 'fatia') {
+      prefixoQtd = '*' + item.quantidade + ' fatia(s)* ';
+      sufixoPreco = '/fatia';
+    }
+
+    texto += '• ' + prefixoQtd + item.descricao + ' — ' + formatarMoeda(item.preco_unitario) + sufixoPreco + ' = *' + formatarMoeda(item.subtotal) + '*' + obs + '\n';
+
+    // Extras vinculados a este item
+    const extras = extrasPorPai[item.id] || [];
+    extras.forEach(extra => {
+      const extraObs = extra.observacao ? ' _(' + extra.observacao + ')_' : '';
+      const extraQtd = (extra.quantidade && extra.quantidade > 1) ? ` (${extra.quantidade}x)` : '';
+      texto += '  ↳ *Personalização*: ' + extra.descricao + extraQtd + ' (+ ' + formatarMoeda(extra.subtotal) + ')' + extraObs + '\n';
+    });
+  });
+
+  // Se algum extra ficou orfão (sem pai encontrado), listar ao final
+  Object.keys(extrasPorPai).forEach(paiId => {
+    const paiExiste = itensPrincipais.some(p => String(p.id) === String(paiId));
+    if (!paiExiste) {
+      extrasPorPai[paiId].forEach(extra => {
+        const obs = extra.observacao ? ' _(' + extra.observacao + ')_' : '';
+        texto += '• *Personalização*: ' + extra.descricao + ' — *' + formatarMoeda(extra.subtotal) + '*' + obs + '\n';
+      });
+    }
   });
   
   texto += '\n💰 *Subtotal*: ' + formatarMoeda(pedido.valor_produtos) + '\n';
@@ -271,8 +322,12 @@ router.post('/', exigirLogin, async (req, res) => {
   const descs = Array.isArray(req.body.item_descricao) ? req.body.item_descricao : (req.body.item_descricao ? [req.body.item_descricao] : []);
   const prods = Array.isArray(req.body.item_produto_id) ? req.body.item_produto_id : (req.body.item_produto_id ? [req.body.item_produto_id] : []);
   const qtds = Array.isArray(req.body.item_quantidade) ? req.body.item_quantidade : (req.body.item_quantidade ? [req.body.item_quantidade] : []);
+  const unidades = Array.isArray(req.body.item_unidade) ? req.body.item_unidade : (req.body.item_unidade ? [req.body.item_unidade] : []);
+  const tipos = Array.isArray(req.body.item_tipo) ? req.body.item_tipo : (req.body.item_tipo ? [req.body.item_tipo] : []);
   const precos = Array.isArray(req.body.item_preco) ? req.body.item_preco : (req.body.item_preco ? [req.body.item_preco] : []);
   const obss = Array.isArray(req.body.item_observacao) ? req.body.item_observacao : (req.body.item_observacao ? [req.body.item_observacao] : []);
+  const tempIds = Array.isArray(req.body.item_temp_id) ? req.body.item_temp_id : (req.body.item_temp_id ? [req.body.item_temp_id] : []);
+  const paiTempIds = Array.isArray(req.body.item_pai_temp_id) ? req.body.item_pai_temp_id : (req.body.item_pai_temp_id ? [req.body.item_pai_temp_id] : []);
 
   let valorProdutos = 0;
   for (let i = 0; i < descs.length; i++) {
@@ -283,9 +338,24 @@ router.post('/', exigirLogin, async (req, res) => {
     const preco = Math.max(0, parseFloat(precos[i]) || 0);
     const subtotal = Number((qtd * preco).toFixed(2));
     const obs = (obss[i] || '').trim();
+    const unidade = ['un', 'kg', 'g', 'fatia'].includes(unidades[i]) ? unidades[i] : 'un';
+    const tipoItem = ['produto', 'avulso', 'extra'].includes(tipos[i]) ? tipos[i] : (prodId ? 'produto' : 'avulso');
+    const tempId = (tempIds[i] || `temp_${i}`).trim();
+    const paiTempId = (paiTempIds[i] || '').trim();
     
     valorProdutos += subtotal;
-    itensParsed.push({ produtoId: prodId, descricao, quantidade: qtd, precoUnitario: preco, subtotal, observacao: obs });
+    itensParsed.push({
+      tempId,
+      paiTempId,
+      produtoId: prodId,
+      tipoItem,
+      unidade,
+      descricao,
+      quantidade: qtd,
+      precoUnitario: preco,
+      subtotal,
+      observacao: obs
+    });
   }
 
   if (itensParsed.length === 0) {
@@ -311,12 +381,24 @@ router.post('/', exigirLogin, async (req, res) => {
       ]);
 
       const pid = Number(result.lastInsertRowid);
+      const mapaTempParaId = {};
 
-      for (const item of itensParsed) {
+      // 1. Inserir itens principais (sem pai)
+      for (const item of itensParsed.filter(it => !it.paiTempId)) {
+        const res = await tx.run(`
+          INSERT INTO pedido_itens (pedido_id, produto_id, item_pai_id, tipo_item, descricao, quantidade, unidade, preco_unitario, subtotal, observacao)
+          VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)
+        `, [pid, item.produtoId, item.tipoItem, item.descricao, item.quantidade, item.unidade, item.precoUnitario, item.subtotal, item.observacao || null]);
+        mapaTempParaId[item.tempId] = Number(res.lastInsertRowid);
+      }
+
+      // 2. Inserir itens vinculados (extras que possuem pai)
+      for (const item of itensParsed.filter(it => it.paiTempId)) {
+        const paiId = mapaTempParaId[item.paiTempId] || null;
         await tx.run(`
-          INSERT INTO pedido_itens (pedido_id, produto_id, descricao, quantidade, preco_unitario, subtotal, observacao)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [pid, item.produtoId, item.descricao, item.quantidade, item.precoUnitario, item.subtotal, item.observacao || null]);
+          INSERT INTO pedido_itens (pedido_id, produto_id, item_pai_id, tipo_item, descricao, quantidade, unidade, preco_unitario, subtotal, observacao)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [pid, item.produtoId, paiId, item.tipoItem, item.descricao, item.quantidade, item.unidade, item.precoUnitario, item.subtotal, item.observacao || null]);
       }
 
       return pid;
@@ -446,8 +528,12 @@ router.post('/:id/editar', exigirLogin, async (req, res) => {
   const descs = Array.isArray(req.body.item_descricao) ? req.body.item_descricao : (req.body.item_descricao ? [req.body.item_descricao] : []);
   const prods = Array.isArray(req.body.item_produto_id) ? req.body.item_produto_id : (req.body.item_produto_id ? [req.body.item_produto_id] : []);
   const qtds = Array.isArray(req.body.item_quantidade) ? req.body.item_quantidade : (req.body.item_quantidade ? [req.body.item_quantidade] : []);
+  const unidades = Array.isArray(req.body.item_unidade) ? req.body.item_unidade : (req.body.item_unidade ? [req.body.item_unidade] : []);
+  const tipos = Array.isArray(req.body.item_tipo) ? req.body.item_tipo : (req.body.item_tipo ? [req.body.item_tipo] : []);
   const precos = Array.isArray(req.body.item_preco) ? req.body.item_preco : (req.body.item_preco ? [req.body.item_preco] : []);
   const obss = Array.isArray(req.body.item_observacao) ? req.body.item_observacao : (req.body.item_observacao ? [req.body.item_observacao] : []);
+  const tempIds = Array.isArray(req.body.item_temp_id) ? req.body.item_temp_id : (req.body.item_temp_id ? [req.body.item_temp_id] : []);
+  const paiTempIds = Array.isArray(req.body.item_pai_temp_id) ? req.body.item_pai_temp_id : (req.body.item_pai_temp_id ? [req.body.item_pai_temp_id] : []);
 
   let valorProdutos = 0;
   for (let i = 0; i < descs.length; i++) {
@@ -458,9 +544,24 @@ router.post('/:id/editar', exigirLogin, async (req, res) => {
     const preco = Math.max(0, parseFloat(precos[i]) || 0);
     const subtotal = Number((qtd * preco).toFixed(2));
     const obs = (obss[i] || '').trim();
+    const unidade = ['un', 'kg', 'g', 'fatia'].includes(unidades[i]) ? unidades[i] : 'un';
+    const tipoItem = ['produto', 'avulso', 'extra'].includes(tipos[i]) ? tipos[i] : (prodId ? 'produto' : 'avulso');
+    const tempId = (tempIds[i] || `temp_${i}`).trim();
+    const paiTempId = (paiTempIds[i] || '').trim();
     
     valorProdutos += subtotal;
-    itensParsed.push({ produtoId: prodId, descricao, quantidade: qtd, precoUnitario: preco, subtotal, observacao: obs });
+    itensParsed.push({
+      tempId,
+      paiTempId,
+      produtoId: prodId,
+      tipoItem,
+      unidade,
+      descricao,
+      quantidade: qtd,
+      precoUnitario: preco,
+      subtotal,
+      observacao: obs
+    });
   }
 
   if (itensParsed.length === 0) {
@@ -490,11 +591,24 @@ router.post('/:id/editar', exigirLogin, async (req, res) => {
       // Substituir itens
       await tx.run('DELETE FROM pedido_itens WHERE pedido_id = ?', [id]);
 
-      for (const item of itensParsed) {
+      const mapaTempParaId = {};
+
+      // 1. Inserir itens principais (sem pai)
+      for (const item of itensParsed.filter(it => !it.paiTempId)) {
+        const res = await tx.run(`
+          INSERT INTO pedido_itens (pedido_id, produto_id, item_pai_id, tipo_item, descricao, quantidade, unidade, preco_unitario, subtotal, observacao)
+          VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)
+        `, [id, item.produtoId, item.tipoItem, item.descricao, item.quantidade, item.unidade, item.precoUnitario, item.subtotal, item.observacao || null]);
+        mapaTempParaId[item.tempId] = Number(res.lastInsertRowid);
+      }
+
+      // 2. Inserir itens vinculados (extras que possuem pai)
+      for (const item of itensParsed.filter(it => it.paiTempId)) {
+        const paiId = mapaTempParaId[item.paiTempId] || null;
         await tx.run(`
-          INSERT INTO pedido_itens (pedido_id, produto_id, descricao, quantidade, preco_unitario, subtotal, observacao)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [id, item.produtoId, item.descricao, item.quantidade, item.precoUnitario, item.subtotal, item.observacao || null]);
+          INSERT INTO pedido_itens (pedido_id, produto_id, item_pai_id, tipo_item, descricao, quantidade, unidade, preco_unitario, subtotal, observacao)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [id, item.produtoId, paiId, item.tipoItem, item.descricao, item.quantidade, item.unidade, item.precoUnitario, item.subtotal, item.observacao || null]);
       }
     });
 

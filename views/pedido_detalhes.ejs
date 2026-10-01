@@ -1,4 +1,4 @@
-﻿<%- include('partials/topo') %>
+<%- include('partials/topo') %>
 
 <div style="max-width: 1100px; margin: 0 auto;">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem; flex-wrap: wrap; gap: 0.8rem;">
@@ -107,20 +107,40 @@
               </tr>
             </thead>
             <tbody>
-              <% itens.forEach(item => { %>
-                <tr>
-                  <td>
-                    <div style="font-weight: 700; color: var(--cor-texto);">
-                      <%= item.descricao %>
+              <% 
+                const extrasPorPai = {};
+                const itensPrincipais = [];
+                itens.forEach(it => {
+                  if (it.item_pai_id) {
+                    if (!extrasPorPai[it.item_pai_id]) extrasPorPai[it.item_pai_id] = [];
+                    extrasPorPai[it.item_pai_id].push(it);
+                  } else {
+                    itensPrincipais.push(it);
+                  }
+                });
+
+                function renderItemLinha(item, isFilho) {
+                  const un = item.unidade || 'un';
+                  const qtdFmt = (un !== 'un') ? `${item.quantidade} ${un}` : `${item.quantidade} un`;
+              %>
+                <tr style="<%= isFilho ? 'background: #fffaf0; border-left: 3px solid #f97316;' : '' %>">
+                  <td style="<%= isFilho ? 'padding-left: 1.25rem;' : '' %>">
+                    <div style="font-weight: 700; color: var(--cor-texto); display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                      <% if (isFilho) { %>
+                        <span style="font-size: 0.72rem; background: #ffedd5; color: #c2410c; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700;">↳ Personalização</span>
+                      <% } else if (item.tipo_item === 'avulso') { %>
+                        <span style="font-size: 0.7rem; background: #fef3c7; color: #92400e; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 700;">Avulso</span>
+                      <% } %>
+                      <span><%= item.descricao %></span>
                     </div>
                     <% if (item.observacao) { %>
-                      <div style="font-size: 0.76rem; color: var(--cor-texto-suave); font-style: italic;">
+                      <div style="font-size: 0.76rem; color: var(--cor-texto-suave); font-style: italic; margin-top: 2px;">
                         Obs: <%= item.observacao %>
                       </div>
                     <% } %>
                   </td>
-                  <td style="text-align: center; font-weight: 600;">
-                    <%= item.quantidade %>
+                  <td style="text-align: center; font-weight: 600; font-size: 0.88rem; white-space: nowrap;">
+                    <%= qtdFmt %>
                   </td>
                   <td style="text-align: right; color: var(--cor-texto-suave); font-size: 0.85rem;">
                     <%= formatMoney(item.preco_unitario) %>
@@ -129,7 +149,22 @@
                     <%= formatMoney(item.subtotal) %>
                   </td>
                 </tr>
-              <% }); %>
+              <% 
+                }
+
+                itensPrincipais.forEach(item => {
+                  renderItemLinha(item, false);
+                  const filhos = extrasPorPai[item.id] || [];
+                  filhos.forEach(filho => renderItemLinha(filho, true));
+                });
+
+                Object.keys(extrasPorPai).forEach(paiId => {
+                  const paiExiste = itensPrincipais.some(p => String(p.id) === String(paiId));
+                  if (!paiExiste) {
+                    extrasPorPai[paiId].forEach(orfao => renderItemLinha(orfao, true));
+                  }
+                });
+              %>
             </tbody>
           </table>
         </div>

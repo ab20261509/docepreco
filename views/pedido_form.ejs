@@ -1,5 +1,44 @@
 <%- include('partials/topo') %>
 
+<style>
+  .linha-item-extra {
+    background-color: #fffaf0;
+    border-left: 3px solid #f97316;
+  }
+  .linha-item-extra td {
+    padding-top: 0.3rem !important;
+    padding-bottom: 0.3rem !important;
+  }
+  .badge-extra {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.72rem;
+    background: #ffedd5;
+    color: #c2410c;
+    font-weight: 700;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .btn-adicionar-extra-filho {
+    background: #fdf2f8;
+    color: #be185d;
+    border: 1px solid #fbcfe8;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.2rem 0.4rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn-adicionar-extra-filho:hover {
+    background: #fce7f3;
+    border-color: #f472b6;
+  }
+</style>
+
 <div style="max-width: 1000px; margin: 0 auto;">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem;">
     <div>
@@ -157,10 +196,11 @@
             <tr>
               <th>Descrição do Item</th>
               <th style="width: 80px; text-align: center;">Qtd</th>
-              <th style="width: 110px; text-align: right;">Preço Un (R$)</th>
-              <th style="width: 110px; text-align: right;">Subtotal</th>
-              <th style="width: 200px;">Observação / Tema</th>
-              <th style="width: 45px; text-align: center;"></th>
+              <th style="width: 85px; text-align: center;">Unidade</th>
+              <th style="width: 105px; text-align: right;">Preço (R$)</th>
+              <th style="width: 105px; text-align: right;">Subtotal</th>
+              <th style="width: 170px;">Observação / Tema</th>
+              <th style="width: 85px; text-align: center;">Ações</th>
             </tr>
           </thead>
           <tbody id="corpoItens">
@@ -350,15 +390,23 @@
     blocoEndereco.style.display = this.value === 'entrega' ? 'block' : 'none';
   });
 
-  // Função para criar linha de item
-  function adicionarLinha(dados = {}) {
-    const tr = document.createElement('tr');
-    tr.className = 'linha-item-pedido';
+  let contadorLinhas = 0;
 
-    // Determinar se é item da fábrica ou item avulso:
-    // É avulso se isAvulso for explicitamente true OU se produto_id for estritamente null
-    const isAvulso = dados.isAvulso === true || dados.produto_id === null;
-    const isProdutoFabrica = !isAvulso;
+  // Função para criar linha de item (principal ou extra vinculado)
+  function adicionarLinha(dados = {}, trReferencia = null) {
+    contadorLinhas++;
+    const tempId = dados.tempId || ('row_' + contadorLinhas + '_' + Math.random().toString(36).substr(2, 6));
+    const paiTempId = dados.paiTempId || (dados.item_pai_id ? ('item_' + dados.item_pai_id) : '');
+    const isExtra = dados.isExtra === true || dados.tipo_item === 'extra' || Boolean(paiTempId);
+    const isAvulso = !isExtra && (dados.isAvulso === true || dados.tipo_item === 'avulso' || dados.produto_id === null);
+    const isProdutoFabrica = !isExtra && !isAvulso;
+    const tipoItem = isExtra ? 'extra' : (isAvulso ? 'avulso' : 'produto');
+    const unidadeSelecionada = dados.unidade || (dados.produto_unidade || 'un');
+
+    const tr = document.createElement('tr');
+    tr.className = 'linha-item-pedido ' + (isExtra ? 'linha-item-extra' : 'linha-item-principal');
+    tr.dataset.tempId = tempId;
+    if (paiTempId) tr.dataset.paiTempId = paiTempId;
 
     let opcoesProdutosHtml = '<option value="">-- Selecione a Receita da Fábrica --</option>';
     if (PRODUTOS_FABRICA && PRODUTOS_FABRICA.length > 0) {
@@ -367,7 +415,8 @@
         const selectedAttr = isSelected ? 'selected' : '';
         const precoFmt = Number(p.precoSugerido || 0).toFixed(2);
         const nomeEscaped = (p.nome || '').replace(/"/g, '&quot;');
-        opcoesProdutosHtml += `<option value="${p.id}" data-nome="${nomeEscaped}" data-preco="${p.precoSugerido || 0}" ${selectedAttr}>${p.nome} (Sugerido: R$ ${precoFmt})</option>`;
+        const unProd = p.unidade || 'un';
+        opcoesProdutosHtml += `<option value="${p.id}" data-nome="${nomeEscaped}" data-preco="${p.precoSugerido || 0}" data-unidade="${unProd}" ${selectedAttr}>${p.nome} (${unProd}) - Sugerido: R$ ${precoFmt}/${unProd}</option>`;
       });
     } else {
       opcoesProdutosHtml = '<option value="">-- Nenhuma receita cadastrada na Fábrica --</option>';
@@ -376,25 +425,68 @@
     const valorPrecoInicial = dados.preco_unitario !== undefined ? dados.preco_unitario : 0;
     const descInicial = (dados.descricao || '').replace(/"/g, '&quot;');
 
+    // HTML de opções de unidade
+    const unidadesOpcoes = ['un', 'kg', 'g', 'fatia'];
+    let selectUnidadeHtml = `<select name="item_unidade" class="input item-unidade" style="height: 34px; font-size: 0.85rem; padding: 0.2rem 0.3rem; font-weight: 600; text-align: center;">`;
+    unidadesOpcoes.forEach(u => {
+      const sel = (u === unidadeSelecionada) ? 'selected' : '';
+      selectUnidadeHtml += `<option value="${u}" ${sel}>${u}</option>`;
+    });
+    selectUnidadeHtml += `</select>`;
+
+    let colunaDescricaoHtml = '';
+    if (isExtra) {
+      colunaDescricaoHtml = `
+        <div style="display: flex; align-items: center; gap: 0.4rem; padding-left: 0.5rem;">
+          <span class="badge-extra">↳ Personalização</span>
+          <input type="text" name="item_descricao" class="input item-descricao" placeholder="Ex: Topo de Bolo Personalizado Safari / Vela Vulcão" style="height: 34px; font-size: 0.85rem; padding: 0.2rem 0.5rem;" value="${descInicial}" required>
+        </div>
+      `;
+    } else if (isProdutoFabrica) {
+      colunaDescricaoHtml = `
+        <div>
+          <select class="input select-produto-fabrica" style="height: 34px; font-size: 0.85rem; padding: 0.2rem 0.5rem; font-weight: 600;" required>
+            ${opcoesProdutosHtml}
+          </select>
+          <input type="hidden" name="item_descricao" class="item-descricao" value="${descInicial}">
+        </div>
+      `;
+    } else {
+      colunaDescricaoHtml = `
+        <div style="display: flex; align-items: center; gap: 0.35rem;">
+          <span style="font-size: 0.72rem; background: #fef3c7; color: #92400e; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700; white-space: nowrap;">Avulso</span>
+          <input type="text" name="item_descricao" class="input item-descricao" placeholder="Ex: Topo de Bolo Personalizado / Vela" style="height: 34px; font-size: 0.85rem; padding: 0.2rem 0.5rem;" value="${descInicial}" required>
+        </div>
+      `;
+    }
+
+    let colunaAcoesHtml = '';
+    if (isProdutoFabrica) {
+      colunaAcoesHtml = `
+        <div style="display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
+          <button type="button" class="btn-adicionar-extra-filho" title="Adicionar personalização ou topo vinculado a este bolo">➕ Topo</button>
+          <button type="button" class="btn-icone-tabela btn-remover-item" title="Remover item e seus extras">✕</button>
+        </div>
+      `;
+    } else {
+      colunaAcoesHtml = `
+        <button type="button" class="btn-icone-tabela btn-remover-item" title="Remover item">✕</button>
+      `;
+    }
+
     tr.innerHTML = `
       <td style="min-width: 250px;">
+        <input type="hidden" name="item_temp_id" value="${tempId}">
+        <input type="hidden" name="item_pai_temp_id" class="item-pai-temp-id" value="${paiTempId}">
+        <input type="hidden" name="item_tipo" class="item-tipo" value="${tipoItem}">
         <input type="hidden" name="item_produto_id" class="item-produto-id" value="${dados.produto_id || ''}">
-        ${isProdutoFabrica ? `
-          <div>
-            <select class="input select-produto-fabrica" style="height: 34px; font-size: 0.85rem; padding: 0.2rem 0.5rem; font-weight: 600;" required>
-              ${opcoesProdutosHtml}
-            </select>
-            <input type="hidden" name="item_descricao" class="item-descricao" value="${descInicial}">
-          </div>
-        ` : `
-          <div style="display: flex; align-items: center; gap: 0.35rem;">
-            <span style="font-size: 0.72rem; background: #fef3c7; color: #92400e; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700; white-space: nowrap;">Avulso</span>
-            <input type="text" name="item_descricao" class="input item-descricao" placeholder="Ex: Topo de Bolo Personalizado / Vela" style="height: 34px; font-size: 0.85rem; padding: 0.2rem 0.5rem;" value="${descInicial}" required>
-          </div>
-        `}
+        ${colunaDescricaoHtml}
       </td>
       <td>
         <input type="number" step="0.01" min="0.01" name="item_quantidade" class="input item-qtd" style="height: 34px; font-size: 0.85rem; text-align: center; padding: 0.2rem;" value="${dados.quantidade || 1}" required>
+      </td>
+      <td>
+        ${selectUnidadeHtml}
       </td>
       <td>
         <input type="number" step="0.01" min="0" name="item_preco" class="input item-preco" style="height: 34px; font-size: 0.85rem; text-align: right; padding: 0.2rem 0.4rem;" value="${valorPrecoInicial}" required>
@@ -406,56 +498,105 @@
         <input type="text" name="item_observacao" class="input" placeholder="Detalhes / Sabor..." style="height: 34px; font-size: 0.82rem; padding: 0.2rem 0.5rem;" value="${dados.observacao || ''}">
       </td>
       <td style="text-align: center; vertical-align: middle;">
-        <button type="button" class="btn-icone-tabela btn-remover-item" title="Remover item">✕</button>
+        ${colunaAcoesHtml}
       </td>
     `;
 
-    corpoItens.appendChild(tr);
+    if (trReferencia && trReferencia.parentNode) {
+      trReferencia.parentNode.insertBefore(tr, trReferencia.nextSibling);
+    } else {
+      corpoItens.appendChild(tr);
+    }
 
-    // Eventos da linha
+    // Elementos da linha
     const selectProd = tr.querySelector('.select-produto-fabrica');
     const inputDesc = tr.querySelector('.item-descricao');
     const inputId = tr.querySelector('.item-produto-id');
     const inputQtd = tr.querySelector('.item-qtd');
+    const selectUn = tr.querySelector('.item-unidade');
     const inputPreco = tr.querySelector('.item-preco');
     const btnRemover = tr.querySelector('.btn-remover-item');
+    const btnAddExtra = tr.querySelector('.btn-adicionar-extra-filho');
+
+    let baseUnidade = unidadeSelecionada;
+    let basePreco = parseFloat(valorPrecoInicial) || 0;
 
     if (selectProd) {
       selectProd.addEventListener('change', function() {
         const opt = this.options[this.selectedIndex];
         if (this.value) {
           inputId.value = this.value;
-          inputDesc.value = opt.getAttribute('data-nome') || opt.text.split(' (Sugerido')[0].trim();
-          const precoSug = parseFloat(opt.getAttribute('data-preco')) || 0;
-          inputPreco.value = precoSug.toFixed(2);
+          inputDesc.value = opt.getAttribute('data-nome') || opt.text.split(' (')[0].trim();
+          basePreco = parseFloat(opt.getAttribute('data-preco')) || 0;
+          baseUnidade = opt.getAttribute('data-unidade') || 'un';
+          selectUn.value = baseUnidade;
+          inputPreco.value = basePreco.toFixed(2);
         } else {
           inputId.value = '';
           inputDesc.value = '';
+          basePreco = 0;
+          inputPreco.value = '0.00';
         }
         recalcularTotais();
       });
 
-      // Se já veio com produto selecionado (ex: ao carregar edição), sincronizar
       if (selectProd.value) {
         const opt = selectProd.options[selectProd.selectedIndex];
         if (opt) {
           inputId.value = selectProd.value;
+          basePreco = parseFloat(opt.getAttribute('data-preco')) || 0;
+          baseUnidade = opt.getAttribute('data-unidade') || 'un';
           if (!inputDesc.value) {
-            inputDesc.value = opt.getAttribute('data-nome') || opt.text.split(' (Sugerido')[0].trim();
+            inputDesc.value = opt.getAttribute('data-nome') || opt.text.split(' (')[0].trim();
           }
         }
       }
     }
 
+    // Conversão inteligente ao alterar unidade (kg <-> g)
+    selectUn.addEventListener('change', function() {
+      const novaUnidade = this.value;
+      if (baseUnidade === 'kg' && novaUnidade === 'g') {
+        inputPreco.value = (basePreco / 1000).toFixed(4);
+      } else if (baseUnidade === 'g' && novaUnidade === 'kg') {
+        inputPreco.value = (basePreco * 1000).toFixed(2);
+      } else if (novaUnidade === baseUnidade && basePreco > 0) {
+        inputPreco.value = basePreco.toFixed(2);
+      }
+      recalcularTotais();
+    });
+
     inputQtd.addEventListener('input', recalcularTotais);
     inputPreco.addEventListener('input', recalcularTotais);
 
     btnRemover.addEventListener('click', function() {
+      // Se for item principal, remove também os extras vinculados a ele
+      if (!isExtra) {
+        const filhos = corpoItens.querySelectorAll(`[data-pai-temp-id="${tempId}"]`);
+        filhos.forEach(f => f.remove());
+      }
       tr.remove();
       recalcularTotais();
     });
 
+    if (btnAddExtra) {
+      btnAddExtra.addEventListener('click', function() {
+        // Encontrar a última linha vinculada a este pai para inserir logo abaixo
+        const extrasDestePai = corpoItens.querySelectorAll(`[data-pai-temp-id="${tempId}"]`);
+        const refRow = extrasDestePai.length > 0 ? extrasDestePai[extrasDestePai.length - 1] : tr;
+        adicionarLinha({
+          isExtra: true,
+          paiTempId: tempId,
+          descricao: '',
+          quantidade: 1,
+          unidade: 'un',
+          preco_unitario: 0
+        }, refRow);
+      });
+    }
+
     recalcularTotais();
+    return tr;
   }
 
   // Recalcular Subtotais e Totais do Pedido
@@ -505,18 +646,43 @@
   valorSinalInput.addEventListener('input', recalcularTotais);
 
   document.getElementById('btnAdicionarProduto').addEventListener('click', () => {
-    adicionarLinha({ isAvulso: false, produto_id: '', quantidade: 1, preco_unitario: 0 });
+    adicionarLinha({ isAvulso: false, isExtra: false, produto_id: '', quantidade: 1, preco_unitario: 0 });
   });
 
   document.getElementById('btnAdicionarItemAvulso').addEventListener('click', () => {
-    adicionarLinha({ isAvulso: true, produto_id: null, quantidade: 1, preco_unitario: 0 });
+    adicionarLinha({ isAvulso: true, isExtra: false, produto_id: null, quantidade: 1, preco_unitario: 0 });
   });
 
   // Inicialização com itens existentes ou linha inicial padrão com produto da fábrica
   if (ITENS_EXISTENTES && ITENS_EXISTENTES.length > 0) {
-    ITENS_EXISTENTES.forEach(item => adicionarLinha(item));
+    const mapaDbParaTempId = {};
+    ITENS_EXISTENTES.forEach(item => {
+      const tId = 'item_' + (item.id || ('tmp_' + Math.random().toString(36).substr(2, 6)));
+      item.tempId = tId;
+      if (item.id) mapaDbParaTempId[item.id] = tId;
+    });
+
+    ITENS_EXISTENTES.forEach(item => {
+      if (item.item_pai_id && mapaDbParaTempId[item.item_pai_id]) {
+        item.paiTempId = mapaDbParaTempId[item.item_pai_id];
+        item.isExtra = true;
+      }
+    });
+
+    const linhasCriadasPorTempId = {};
+    // 1. Principais
+    ITENS_EXISTENTES.filter(i => !i.item_pai_id).forEach(item => {
+      const tr = adicionarLinha(item);
+      linhasCriadasPorTempId[item.tempId] = tr;
+    });
+
+    // 2. Extras vinculados
+    ITENS_EXISTENTES.filter(i => i.item_pai_id).forEach(item => {
+      const paiTr = linhasCriadasPorTempId[item.paiTempId];
+      adicionarLinha(item, paiTr || null);
+    });
   } else {
-    adicionarLinha({ isAvulso: false, produto_id: '', quantidade: 1, preco_unitario: 0 });
+    adicionarLinha({ isAvulso: false, isExtra: false, produto_id: '', quantidade: 1, preco_unitario: 0 });
   }
 </script>
 

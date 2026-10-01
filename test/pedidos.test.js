@@ -24,11 +24,11 @@ async function run() {
   `, [uid1, 'Juliana Paes', '11988889999', 'juliana@email.com', 'Rua das Flores, 123', 'Jardins', 'São Paulo']);
   const clienteId = resCli.lastInsertRowid;
 
-  // 3. Criar produto na fábrica para usuária Clara
+  // 3. Criar produto na fábrica para usuária Clara com unidade 'kg'
   const resProd = await db.run(`
-    INSERT INTO produtos (usuario_id, nome, rendimento, tempo_horas, mao_obra_extra, margem_pct, taxas_pct)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `, [uid1, 'Bolo Red Velvet', 1, 1.5, 0, 40, 5]);
+    INSERT INTO produtos (usuario_id, nome, rendimento, unidade, tempo_horas, mao_obra_extra, margem_pct, taxas_pct)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `, [uid1, 'Bolo Red Velvet', 2, 'kg', 1.5, 0, 40, 5]);
   const prodId = resProd.lastInsertRowid;
 
   await db.run(`
@@ -43,16 +43,18 @@ async function run() {
   const produtosComPreco = await buscarProdutosComPreco(uid1);
   assert.strictEqual(produtosComPreco.length, 1);
   assert.strictEqual(produtosComPreco[0].nome, 'Bolo Red Velvet');
+  assert.strictEqual(produtosComPreco[0].unidade, 'kg');
   assert.ok(produtosComPreco[0].precoSugerido > 0, 'Preço sugerido deve ser maior que zero');
-  console.log('✅ Cálculo de Preço Sugerido da Fábrica para o Pedido aprovado: R$ ' + produtosComPreco[0].precoSugerido);
+  console.log('✅ Cálculo de Preço Sugerido da Fábrica para o Pedido aprovado: R$ ' + produtosComPreco[0].precoSugerido + ' / ' + produtosComPreco[0].unidade);
 
-  // 5. Testar criação de pedido e cálculo financeiro
+  // 5. Testar criação de pedido e cálculo financeiro com peso (3 kg) e extra vinculado
   const valorUnitario = produtosComPreco[0].precoSugerido;
-  const qtd = 2;
-  const subtotalProd = Number((qtd * valorUnitario).toFixed(2));
+  const qtdKg = 3; // 3 kg de bolo
+  const subtotalProd = Number((qtdKg * valorUnitario).toFixed(2));
+  const subtotalExtra = 35.00;
   const taxaEntrega = 15.00;
   const desconto = 5.00;
-  const valorTotal = Number((subtotalProd + taxaEntrega - desconto).toFixed(2));
+  const valorTotal = Number((subtotalProd + subtotalExtra + taxaEntrega - desconto).toFixed(2));
   const valorSinal = Number((valorTotal / 2).toFixed(2));
 
   const resPed = await db.run(`
@@ -63,30 +65,34 @@ async function run() {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     uid1, clienteId, '2026-10-15', '16:00', 'entrega', 'Rua das Flores, 123 - Jardins',
-    'orcamento', subtotalProd, taxaEntrega, desconto, valorTotal, valorSinal,
+    'orcamento', subtotalProd + subtotalExtra, taxaEntrega, desconto, valorTotal, valorSinal,
     'sinal_pago', 'Pix', 'Entregar na portaria'
   ]);
   const pedidoId = resPed.lastInsertRowid;
 
-  // Inserir itens: 1 produto da fábrica + 1 item avulso (topo de bolo)
-  await db.run(`
-    INSERT INTO pedido_itens (pedido_id, produto_id, descricao, quantidade, preco_unitario, subtotal, observacao)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `, [pedidoId, prodId, 'Bolo Red Velvet', qtd, valorUnitario, subtotalProd, 'Tema Primavera']);
+  // Inserir item principal (bolo 3 kg)
+  const resItemBolo = await db.run(`
+    INSERT INTO pedido_itens (pedido_id, produto_id, item_pai_id, tipo_item, descricao, quantidade, unidade, preco_unitario, subtotal, observacao)
+    VALUES (?, ?, NULL, 'produto', ?, ?, 'kg', ?, ?, ?)
+  `, [pedidoId, prodId, 'Bolo Red Velvet', qtdKg, valorUnitario, subtotalProd, 'Tema Primavera']);
+  const itemBoloId = resItemBolo.lastInsertRowid;
 
+  // Inserir extra vinculado ao bolo (topo personalizado)
   await db.run(`
-    INSERT INTO pedido_itens (pedido_id, produto_id, descricao, quantidade, preco_unitario, subtotal, observacao)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `, [pedidoId, null, 'Topo de Bolo Personalizado', 1, 25.00, 25.00, 'Escrita: Parabéns Ju']);
+    INSERT INTO pedido_itens (pedido_id, produto_id, item_pai_id, tipo_item, descricao, quantidade, unidade, preco_unitario, subtotal, observacao)
+    VALUES (?, NULL, ?, 'extra', ?, 1, 'un', ?, ?, ?)
+  `, [pedidoId, itemBoloId, 'Topo de Bolo Personalizado Safari', subtotalExtra, subtotalExtra, 'Nome: Theo 1 ano']);
 
   // 6. Validar itens inseridos
   const itens = await db.all('SELECT * FROM pedido_itens WHERE pedido_id = ? ORDER BY id ASC', [pedidoId]);
   assert.strictEqual(itens.length, 2, 'Pedido deve conter exatamente 2 itens');
   assert.strictEqual(itens[0].descricao, 'Bolo Red Velvet');
-  assert.strictEqual(itens[0].produto_id, prodId);
-  assert.strictEqual(itens[1].descricao, 'Topo de Bolo Personalizado');
-  assert.strictEqual(itens[1].produto_id, null);
-  console.log('✅ Pedido criado com produtos da fábrica e itens avulsos com sucesso');
+  assert.strictEqual(itens[0].unidade, 'kg');
+  assert.strictEqual(itens[0].tipo_item, 'produto');
+  assert.strictEqual(itens[1].descricao, 'Topo de Bolo Personalizado Safari');
+  assert.strictEqual(itens[1].tipo_item, 'extra');
+  assert.strictEqual(itens[1].item_pai_id, itemBoloId);
+  console.log('✅ Pedido criado com produtos por peso (kg) e extras personalizados vinculados');
 
   // 7. Testar geração de texto para WhatsApp
   const pedidoCompleto = await db.get(`
@@ -97,12 +103,12 @@ async function run() {
   `, [pedidoId]);
 
   const textoWhats = gerarTextoWhatsApp(pedidoCompleto, itens);
-  assert.ok(textoWhats.includes('Bolo Red Velvet'), 'Texto WhatsApp deve conter o produto');
-  assert.ok(textoWhats.includes('Topo de Bolo Personalizado'), 'Texto WhatsApp deve conter o item avulso');
+  assert.ok(textoWhats.includes('3 kg* Bolo Red Velvet'), 'Texto WhatsApp deve conter a unidade kg e quantidade');
+  assert.ok(textoWhats.includes('↳ *Personalização*: Topo de Bolo Personalizado Safari'), 'Texto WhatsApp deve conter o extra aninhado');
   assert.ok(textoWhats.includes('Juliana Paes'), 'Texto WhatsApp deve conter o nome da cliente');
   assert.ok(textoWhats.includes('15/10/2026'), 'Texto WhatsApp deve conter a data formatada');
   assert.ok(textoWhats.includes('Sinal / Entrada'), 'Texto WhatsApp deve conter o sinal');
-  console.log('✅ Geração de texto profissional para WhatsApp validada com sucesso');
+  console.log('✅ Geração de texto profissional para WhatsApp com unidades e extras aninhados validada com sucesso');
 
   // 8. Testar avanço de status
   await db.run("UPDATE pedidos SET status = 'confirmado' WHERE id = ?", [pedidoId]);

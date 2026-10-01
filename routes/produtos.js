@@ -76,6 +76,7 @@ router.get('/novo', exigirLogin, async (req, res, next) => {
       id: null,
       nome: '',
       rendimento: 1,
+      unidade: 'un',
       tempo_horas: 0,
       mao_obra_extra: 0,
       margem_pct: 40,
@@ -106,6 +107,8 @@ router.post('/', exigirLogin, async (req, res, next) => {
 
     const nome = (req.body.nome || '').trim();
     const rendimento = parseFloat(req.body.rendimento) || 1;
+    const unidadeValida = ['un', 'kg', 'g', 'fatia'];
+    const unidade = unidadeValida.includes(req.body.unidade) ? req.body.unidade : 'un';
     let tempoHoras = parseFloat(req.body.tempo_horas);
     if (isNaN(tempoHoras) || tempoHoras < 0) {
       const th = Math.max(0, parseFloat(req.body.tempo_horas_parte) || 0);
@@ -118,7 +121,7 @@ router.post('/', exigirLogin, async (req, res, next) => {
 
     if (!nome) {
       return res.status(400).render('produto', {
-        produto: { id: null, nome, rendimento, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
+        produto: { id: null, nome, rendimento, unidade, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
         ingredientes: [],
         complementos: [],
         calculo: null,
@@ -131,12 +134,12 @@ router.post('/', exigirLogin, async (req, res, next) => {
 
     if (rendimento <= 0) {
       return res.status(400).render('produto', {
-        produto: { id: null, nome, rendimento, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
+        produto: { id: null, nome, rendimento, unidade, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
         ingredientes: [],
         complementos: [],
         calculo: null,
         cfHora,
-        erro: 'O rendimento (unidades por lote) deve ser maior que zero.',
+        erro: 'O rendimento do lote deve ser maior que zero.',
         modo: 'novo',
         activeNav: 'novo_produto'
       });
@@ -144,7 +147,7 @@ router.post('/', exigirLogin, async (req, res, next) => {
 
     if (margemPct + taxasPct >= 100) {
       return res.status(400).render('produto', {
-        produto: { id: null, nome, rendimento, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
+        produto: { id: null, nome, rendimento, unidade, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
         ingredientes: [],
         complementos: [],
         calculo: null,
@@ -167,9 +170,9 @@ router.post('/', exigirLogin, async (req, res, next) => {
 
     const novoProdutoId = await db.transaction(async (tx) => {
       const info = await tx.run(`
-        INSERT INTO produtos (usuario_id, nome, rendimento, tempo_horas, mao_obra_extra, margem_pct, taxas_pct, atualizado_em)
-        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
-      `, [uid, nome, rendimento, tempoHoras, maoObraExtra, margemPct, taxasPct]);
+        INSERT INTO produtos (usuario_id, nome, rendimento, unidade, tempo_horas, mao_obra_extra, margem_pct, taxas_pct, atualizado_em)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      `, [uid, nome, rendimento, unidade, tempoHoras, maoObraExtra, margemPct, taxasPct]);
 
       const produtoId = Number(info.lastInsertRowid);
 
@@ -270,6 +273,8 @@ router.post('/:id', exigirLogin, async (req, res, next) => {
 
     const nome = (req.body.nome || '').trim();
     const rendimento = parseFloat(req.body.rendimento) || 1;
+    const unidadeValida = ['un', 'kg', 'g', 'fatia'];
+    const unidade = unidadeValida.includes(req.body.unidade) ? req.body.unidade : 'un';
     let tempoHoras = parseFloat(req.body.tempo_horas);
     if (isNaN(tempoHoras) || tempoHoras < 0) {
       const th = Math.max(0, parseFloat(req.body.tempo_horas_parte) || 0);
@@ -284,7 +289,7 @@ router.post('/:id', exigirLogin, async (req, res, next) => {
       const ingredientes = await db.all('SELECT * FROM ingredientes WHERE produto_id = ?', [id]);
       const complementos = await db.all('SELECT * FROM complementos WHERE produto_id = ?', [id]);
       return res.status(400).render('produto', {
-        produto: { id, nome, rendimento, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
+        produto: { id, nome, rendimento, unidade, tempo_horas: tempoHoras, mao_obra_extra: maoObraExtra, margem_pct: margemPct, taxas_pct: taxasPct },
         ingredientes,
         complementos,
         calculo: null,
@@ -306,9 +311,9 @@ router.post('/:id', exigirLogin, async (req, res, next) => {
     await db.transaction(async (tx) => {
       await tx.run(`
         UPDATE produtos
-        SET nome = ?, rendimento = ?, tempo_horas = ?, mao_obra_extra = ?, margem_pct = ?, taxas_pct = ?, atualizado_em = datetime('now')
+        SET nome = ?, rendimento = ?, unidade = ?, tempo_horas = ?, mao_obra_extra = ?, margem_pct = ?, taxas_pct = ?, atualizado_em = datetime('now')
         WHERE id = ? AND usuario_id = ?
-      `, [nome, rendimento, tempoHoras, maoObraExtra, margemPct, taxasPct, id, uid]);
+      `, [nome, rendimento, unidade, tempoHoras, maoObraExtra, margemPct, taxasPct, id, uid]);
 
       // Substituição de ingredientes
       await tx.run('DELETE FROM ingredientes WHERE produto_id = ?', [id]);

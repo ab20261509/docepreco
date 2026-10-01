@@ -47,13 +47,24 @@
         </div>
 
         <div class="form-linha">
-          <div class="form-grupo">
-            <label for="rendimento">Rendimento do Lote (unidades) *</label>
-            <input type="number" id="rendimento" name="rendimento" value="<%= produto.rendimento %>" step="1" min="1" required class="recalc-trigger">
-            <span class="ajuda-texto">Unidades produzidas nesta receita</span>
+          <div class="form-grupo" style="flex: 1.5;">
+            <label for="rendimento">Rendimento do Lote *</label>
+            <input type="number" id="rendimento" name="rendimento" value="<%= produto.rendimento %>" step="0.01" min="0.01" required class="recalc-trigger">
+            <span class="ajuda-texto">Quantidade produzida nesta receita</span>
           </div>
 
-          <div class="form-grupo">
+          <div class="form-grupo" style="flex: 1.5;">
+            <label for="unidade">Unidade de Medida *</label>
+            <select id="unidade" name="unidade" class="recalc-trigger input" style="height: 42px; font-weight: 600;">
+              <option value="un" <%= (!produto.unidade || produto.unidade === 'un') ? 'selected' : '' %>>un (Unidades / Doces)</option>
+              <option value="kg" <%= produto.unidade === 'kg' ? 'selected' : '' %>>kg (Quilograma / Bolos por peso)</option>
+              <option value="g" <%= produto.unidade === 'g' ? 'selected' : '' %>>g (Grama / Pote ou Pudim)</option>
+              <option value="fatia" <%= produto.unidade === 'fatia' ? 'selected' : '' %>>fatia (Fatia / Porção)</option>
+            </select>
+            <span class="ajuda-texto">Base do cálculo e da venda</span>
+          </div>
+
+          <div class="form-grupo" style="flex: 2;">
             <label>Tempo de Produção *</label>
             <% 
               const tempoTotal = parseFloat(produto.tempo_horas) || 0;
@@ -75,10 +86,10 @@
             <span class="ajuda-texto">Custo fixo: <%= formatMoney(cfHora) %>/h</span>
           </div>
 
-          <div class="form-grupo">
+          <div class="form-grupo" style="flex: 1.5;">
             <label for="mao_obra_extra">Mão de Obra Extra (R$)</label>
             <input type="number" id="mao_obra_extra" name="mao_obra_extra" value="<%= produto.mao_obra_extra %>" step="0.01" min="0" class="recalc-trigger">
-            <span class="ajuda-texto">Deixe 0 se já incluso nos fixos</span>
+            <span class="ajuda-texto">Se não incluso nos fixos</span>
           </div>
         </div>
       </div>
@@ -234,17 +245,17 @@
 
         <div class="destaque-preco">
           <div class="valor" id="display-preco-unitario">R$ 0,00</div>
-          <div class="legenda">Preço Sugerido por Unidade</div>
+          <div class="legenda">Preço Sugerido por <span class="label-unidade-medida"><%= produto.unidade || 'un' %></span></div>
         </div>
 
         <div class="lista-metricas">
           <div class="metrica-linha">
-            <span>Custo por Unidade:</span>
+            <span>Custo por <span class="label-unidade-medida"><%= produto.unidade || 'un' %></span>:</span>
             <strong id="display-custo-unitario">R$ 0,00</strong>
           </div>
 
           <div class="metrica-linha destaque">
-            <span>Lucro por Unidade:</span>
+            <span>Lucro por <span class="label-unidade-medida"><%= produto.unidade || 'un' %></span>:</span>
             <strong id="display-lucro-unitario">R$ 0,00</strong>
           </div>
 
@@ -353,6 +364,12 @@
     document.getElementById('display-custo-lote').textContent = formatarMoeda(custoLote);
 
     const rendimento = parseFloat(document.getElementById('rendimento').value) || 1;
+    const unidadeEl = document.getElementById('unidade');
+    const unidadeAtual = unidadeEl ? unidadeEl.value : 'un';
+    document.querySelectorAll('.label-unidade-medida').forEach(el => {
+      el.textContent = unidadeAtual;
+    });
+
     const custoUnit = rendimento > 0 ? (custoLote / rendimento) : custoLote;
     document.getElementById('display-custo-unitario').textContent = formatarMoeda(custoUnit);
 
