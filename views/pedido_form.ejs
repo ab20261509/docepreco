@@ -1,4 +1,4 @@
-﻿<%- include('partials/topo') %>
+<%- include('partials/topo') %>
 
 <div style="max-width: 1000px; margin: 0 auto;">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem;">
@@ -124,7 +124,7 @@
           <span>🎂</span> <span>Itens do Pedido</span>
         </h3>
         <div style="display: flex; gap: 0.45rem;">
-          <button type="button" class="btn btn-secundario btn-sm" id="btnAdicionarProduto">
+          <button type="button" class="btn btn-primario btn-sm" id="btnAdicionarProduto" style="font-weight: 700;">
             ➕ Produto da Fábrica
           </button>
           <button type="button" class="btn btn-secundario btn-sm" id="btnAdicionarItemAvulso">
@@ -132,6 +132,24 @@
           </button>
         </div>
       </div>
+
+      <% if (!produtos || produtos.length === 0) { %>
+        <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 0.85rem 1.15rem; border-radius: 8px; margin-bottom: 0.85rem; font-size: 0.88rem; color: #92400e; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.25rem;">ℹ️</span>
+            <div>
+              <strong>Nenhuma receita cadastrada na Fábrica ainda.</strong><br>
+              Você pode cadastrar seus produtos para que o preço sugerido seja puxado automaticamente, ou usar itens avulsos.
+            </div>
+          </div>
+          <a href="/produtos/novo" target="_blank" class="btn btn-secundario btn-sm" style="background: #ffffff; font-weight: 700; white-space: nowrap;">➕ Cadastrar Receita</a>
+        </div>
+      <% } else { %>
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.6rem 0.9rem; border-radius: 8px; margin-bottom: 0.85rem; font-size: 0.82rem; color: #166534; display: flex; align-items: center; gap: 0.45rem;">
+          <span>✓</span>
+          <span><strong><%= produtos.length %></strong> <%= produtos.length === 1 ? 'receita da fábrica disponível' : 'receitas da fábrica disponíveis' %> para puxar com preço e custo automáticos.</span>
+        </div>
+      <% } %>
 
       <div class="tabela-responsiva">
         <table class="tabela" id="tabelaItensPedido">
@@ -289,8 +307,8 @@
 
 <!-- Dados JSON dos Produtos da Fábrica para o Script -->
 <script>
-  const PRODUTOS_FABRICA = <%- JSON.stringify(produtos) %>;
-  const ITENS_EXISTENTES = <%- JSON.stringify(itens) %>;
+  const PRODUTOS_FABRICA = <%- JSON.stringify(produtos || []) %>;
+  const ITENS_EXISTENTES = <%- JSON.stringify(itens || []) %>;
 
   const selectCliente = document.getElementById('selectCliente');
   const blocoClienteAvulso = document.getElementById('blocoClienteAvulso');
@@ -337,37 +355,55 @@
     const tr = document.createElement('tr');
     tr.className = 'linha-item-pedido';
 
-    const isProdutoFabrica = dados.produto_id !== undefined ? Boolean(dados.produto_id) : true;
+    // Determinar se é item da fábrica ou item avulso:
+    // É avulso se isAvulso for explicitamente true OU se produto_id for estritamente null
+    const isAvulso = dados.isAvulso === true || dados.produto_id === null;
+    const isProdutoFabrica = !isAvulso;
 
     let opcoesProdutosHtml = '<option value="">-- Selecione a Receita da Fábrica --</option>';
-    PRODUTOS_FABRICA.forEach(p => {
-      const selected = dados.produto_id == p.id ? 'selected' : '';
-      opcoesProdutosHtml += `<option value="${p.id}" data-preco="${p.precoSugerido}" ${selected}>${p.nome} (Sugerido: R$ ${p.precoSugerido.toFixed(2)})</option>`;
-    });
+    if (PRODUTOS_FABRICA && PRODUTOS_FABRICA.length > 0) {
+      PRODUTOS_FABRICA.forEach(p => {
+        const isSelected = (dados.produto_id !== undefined && dados.produto_id !== '' && dados.produto_id !== null && Number(dados.produto_id) === Number(p.id));
+        const selectedAttr = isSelected ? 'selected' : '';
+        const precoFmt = Number(p.precoSugerido || 0).toFixed(2);
+        const nomeEscaped = (p.nome || '').replace(/"/g, '&quot;');
+        opcoesProdutosHtml += `<option value="${p.id}" data-nome="${nomeEscaped}" data-preco="${p.precoSugerido || 0}" ${selectedAttr}>${p.nome} (Sugerido: R$ ${precoFmt})</option>`;
+      });
+    } else {
+      opcoesProdutosHtml = '<option value="">-- Nenhuma receita cadastrada na Fábrica --</option>';
+    }
+
+    const valorPrecoInicial = dados.preco_unitario !== undefined ? dados.preco_unitario : 0;
+    const descInicial = (dados.descricao || '').replace(/"/g, '&quot;');
 
     tr.innerHTML = `
-      <td>
+      <td style="min-width: 250px;">
         <input type="hidden" name="item_produto_id" class="item-produto-id" value="${dados.produto_id || ''}">
         ${isProdutoFabrica ? `
-          <select class="input select-produto-fabrica" style="height: 32px; font-size: 0.85rem; padding: 0.2rem 0.5rem;">
-            ${opcoesProdutosHtml}
-          </select>
-          <input type="hidden" name="item_descricao" class="item-descricao" value="${dados.descricao || ''}">
+          <div>
+            <select class="input select-produto-fabrica" style="height: 34px; font-size: 0.85rem; padding: 0.2rem 0.5rem; font-weight: 600;" required>
+              ${opcoesProdutosHtml}
+            </select>
+            <input type="hidden" name="item_descricao" class="item-descricao" value="${descInicial}">
+          </div>
         ` : `
-          <input type="text" name="item_descricao" class="input item-descricao" placeholder="Ex: Topo de Bolo Personalizado / Vela" style="height: 32px; font-size: 0.85rem; padding: 0.2rem 0.5rem;" value="${dados.descricao || ''}" required>
+          <div style="display: flex; align-items: center; gap: 0.35rem;">
+            <span style="font-size: 0.72rem; background: #fef3c7; color: #92400e; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700; white-space: nowrap;">Avulso</span>
+            <input type="text" name="item_descricao" class="input item-descricao" placeholder="Ex: Topo de Bolo Personalizado / Vela" style="height: 34px; font-size: 0.85rem; padding: 0.2rem 0.5rem;" value="${descInicial}" required>
+          </div>
         `}
       </td>
       <td>
-        <input type="number" step="0.01" min="0.01" name="item_quantidade" class="input item-qtd" style="height: 32px; font-size: 0.85rem; text-align: center; padding: 0.2rem 0.2rem;" value="${dados.quantidade || 1}" required>
+        <input type="number" step="0.01" min="0.01" name="item_quantidade" class="input item-qtd" style="height: 34px; font-size: 0.85rem; text-align: center; padding: 0.2rem;" value="${dados.quantidade || 1}" required>
       </td>
       <td>
-        <input type="number" step="0.01" min="0" name="item_preco" class="input item-preco" style="height: 32px; font-size: 0.85rem; text-align: right; padding: 0.2rem 0.4rem;" value="${dados.preco_unitario !== undefined ? dados.preco_unitario : 0}" required>
+        <input type="number" step="0.01" min="0" name="item_preco" class="input item-preco" style="height: 34px; font-size: 0.85rem; text-align: right; padding: 0.2rem 0.4rem;" value="${valorPrecoInicial}" required>
       </td>
       <td style="text-align: right; font-weight: 700; font-size: 0.88rem; vertical-align: middle;">
         <span class="item-subtotal-texto">R$ 0,00</span>
       </td>
       <td>
-        <input type="text" name="item_observacao" class="input" placeholder="Detalhes / Sabor..." style="height: 32px; font-size: 0.82rem; padding: 0.2rem 0.5rem;" value="${dados.observacao || ''}">
+        <input type="text" name="item_observacao" class="input" placeholder="Detalhes / Sabor..." style="height: 34px; font-size: 0.82rem; padding: 0.2rem 0.5rem;" value="${dados.observacao || ''}">
       </td>
       <td style="text-align: center; vertical-align: middle;">
         <button type="button" class="btn-icone-tabela btn-remover-item" title="Remover item">✕</button>
@@ -389,7 +425,7 @@
         const opt = this.options[this.selectedIndex];
         if (this.value) {
           inputId.value = this.value;
-          inputDesc.value = opt.text.split(' (Sugerido')[0];
+          inputDesc.value = opt.getAttribute('data-nome') || opt.text.split(' (Sugerido')[0].trim();
           const precoSug = parseFloat(opt.getAttribute('data-preco')) || 0;
           inputPreco.value = precoSug.toFixed(2);
         } else {
@@ -398,6 +434,17 @@
         }
         recalcularTotais();
       });
+
+      // Se já veio com produto selecionado (ex: ao carregar edição), sincronizar
+      if (selectProd.value) {
+        const opt = selectProd.options[selectProd.selectedIndex];
+        if (opt) {
+          inputId.value = selectProd.value;
+          if (!inputDesc.value) {
+            inputDesc.value = opt.getAttribute('data-nome') || opt.text.split(' (Sugerido')[0].trim();
+          }
+        }
+      }
     }
 
     inputQtd.addEventListener('input', recalcularTotais);
@@ -457,14 +504,19 @@
   descontoInput.addEventListener('input', recalcularTotais);
   valorSinalInput.addEventListener('input', recalcularTotais);
 
-  document.getElementById('btnAdicionarProduto').addEventListener('click', () => adicionarLinha({ produto_id: '', quantidade: 1, preco_unitario: 0 }));
-  document.getElementById('btnAdicionarItemAvulso').addEventListener('click', () => adicionarLinha({ produto_id: null, quantidade: 1, preco_unitario: 0 }));
+  document.getElementById('btnAdicionarProduto').addEventListener('click', () => {
+    adicionarLinha({ isAvulso: false, produto_id: '', quantidade: 1, preco_unitario: 0 });
+  });
 
-  // Inicialização com itens existentes ou linha inicial padrão
+  document.getElementById('btnAdicionarItemAvulso').addEventListener('click', () => {
+    adicionarLinha({ isAvulso: true, produto_id: null, quantidade: 1, preco_unitario: 0 });
+  });
+
+  // Inicialização com itens existentes ou linha inicial padrão com produto da fábrica
   if (ITENS_EXISTENTES && ITENS_EXISTENTES.length > 0) {
     ITENS_EXISTENTES.forEach(item => adicionarLinha(item));
   } else {
-    adicionarLinha({ produto_id: '', quantidade: 1, preco_unitario: 0 });
+    adicionarLinha({ isAvulso: false, produto_id: '', quantidade: 1, preco_unitario: 0 });
   }
 </script>
 
