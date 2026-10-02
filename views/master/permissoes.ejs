@@ -213,6 +213,93 @@
     </div>
   </form>
 
+  <!-- 🎓 Seção de Controle dos Guias de Onboarding do Usuário -->
+  <div class="cartao" style="margin-top: 2rem; border: 1.5px solid #fed7aa; background: #fffcf9; padding: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+      <div>
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: #7c2d12; margin: 0; display: flex; align-items: center; gap: 0.45rem;">
+          <span>🎓</span> Guias de Onboarding & Primeiros Passos do Usuário
+        </h3>
+        <p style="font-size: 0.84rem; color: #9a3412; margin: 0.2rem 0 0 0;">
+          Reative qualquer um dos tutoriais abaixo para guiar novamente o confeiteiro quando ele tiver dúvidas nos processos de cadastro.
+        </p>
+      </div>
+
+      <form method="POST" action="/master/usuarios/<%= usuarioAlvo.id %>/onboarding/reiniciar-todos" onsubmit="return confirm('Deseja realmente REINICIAR TODOS os guias de onboarding para <%= usuarioAlvo.nome %>? Ao logar, ele verá novamente os passos guiados.');">
+        <button type="submit" class="btn btn-sm" style="background: #ea580c; color: #fff; border: 1px solid #c2410c; font-weight: 700; font-size: 0.78rem; padding: 0.35rem 0.75rem;">
+          🔄 Reiniciar Todos os Guias
+        </button>
+      </form>
+    </div>
+
+    <!-- Progresso Real Apurado -->
+    <% if (typeof progressoReal !== 'undefined') { %>
+      <div style="background: #ffffff; border: 1px solid #fed7aa; border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+          <span style="font-size: 0.76rem; font-weight: 800; text-transform: uppercase; color: #9a3412;">Progresso dos Cadastros no Banco de Dados:</span>
+          <div style="font-size: 0.95rem; font-weight: 700; color: var(--cor-texto); margin-top: 0.15rem;">
+            <%= progressoReal.totalConcluidos %> de 4 etapas concluídas (<%= progressoReal.percentual %>%)
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <span class="<%= progressoReal.passos.passo1_custos ? 'badge-status-ativo' : 'badge-status-bloqueado' %>">
+            <%= progressoReal.passos.passo1_custos ? '✓ Custos' : '✕ Custos zerados' %>
+          </span>
+          <span class="<%= progressoReal.passos.passo2_ingredientes ? 'badge-status-ativo' : 'badge-status-bloqueado' %>">
+            <%= progressoReal.passos.passo2_ingredientes ? '✓ Insumos' : '✕ Sem insumos' %>
+          </span>
+          <span class="<%= progressoReal.passos.passo3_produtos ? 'badge-status-ativo' : 'badge-status-bloqueado' %>">
+            <%= progressoReal.passos.passo3_produtos ? '✓ Receitas' : '✕ Sem receitas' %>
+          </span>
+          <span class="<%= progressoReal.passos.passo4_vendas ? 'badge-status-ativo' : 'badge-status-bloqueado' %>">
+            <%= progressoReal.passos.passo4_vendas ? '✓ Vendas' : '✕ Sem vendas' %>
+          </span>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- Lista dos 5 Módulos com Botão Individual de Reativação -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.85rem;">
+      <% (typeof modulosOnboarding !== 'undefined' ? modulosOnboarding : []).forEach(m => { %>
+        <% 
+          const statusAtual = typeof statusOnboardings !== 'undefined' ? (statusOnboardings[m.id] || 'pendente') : 'pendente';
+        %>
+        <div style="background: #ffffff; border: 1.5px solid <%= statusAtual === 'pendente' ? '#fed7aa' : '#e2e8f0' %>; border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+              <span style="font-size: 1.4rem;"><%= m.icone %></span>
+              <% if (statusAtual === 'pendente') { %>
+                <span style="background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; font-size: 0.7rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 999px;">
+                  ⚠️ Guia Ativo (Pendente)
+                </span>
+              <% } else if (statusAtual === 'concluido') { %>
+                <span class="badge-status-ativo" style="font-size: 0.7rem;">✓ Concluído</span>
+              <% } else { %>
+                <span style="background: #f1f5f9; color: #64748b; font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 999px;">Dispensado</span>
+              <% } %>
+            </div>
+
+            <strong style="font-size: 0.95rem; color: var(--cor-texto); display: block; margin-bottom: 0.2rem;">
+              <%= m.titulo %>
+            </strong>
+            <p style="font-size: 0.8rem; color: var(--cor-texto-suave); margin: 0 0 0.85rem 0; line-height: 1.35;">
+              <%= m.descricao %>
+            </p>
+          </div>
+
+          <div>
+            <form method="POST" action="/master/usuarios/<%= usuarioAlvo.id %>/onboarding/<%= m.id %>/reativar" style="margin: 0;">
+              <button type="submit" class="btn btn-sm" style="width: 100%; justify-content: center; font-size: 0.78rem; font-weight: 700; background: <%= statusAtual === 'pendente' ? '#f8fafc' : '#fff7ed' %>; color: #c2410c; border: 1px solid #fed7aa;">
+                <%= statusAtual === 'pendente' ? '🔄 Reiniciar Novamente' : '🔄 Reativar Este Guia' %>
+              </button>
+            </form>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+
+  </div>
+
 </div>
 
 <script>

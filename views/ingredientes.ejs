@@ -1,10 +1,63 @@
 <%- include('partials/topo') %>
 
 <% if (typeof sucesso !== 'undefined' && sucesso) { %>
-  <div class="alerta alerta-sucesso">
-    <span>✅</span>
-    <span>Operação realizada com sucesso!</span>
+  <div class="alerta alerta-sucesso" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <span>✅</span>
+      <span>Operação realizada com sucesso!</span>
+    </div>
+    <a href="/produtos/novo" class="btn btn-primario btn-sm" style="background: #ea580c; border-color: #c2410c; font-weight: 700;">
+      🧁 Próximo Passo: Criar Receita com estes Insumos →
+    </a>
   </div>
+<% } %>
+
+<% if (typeof onboardingGuias !== 'undefined' && onboardingGuias.ingredientes === 'pendente') { %>
+  <div id="guiaIngredientesBanner" class="cartao" style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1.5px solid #fed7aa; margin-bottom: 1.25rem; padding: 1.15rem 1.35rem; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.08);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
+      <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+        <span style="font-size: 1.8rem; line-height: 1;">🥣</span>
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.25rem;">
+            <strong style="font-size: 1rem; color: #7c2d12;">Passo 2 do Onboarding: Insumos, Matéria-Prima & Estoque</strong>
+            <span style="background: #ea580c; color: #fff; font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.45rem; border-radius: 999px;">Guia Rápido</span>
+          </div>
+          <p style="font-size: 0.84rem; color: #9a3412; margin: 0 0 0.65rem 0; line-height: 1.45;">
+            Cadastre os ingredientes e embalagens que você compra (farinha, leite condensado, chocolate, caixas, fitas). 
+            Ao informar o peso da embalagem e quanto você pagou, o sistema calcula o valor de cada grama ou mililitro para as suas receitas. 
+            Você também pode baixar nossa <strong>Planilha Modelo Excel</strong> para importar tudo rapidamente!
+          </p>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" id="btnConcluirGuiaIngredientes" class="btn btn-primario btn-sm" style="background: #ea580c; border-color: #c2410c; font-size: 0.78rem; font-weight: 700;">
+              ✓ Entendi! Concluir Guia
+            </button>
+            <a href="/ingredientes/modelo-excel" class="btn btn-secundario btn-sm" style="font-size: 0.78rem; font-weight: 700; color: #15803d; border-color: #86efac; background: #fff;">
+              📥 Baixar Modelo Excel
+            </a>
+            <a href="/produtos/novo" class="btn btn-secundario btn-sm" style="font-size: 0.78rem; font-weight: 700; color: #9a3412; border-color: #fed7aa; background: #fff;">
+              Ir para Receitas →
+            </a>
+          </div>
+        </div>
+      </div>
+      <button type="button" id="btnFecharGuiaIngredientesX" style="background: none; border: none; font-size: 1.15rem; color: #9a3412; cursor: pointer;" title="Fechar">✕</button>
+    </div>
+  </div>
+  <script>
+    (function() {
+      const banner = document.getElementById('guiaIngredientesBanner');
+      const btnConcluir = document.getElementById('btnConcluirGuiaIngredientes');
+      const btnX = document.getElementById('btnFecharGuiaIngredientesX');
+      async function fechar() {
+        if (banner) banner.style.display = 'none';
+        try {
+          await fetch('/onboarding/ingredientes/concluir', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        } catch (_) {}
+      }
+      if (btnConcluir) btnConcluir.addEventListener('click', fechar);
+      if (btnX) btnX.addEventListener('click', fechar);
+    })();
+  </script>
 <% } %>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem; flex-wrap: wrap; gap: 0.75rem;">
@@ -12,7 +65,12 @@
     <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--cor-texto);">Ingredientes e Estoque 🥣📦</h1>
     <p style="color: var(--cor-texto-suave); font-size: 0.85rem;">Catálogo de insumos, histórico de compras, validades e controle de estoque</p>
   </div>
-  <div>
+  <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <form method="POST" action="/onboarding/ingredientes/reiniciar" style="margin: 0;">
+      <button type="submit" class="btn btn-secundario btn-sm" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;" title="Ver explicações desta etapa">
+        ❓ Como Funciona?
+      </button>
+    </form>
     <button type="button" class="btn btn-primario btn-sm" id="btn-abrir-modal">
       ➕ Novo Ingrediente
     </button>

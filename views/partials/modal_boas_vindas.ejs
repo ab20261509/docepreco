@@ -1,0 +1,124 @@
+<% if (typeof onboardingGuias !== 'undefined' && onboardingGuias.geral === 'pendente') { %>
+<div id="modalBoasVindas" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 99998; display: flex; align-items: center; justify-content: center; padding: 1.25rem;">
+  <div style="background: #ffffff; border-radius: 20px; width: 560px; max-width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: 2px solid #fed7aa; overflow: hidden; animation: popModal 0.25s ease-out;">
+    
+    <!-- Topo Festivo / Boas-Vindas -->
+    <div style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); padding: 1.75rem 1.75rem 1.25rem; text-align: center; border-bottom: 1px solid #fed7aa; position: relative;">
+      <button type="button" id="btnFecharModalBoasVindasX" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.25rem; color: #9a3412; cursor: pointer; border-radius: 999px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="Fechar modal">✕</button>
+      <div style="font-size: 2.8rem; margin-bottom: 0.35rem;">🧁 ✨</div>
+      <h2 style="font-size: 1.45rem; font-weight: 800; color: #7c2d12; margin: 0 0 0.4rem 0;">
+        Bem-vindo(a) ao DocePreço!
+      </h2>
+      <p style="font-size: 0.88rem; color: #9a3412; margin: 0 auto; max-width: 420px; line-height: 1.4;">
+        O sistema completo feito sob medida para você <strong>precificar com lucro real</strong>, controlar estoque e profissionalizar suas encomendas.
+      </p>
+    </div>
+
+    <!-- Como Funciona o Método em 4 Passos -->
+    <div style="padding: 1.5rem 1.75rem;">
+      <span style="font-size: 0.76rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #ea580c; display: block; margin-bottom: 0.85rem;">
+        Como você alcançará o preço ideal em 4 passos:
+      </span>
+
+      <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+        
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem; background: #fffbf5; border: 1px solid #fed7aa; padding: 0.65rem 0.85rem; border-radius: 10px;">
+          <span style="font-size: 1.2rem; line-height: 1;">1️⃣</span>
+          <div>
+            <strong style="font-size: 0.86rem; color: #7c2d12; display: block;">Custos Fixos & Mão de Obra</strong>
+            <span style="font-size: 0.78rem; color: #64748b;">Descubra o valor exato da sua hora trabalhada incluindo gás, luz e aluguel.</span>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem; background: #fffbf5; border: 1px solid #fed7aa; padding: 0.65rem 0.85rem; border-radius: 10px;">
+          <span style="font-size: 1.2rem; line-height: 1;">2️⃣</span>
+          <div>
+            <strong style="font-size: 0.86rem; color: #7c2d12; display: block;">Insumos & Matéria-Prima</strong>
+            <span style="font-size: 0.78rem; color: #64748b;">Cadastre seus ingredientes para o sistema calcular o custo de cada grama utilizada.</span>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem; background: #fffbf5; border: 1px solid #fed7aa; padding: 0.65rem 0.85rem; border-radius: 10px;">
+          <span style="font-size: 1.2rem; line-height: 1;">3️⃣</span>
+          <div>
+            <strong style="font-size: 0.86rem; color: #7c2d12; display: block;">Fichas Técnicas & Precificação</strong>
+            <span style="font-size: 0.78rem; color: #64748b;">Monte suas receitas e receba o preço de venda sugerido com margem de lucro garantida.</span>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem; background: #fffbf5; border: 1px solid #fed7aa; padding: 0.65rem 0.85rem; border-radius: 10px;">
+          <span style="font-size: 1.2rem; line-height: 1;">4️⃣</span>
+          <div>
+            <strong style="font-size: 0.86rem; color: #7c2d12; display: block;">Vendas, Encomendas & WhatsApp</strong>
+            <span style="font-size: 0.78rem; color: #64748b;">Envie orçamentos profissionais no WhatsApp e controle pedidos na agenda.</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Ações do Modal -->
+      <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+        <button type="button" id="btnIniciarOnboardingPasso1" class="btn btn-primario" style="width: 100%; justify-content: center; font-size: 0.95rem; font-weight: 800; padding: 0.75rem; background: #ea580c; border-color: #c2410c; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);">
+          🚀 Começar pelo Passo 1: Configurar Custos Fixos
+        </button>
+
+        <button type="button" id="btnExplorarPainel" class="btn btn-secundario" style="width: 100%; justify-content: center; font-size: 0.85rem; font-weight: 700; padding: 0.6rem; color: #64748b; background: transparent; border-color: transparent;">
+          Explorar o sistema por conta própria
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<style>
+  @keyframes popModal {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+</style>
+
+<script>
+  (function() {
+    const modal = document.getElementById('modalBoasVindas');
+    if (!modal) return;
+
+    async function marcarOnboardingGeralConcluido() {
+      try {
+        await fetch('/onboarding/geral/concluir', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
+        });
+      } catch (err) {
+        console.warn('Erro ao salvar status de onboarding:', err);
+      }
+    }
+
+    const btnPasso1 = document.getElementById('btnIniciarOnboardingPasso1');
+    const btnExplorar = document.getElementById('btnExplorarPainel');
+    const btnX = document.getElementById('btnFecharModalBoasVindasX');
+
+    if (btnPasso1) {
+      btnPasso1.addEventListener('click', async function() {
+        await marcarOnboardingGeralConcluido();
+        window.location.href = '/custos';
+      });
+    }
+
+    if (btnExplorar) {
+      btnExplorar.addEventListener('click', async function() {
+        modal.style.display = 'none';
+        await marcarOnboardingGeralConcluido();
+      });
+    }
+
+    if (btnX) {
+      btnX.addEventListener('click', async function() {
+        modal.style.display = 'none';
+        await marcarOnboardingGeralConcluido();
+      });
+    }
+  })();
+</script>
+<% } %>

@@ -1,10 +1,59 @@
 <%- include('partials/topo') %>
 
 <% if (sucesso) { %>
-  <div class="alerta alerta-sucesso">
-    <span>✅</span>
-    <span>Custos fixos e horas trabalhadas atualizados com sucesso!</span>
+  <div class="alerta alerta-sucesso" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <span>✅</span>
+      <span>Custos fixos atualizados! Custo da sua hora calculado: <strong><%= formatMoney(cfHora) %>/h</strong>.</span>
+    </div>
+    <a href="/ingredientes" class="btn btn-primario btn-sm" style="background: #15803d; border-color: #166534; font-weight: 700;">
+      🥣 Próximo Passo: Cadastrar Insumos & Estoque →
+    </a>
   </div>
+<% } %>
+
+<% if (typeof onboardingGuias !== 'undefined' && onboardingGuias.custos === 'pendente') { %>
+  <div id="guiaCustosBanner" class="cartao" style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1.5px solid #fed7aa; margin-bottom: 1.25rem; padding: 1.15rem 1.35rem; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.08);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
+      <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+        <span style="font-size: 1.8rem; line-height: 1;">🏢</span>
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.25rem;">
+            <strong style="font-size: 1rem; color: #7c2d12;">Passo 1 do Onboarding: Custos Fixos & Mão de Obra</strong>
+            <span style="background: #ea580c; color: #fff; font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.45rem; border-radius: 999px;">Guia Rápido</span>
+          </div>
+          <p style="font-size: 0.84rem; color: #9a3412; margin: 0 0 0.65rem 0; line-height: 1.45;">
+            Cada hora que você passa na cozinha tem um custo real (gás, energia, água, aluguel, internet e sua retirada/pró-labore). 
+            Preencha os valores estimados de cada conta no mês e a sua carga horária. O sistema apura o <strong>Custo por Hora</strong> e o somará automaticamente ao tempo de preparo de cada receita!
+          </p>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" id="btnConcluirGuiaCustos" class="btn btn-primario btn-sm" style="background: #ea580c; border-color: #c2410c; font-size: 0.78rem; font-weight: 700;">
+              ✓ Entendi! Concluir Guia
+            </button>
+            <a href="/ingredientes" class="btn btn-secundario btn-sm" style="font-size: 0.78rem; font-weight: 700; color: #9a3412; border-color: #fed7aa; background: #fff;">
+              Ir para Insumos →
+            </a>
+          </div>
+        </div>
+      </div>
+      <button type="button" id="btnFecharGuiaCustosX" style="background: none; border: none; font-size: 1.15rem; color: #9a3412; cursor: pointer;" title="Fechar">✕</button>
+    </div>
+  </div>
+  <script>
+    (function() {
+      const banner = document.getElementById('guiaCustosBanner');
+      const btnConcluir = document.getElementById('btnConcluirGuiaCustos');
+      const btnX = document.getElementById('btnFecharGuiaCustosX');
+      async function fechar() {
+        if (banner) banner.style.display = 'none';
+        try {
+          await fetch('/onboarding/custos/concluir', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        } catch (_) {}
+      }
+      if (btnConcluir) btnConcluir.addEventListener('click', fechar);
+      if (btnX) btnX.addEventListener('click', fechar);
+    })();
+  </script>
 <% } %>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem; flex-wrap: wrap; gap: 0.75rem;">
@@ -12,7 +61,12 @@
     <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--cor-texto);">Custos Fixos Mensais</h1>
     <p style="color: var(--cor-texto-suave); font-size: 0.85rem;">Parte 1 da planilha &bull; Calcule o custo da sua hora de produção para precificar com precisão</p>
   </div>
-  <div>
+  <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <form method="POST" action="/onboarding/custos/reiniciar" style="margin: 0;">
+      <button type="submit" class="btn btn-secundario btn-sm" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;" title="Ver explicações desta etapa">
+        ❓ Como Funciona?
+      </button>
+    </form>
     <a href="/" class="btn btn-secundario btn-sm">← Voltar ao Painel</a>
   </div>
 </div>

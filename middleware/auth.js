@@ -36,12 +36,33 @@ async function carregarPermissoes(req, res, next) {
   if (!req.session || !req.session.usuario) {
     res.locals.pode = () => false;
     res.locals.isMaster = false;
+    res.locals.onboardingGuias = {};
     return next();
   }
 
   const usuario = req.session.usuario;
   const isMaster = usuario.perfil === 'master';
   res.locals.isMaster = isMaster;
+
+  const onboardingGuias = {
+    geral: 'pendente',
+    custos: 'pendente',
+    ingredientes: 'pendente',
+    produtos: 'pendente',
+    pedidos: 'pendente'
+  };
+
+  try {
+    const obRows = await db.all('SELECT modulo, status FROM usuario_onboardings WHERE usuario_id = ?', [usuario.id]);
+    if (obRows && obRows.length > 0) {
+      obRows.forEach(r => {
+        onboardingGuias[r.modulo] = r.status;
+      });
+    }
+  } catch (_) {}
+
+  res.locals.onboardingGuias = onboardingGuias;
+  req.onboardingGuias = onboardingGuias;
 
   // Master tem permissão total em tudo
   if (isMaster) {

@@ -1,0 +1,203 @@
+<% 
+  const isPendenteGeral = typeof onboardingGuias !== 'undefined' && onboardingGuias.geral === 'pendente';
+  const ob = typeof onboarding !== 'undefined' ? onboarding : { percentual: 0, totalConcluidos: 0, passos: {}, estaCompleto: false };
+%>
+
+<div class="cartao onboarding-card" id="cardOnboarding" style="background: linear-gradient(135deg, #ffffff 0%, #fffbf5 100%); border: 1.5px solid #fed7aa; margin-bottom: 1.5rem; position: relative; overflow: hidden; box-shadow: 0 4px 14px rgba(234, 88, 12, 0.08);">
+  
+  <!-- Faixa de Destaque no Topo -->
+  <div style="height: 4px; background: linear-gradient(90deg, #f97316 0%, #d946ef 50%, #10b981 100%);"></div>
+
+  <div style="padding: 1.25rem 1.4rem;">
+    <!-- Cabeçalho do Card com Progresso e Ações -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+      <div style="display: flex; align-items: center; gap: 0.65rem;">
+        <span style="font-size: 1.6rem; line-height: 1;">🧁</span>
+        <div>
+          <h2 style="font-size: 1.15rem; font-weight: 800; color: #7c2d12; margin: 0; display: flex; align-items: center; gap: 0.45rem;">
+            <span>Primeiros Passos da sua Confeitaria</span>
+            <% if (ob.estaCompleto) { %>
+              <span class="badge-status-ativo" style="font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.55rem;">🎉 100% Concluído</span>
+            <% } else { %>
+              <span style="background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.55rem; border-radius: 999px;">
+                <%= ob.totalConcluidos %> de 4 etapas
+              </span>
+            <% } %>
+          </h2>
+          <p style="font-size: 0.82rem; color: #9a3412; margin: 0.2rem 0 0 0;">
+            <% if (ob.estaCompleto) { %>
+              Sua confeitaria está estruturada! Seus custos, ingredientes, receitas e vendas estão configurados.
+            <% } else { %>
+              Siga este roteiro guiado para precificar suas receitas corretamente e começar a faturar.
+            <% } %>
+          </p>
+        </div>
+      </div>
+
+      <!-- Botões de Controle (Minimizar / Ajuda / Reiniciar) -->
+      <div style="display: flex; align-items: center; gap: 0.45rem;">
+        <form method="POST" action="/onboarding/geral/reiniciar" style="margin: 0;">
+          <button type="submit" class="btn btn-secundario btn-sm" style="font-size: 0.75rem; padding: 0.3rem 0.6rem; border-color: #fdba74; color: #9a3412; background: #fff;" title="Reabrir tour explicativo de boas-vindas">
+            🔄 Rever Boas-Vindas
+          </button>
+        </form>
+        <button type="button" id="btnToggleOnboarding" class="btn btn-secundario btn-sm" style="font-size: 0.75rem; padding: 0.3rem 0.6rem; border-color: #fdba74; color: #9a3412; background: #fff;" title="Recolher ou expandir guia">
+          <span id="txtToggleOnboarding">Minimizar</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Barra de Progresso Visual -->
+    <div style="margin-bottom: 1.25rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; font-weight: 700; color: #9a3412; margin-bottom: 0.35rem;">
+        <span>Progresso da Estruturação</span>
+        <span><%= ob.percentual %>% Concluído</span>
+      </div>
+      <div style="background: #fed7aa; height: 9px; border-radius: 999px; overflow: hidden; position: relative;">
+        <div style="background: linear-gradient(90deg, #ea580c 0%, #10b981 100%); height: 100%; width: <%= ob.percentual %>%; border-radius: 999px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+      </div>
+    </div>
+
+    <!-- Grade dos 4 Passos do Onboarding -->
+    <div id="corpoOnboarding" class="grade-onboarding" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.85rem;">
+      
+      <!-- Passo 1: Custos Fixos -->
+      <div class="onboarding-passo-card <%= ob.passos.passo1_custos ? 'passo-concluido' : 'passo-ativo' %>" style="background: #ffffff; border: 1.5px solid <%= ob.passos.passo1_custos ? '#86efac' : '#fdba74' %>; border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
+            <span style="font-size: 1.35rem;">🏢</span>
+            <% if (ob.passos.passo1_custos) { %>
+              <span class="badge-status-ativo" style="font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.45rem;">✓ Concluído</span>
+            <% } else { %>
+              <span style="background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.45rem; border-radius: 999px;">Passo 1</span>
+            <% } %>
+          </div>
+          <strong style="font-size: 0.92rem; color: var(--cor-texto); display: block; margin-bottom: 0.2rem;">
+            1. Custos & Mão de Obra
+          </strong>
+          <p style="font-size: 0.78rem; color: var(--cor-texto-suave); margin: 0 0 0.8rem 0; line-height: 1.35;">
+            Defina suas contas mensais e horas trabalhadas para apurar o custo da sua hora.
+          </p>
+        </div>
+        <div>
+          <a href="/custos" class="btn btn-sm <%= ob.passos.passo1_custos ? 'btn-secundario' : 'btn-primario' %>" style="width: 100%; text-align: center; justify-content: center; font-size: 0.78rem; font-weight: 700; padding: 0.35rem 0.5rem;">
+            <%= ob.passos.passo1_custos ? '✓ Ver Custos' : '⚙️ Configurar Custos' %>
+          </a>
+        </div>
+      </div>
+
+      <!-- Passo 2: Insumos & Estoque -->
+      <div class="onboarding-passo-card <%= ob.passos.passo2_ingredientes ? 'passo-concluido' : '' %>" style="background: #ffffff; border: 1.5px solid <%= ob.passos.passo2_ingredientes ? '#86efac' : (ob.passos.passo1_custos ? '#fdba74' : '#e2e8f0') %>; border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
+            <span style="font-size: 1.35rem;">🥣</span>
+            <% if (ob.passos.passo2_ingredientes) { %>
+              <span class="badge-status-ativo" style="font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.45rem;">✓ Concluído</span>
+            <% } else { %>
+              <span style="background: <%= ob.passos.passo1_custos ? '#ffedd5' : '#f1f5f9' %>; color: <%= ob.passos.passo1_custos ? '#c2410c' : '#64748b' %>; border: 1px solid <%= ob.passos.passo1_custos ? '#fed7aa' : '#cbd5e1' %>; font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.45rem; border-radius: 999px;">Passo 2</span>
+            <% } %>
+          </div>
+          <strong style="font-size: 0.92rem; color: var(--cor-texto); display: block; margin-bottom: 0.2rem;">
+            2. Insumos & Matéria-Prima
+          </strong>
+          <p style="font-size: 0.78rem; color: var(--cor-texto-suave); margin: 0 0 0.8rem 0; line-height: 1.35;">
+            Cadastre os ingredientes e embalagens que usa, ou importe via planilha Excel.
+          </p>
+        </div>
+        <div>
+          <a href="/ingredientes" class="btn btn-sm <%= ob.passos.passo2_ingredientes ? 'btn-secundario' : (ob.passos.passo1_custos ? 'btn-primario' : 'btn-secundario') %>" style="width: 100%; text-align: center; justify-content: center; font-size: 0.78rem; font-weight: 700; padding: 0.35rem 0.5rem;">
+            <%= ob.passos.passo2_ingredientes ? '✓ Ver Insumos' : '🥣 Cadastrar Insumos' %>
+          </a>
+        </div>
+      </div>
+
+      <!-- Passo 3: Ficha Técnica & Precificação -->
+      <div class="onboarding-passo-card <%= ob.passos.passo3_produtos ? 'passo-concluido' : '' %>" style="background: #ffffff; border: 1.5px solid <%= ob.passos.passo3_produtos ? '#86efac' : (ob.passos.passo2_ingredientes ? '#fdba74' : '#e2e8f0') %>; border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
+            <span style="font-size: 1.35rem;">🎂</span>
+            <% if (ob.passos.passo3_produtos) { %>
+              <span class="badge-status-ativo" style="font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.45rem;">✓ Concluído</span>
+            <% } else { %>
+              <span style="background: <%= ob.passos.passo2_ingredientes ? '#ffedd5' : '#f1f5f9' %>; color: <%= ob.passos.passo2_ingredientes ? '#c2410c' : '#64748b' %>; border: 1px solid <%= ob.passos.passo2_ingredientes ? '#fed7aa' : '#cbd5e1' %>; font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.45rem; border-radius: 999px;">Passo 3</span>
+            <% } %>
+          </div>
+          <strong style="font-size: 0.92rem; color: var(--cor-texto); display: block; margin-bottom: 0.2rem;">
+            3. Ficha Técnica & Lucro
+          </strong>
+          <p style="font-size: 0.78rem; color: var(--cor-texto-suave); margin: 0 0 0.8rem 0; line-height: 1.35;">
+            Crie sua primeira receita com rendimento, tempo de forno e margem de lucro.
+          </p>
+        </div>
+        <div>
+          <a href="/produtos/novo" class="btn btn-sm <%= ob.passos.passo3_produtos ? 'btn-secundario' : (ob.passos.passo2_ingredientes ? 'btn-primario' : 'btn-secundario') %>" style="width: 100%; text-align: center; justify-content: center; font-size: 0.78rem; font-weight: 700; padding: 0.35rem 0.5rem;">
+            <%= ob.passos.passo3_produtos ? '✓ Nova Receita' : '🧁 Criar Receita' %>
+          </a>
+        </div>
+      </div>
+
+      <!-- Passo 4: Primeiro Pedido / Comercial -->
+      <div class="onboarding-passo-card <%= ob.passos.passo4_vendas ? 'passo-concluido' : '' %>" style="background: #ffffff; border: 1.5px solid <%= ob.passos.passo4_vendas ? '#86efac' : (ob.passos.passo3_produtos ? '#fdba74' : '#e2e8f0') %>; border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
+            <span style="font-size: 1.35rem;">🛍️</span>
+            <% if (ob.passos.passo4_vendas) { %>
+              <span class="badge-status-ativo" style="font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.45rem;">✓ Concluído</span>
+            <% } else { %>
+              <span style="background: <%= ob.passos.passo3_produtos ? '#ffedd5' : '#f1f5f9' %>; color: <%= ob.passos.passo3_produtos ? '#c2410c' : '#64748b' %>; border: 1px solid <%= ob.passos.passo3_produtos ? '#fed7aa' : '#cbd5e1' %>; font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.45rem; border-radius: 999px;">Passo 4</span>
+            <% } %>
+          </div>
+          <strong style="font-size: 0.92rem; color: var(--cor-texto); display: block; margin-bottom: 0.2rem;">
+            4. Vendas & WhatsApp
+          </strong>
+          <p style="font-size: 0.78rem; color: var(--cor-texto-suave); margin: 0 0 0.8rem 0; line-height: 1.35;">
+            Lance seu primeiro pedido ou cadastre um cliente com proposta para WhatsApp.
+          </p>
+        </div>
+        <div>
+          <a href="/pedidos/novo" class="btn btn-sm <%= ob.passos.passo4_vendas ? 'btn-secundario' : (ob.passos.passo3_produtos ? 'btn-primario' : 'btn-secundario') %>" style="width: 100%; text-align: center; justify-content: center; font-size: 0.78rem; font-weight: 700; padding: 0.35rem 0.5rem;">
+            <%= ob.passos.passo4_vendas ? '✓ Novo Pedido' : '📝 Criar Pedido' %>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+  (function() {
+    const btnToggle = document.getElementById('btnToggleOnboarding');
+    const corpo = document.getElementById('corpoOnboarding');
+    const txtToggle = document.getElementById('txtToggleOnboarding');
+    const CHAVE_STORAGE = 'docepreco_onboarding_recolhido';
+
+    function aplicarEstadoRecolhido(recolhido) {
+      if (recolhido) {
+        corpo.style.display = 'none';
+        txtToggle.textContent = 'Expandir';
+      } else {
+        corpo.style.display = 'grid';
+        txtToggle.textContent = 'Minimizar';
+      }
+    }
+
+    // Carregar preferência salva
+    const salvoRecolhido = localStorage.getItem(CHAVE_STORAGE) === '1';
+    <% if (ob.estaCompleto) { %>
+      // Se estiver 100% completo, recolhe por padrão a menos que o usuário queira expandir
+      aplicarEstadoRecolhido(true);
+    <% } else { %>
+      aplicarEstadoRecolhido(salvoRecolhido);
+    <% } %>
+
+    if (btnToggle) {
+      btnToggle.addEventListener('click', function() {
+        const estaOculto = corpo.style.display === 'none';
+        aplicarEstadoRecolhido(!estaOculto);
+        localStorage.setItem(CHAVE_STORAGE, !estaOculto ? '1' : '0');
+      });
+    }
+  })();
+</script>

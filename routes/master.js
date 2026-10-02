@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../db');
 const { exigirMaster } = require('../middleware/auth');
+const onboardingService = require('../services/onboarding');
 
 const router = express.Router();
 
@@ -139,12 +140,16 @@ router.get('/usuarios/:id/permissoes', async (req, res, next) => {
       return res.status(404).render('erro_404', { mensagem: 'Usuário não encontrado.' });
     }
 
-    // Carregar permissões atuais deste usuário
-    const permsGravadas = await db.all(`
-      SELECT modulo, pode_ver, pode_criar, pode_editar, pode_excluir
-      FROM permissoes_usuario
-      WHERE usuario_id = ?
-    `, [usuarioAlvoId]);
+    // Carregar permissões atuais e status dos guias de onboarding
+    const [permsGravadas, statusOnboardings, progressoReal] = await Promise.all([
+      db.all(`
+        SELECT modulo, pode_ver, pode_criar, pode_editar, pode_excluir
+        FROM permissoes_usuario
+        WHERE usuario_id = ?
+      `, [usuarioAlvoId]),
+      onboardingService.obterStatusGuias(db, usuarioAlvoId),
+      onboardingService.obterProgressoReal(db, usuarioAlvoId)
+    ]);
 
     const mapaPerms = {};
     permsGravadas.forEach(p => {
@@ -160,6 +165,9 @@ router.get('/usuarios/:id/permissoes', async (req, res, next) => {
       usuarioAlvo,
       modulos: MODULOS_SISTEMA,
       mapaPerms,
+      statusOnboardings,
+      modulosOnboarding: onboardingService.MODULOS_ONBOARDING,
+      progressoReal,
       sucessoMsg: req.query.sucesso ? 'Permissões atualizadas com sucesso!' : null,
       activeNav: 'master_usuarios'
     });
@@ -344,6 +352,70 @@ router.post('/configuracoes', async (req, res, next) => {
     });
 
     res.redirect('/master/configuracoes?sucesso=1');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 10. Consultar Onboardings de um Usuário (API JSON para Modais e Painéis)
+router.get('/usuarios/:id/onboarding', async (req, res, next) => {
+  try {
+    const usuarioId = parseInt(req.params.id, 10);
+    const usuario = await db.get('SELECT id, nome, email, perfil, status FROM usuarios WHERE id = ?', [usuarioId]);
+    if (!usuario) {
+      return res.status(404).json({ sucesso: false, erro: 'Usuário não encontrado.' });
+    }
+
+    const [statusGuias, progressoReal] = await Promise.all([
+      onboardingService.obterStatusGuias(db, usuarioId),
+      onboardingService.obterProgressoReal(db, usuarioId)
+    ]);
+
+    res.json({
+      sucesso: true,
+      usuario,
+      modulos: onboardingService.MODULOS_ONBOARDING,
+      statusGuias,
+      progressoReal
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 11. Reativar Guia/Onboarding Específico de um Usuário
+router.post('/usuarios/:id/onboarding/:modulo/reativar', async (req, res, next) => {
+  try {
+    const usuarioId = parseInt(req.params.id, 10);
+    const modulo = req.params.modulo;
+
+    await onboardingService.reativarGuia(db, usuarioId, modulo);
+
+    if (req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'))) {
+      return res.json({ sucesso: true, usuarioId, modulo, status: 'pendente' });
+    }
+
+    const referer = req.get('Referrer') || '/master/usuarios';
+    const separador = referer.includes('?') ? '&' : '?';
+    res.redirect(`${referer}${separador}sucesso=onboarding_reativado`);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 12. Reiniciar Todos os Guias/Onboardings de um Usuário
+router.post('/usuarios/:id/onboarding/reiniciar-todos', async (req, res, next) => {
+  try {
+    const usuarioId = parseInt(req.params.id, 10);
+    await onboardingService.reiniciarTodosGuias(db, usuarioId);
+
+    if (req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'))) {
+      return res.json({ sucesso: true, usuarioId, status: 'pendente' });
+    }
+
+    const referer = req.get('Referrer') || '/master/usuarios';
+    const separador = referer.includes('?') ? '&' : '?';
+    res.redirect(`${referer}${separador}sucesso=onboardings_reiniciados`);
   } catch (err) {
     next(err);
   }

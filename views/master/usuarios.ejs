@@ -235,6 +235,11 @@
                       🔑 Senha
                     </button>
 
+                    <!-- 5. Gerenciar / Reativar Onboarding -->
+                    <button type="button" class="btn btn-secundario btn-sm btn-gerenciar-onboarding" data-id="<%= u.id %>" data-nome="<%= u.nome %>" style="font-size: 0.74rem; padding: 0.25rem 0.5rem; background: #fff7ed; color: #c2410c; border-color: #fed7aa; font-weight: 700;" title="Reativar ou reiniciar guias de onboarding deste confeiteiro">
+                      🎓 Guias
+                    </button>
+
                   </div>
                 </td>
               </tr>
@@ -296,6 +301,132 @@
   modal.addEventListener('click', (e) => {
     if (e.target === modal) modal.style.display = 'none';
   });
+</script>
+
+<!-- Modal para Gerenciar Onboardings do Usuário -->
+<div id="modalOnboardingMaster" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px); z-index: 99999; align-items: center; justify-content: center; padding: 1rem;">
+  <div style="background: #ffffff; border-radius: 16px; padding: 1.5rem; width: 620px; max-width: 95vw; box-shadow: 0 20px 40px rgba(0,0,0,0.25); max-height: 90vh; overflow-y: auto; border: 2px solid #fed7aa;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; border-bottom: 1px solid #fde68a; padding-bottom: 0.75rem;">
+      <div>
+        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #7c2d12; display: flex; align-items: center; gap: 0.45rem;">
+          <span>🎓</span> Guias de Onboarding & Aprendizado
+        </h3>
+        <p id="obModalSubtitulo" style="font-size: 0.85rem; color: #9a3412; margin: 0.2rem 0 0 0;"></p>
+      </div>
+      <button type="button" id="btnFecharObModalX" style="background: none; border: none; font-size: 1.25rem; color: #9a3412; cursor: pointer;">✕</button>
+    </div>
+
+    <!-- Progresso do Usuário -->
+    <div id="obModalProgressoContainer" style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.82rem; color: #9a3412;">
+      Carregando status dos cadastros...
+    </div>
+
+    <!-- Lista dos 5 Módulos -->
+    <div id="obModalListaModulos" style="display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 1.25rem;">
+      <!-- Preenchido via JavaScript -->
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
+      <form id="formReiniciarTodosOnboarding" method="POST" style="margin: 0;">
+        <button type="submit" class="btn btn-sm" style="background: #ea580c; color: #fff; border: 1px solid #c2410c; font-weight: 700; font-size: 0.78rem;">
+          🔄 Reiniciar Todos os 5 Guias
+        </button>
+      </form>
+      <button type="button" id="btnFecharObModal" class="btn btn-secundario btn-sm">Fechar</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  (function() {
+    const modalOb = document.getElementById('modalOnboardingMaster');
+    const subtitulo = document.getElementById('obModalSubtitulo');
+    const progressoContainer = document.getElementById('obModalProgressoContainer');
+    const listaModulos = document.getElementById('obModalListaModulos');
+    const formReiniciarTodos = document.getElementById('formReiniciarTodosOnboarding');
+    const btnFechar = document.getElementById('btnFecharObModal');
+    const btnFecharX = document.getElementById('btnFecharObModalX');
+
+    function fechar() {
+      modalOb.style.display = 'none';
+    }
+
+    if (btnFechar) btnFechar.addEventListener('click', fechar);
+    if (btnFecharX) btnFecharX.addEventListener('click', fechar);
+    modalOb.addEventListener('click', (e) => { if (e.target === modalOb) fechar(); });
+
+    document.querySelectorAll('.btn-gerenciar-onboarding').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const uid = btn.getAttribute('data-id');
+        const nome = btn.getAttribute('data-nome');
+
+        subtitulo.textContent = `Gerenciando confeiteiro: ${nome} (#${uid})`;
+        formReiniciarTodos.action = `/master/usuarios/${uid}/onboarding/reiniciar-todos`;
+        progressoContainer.innerHTML = '<em>Carregando status dos módulos...</em>';
+        listaModulos.innerHTML = '<div style="text-align: center; padding: 1.5rem; color: #64748b;">Buscando dados no servidor...</div>';
+        modalOb.style.display = 'flex';
+
+        try {
+          const resp = await fetch(`/master/usuarios/${uid}/onboarding`, { headers: { 'Accept': 'application/json' } });
+          const dados = await resp.json();
+
+          if (!dados.sucesso) {
+            progressoContainer.innerHTML = '<span style="color: #b91c1c;">Erro ao consultar dados.</span>';
+            return;
+          }
+
+          const prog = dados.progressoReal;
+          progressoContainer.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <strong>Progresso Real no Banco: ${prog.totalConcluidos} de 4 etapas (${prog.percentual}%)</strong>
+              <span>Próximo Passo: <strong>${prog.proximoPasso ? prog.proximoPasso.nome : 'Todos concluídos 🎉'}</strong></span>
+            </div>
+          `;
+
+          listaModulos.innerHTML = '';
+          dados.modulos.forEach(m => {
+            const status = dados.statusGuias[m.id] || 'pendente';
+            const card = document.createElement('div');
+            card.style.cssText = 'background: #fff; border: 1.5px solid ' + (status === 'pendente' ? '#fed7aa' : '#e2e8f0') + '; border-radius: 10px; padding: 0.75rem 0.95rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap;';
+            
+            let badge = '';
+            if (status === 'pendente') {
+              badge = '<span style="background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.45rem; border-radius: 999px;">⚠️ Ativo (Pendente)</span>';
+            } else if (status === 'concluido') {
+              badge = '<span class="badge-status-ativo" style="font-size: 0.68rem;">✓ Concluído</span>';
+            } else {
+              badge = '<span style="background: #f1f5f9; color: #64748b; font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 999px;">Dispensado</span>';
+            }
+
+            card.innerHTML = `
+              <div style="flex: 1; min-width: 200px;">
+                <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.15rem;">
+                  <span style="font-size: 1.15rem;">${m.icone}</span>
+                  <strong style="font-size: 0.88rem; color: var(--cor-texto);">${m.titulo}</strong>
+                  ${badge}
+                </div>
+                <div style="font-size: 0.75rem; color: var(--cor-texto-suave);">${m.descricao}</div>
+              </div>
+              <div>
+                <form method="POST" action="/master/usuarios/${uid}/onboarding/${m.id}/reativar" style="margin: 0;">
+                  <button type="submit" class="btn btn-sm" style="font-size: 0.74rem; font-weight: 700; background: ${status === 'pendente' ? '#f8fafc' : '#fff7ed'}; color: #c2410c; border: 1px solid #fed7aa; padding: 0.3rem 0.65rem;">
+                    ${status === 'pendente' ? '🔄 Reiniciar Novamente' : '🔄 Reativar Este Guia'}
+                  </button>
+                </form>
+              </div>
+            `;
+            listaModulos.appendChild(card);
+          });
+
+        } catch (err) {
+          console.error('Erro ao buscar status de onboarding:', err);
+          listaModulos.innerHTML = '<div style="color: #b91c1c; padding: 1rem; text-align: center;">Erro de conexão ao buscar os módulos.</div>';
+        }
+      });
+    });
+  })();
 </script>
 
 <%- include('../partials/rodape') %>

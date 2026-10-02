@@ -1,10 +1,59 @@
 <%- include('partials/topo') %>
 
 <% if (typeof sucesso !== 'undefined' && sucesso) { %>
-  <div class="alerta alerta-sucesso">
-    <span>✅</span>
-    <span>Ficha técnica e precificação salvas com sucesso!</span>
+  <div class="alerta alerta-sucesso" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <span>✅</span>
+      <span>Ficha técnica e precificação salvas com sucesso!</span>
+    </div>
+    <a href="/pedidos/novo" class="btn btn-primario btn-sm" style="background: #ea580c; border-color: #c2410c; font-weight: 700;">
+      📝 Próximo Passo: Lançar seu Primeiro Pedido / Orçamento →
+    </a>
   </div>
+<% } %>
+
+<% if (typeof onboardingGuias !== 'undefined' && onboardingGuias.produtos === 'pendente') { %>
+  <div id="guiaProdutosBanner" class="cartao" style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1.5px solid #fed7aa; margin-bottom: 1.25rem; padding: 1.15rem 1.35rem; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.08);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
+      <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+        <span style="font-size: 1.8rem; line-height: 1;">🎂</span>
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.25rem;">
+            <strong style="font-size: 1rem; color: #7c2d12;">Passo 3 do Onboarding: Ficha Técnica & Precificação</strong>
+            <span style="background: #ea580c; color: #fff; font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.45rem; border-radius: 999px;">Guia Rápido</span>
+          </div>
+          <p style="font-size: 0.84rem; color: #9a3412; margin: 0 0 0.65rem 0; line-height: 1.45;">
+            Aqui você cria a ficha técnica da sua receita. Informe o rendimento (ex: 20 fatias ou 50 brigadeiros), o tempo de preparo e os ingredientes utilizados. 
+            Defina sua <strong>Margem de Lucro Desejada</strong> (ex: 50% ou 100%) e o sistema calculará na hora o <strong>Preço de Venda Sugerido</strong> para nunca ter prejuízo!
+          </p>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" id="btnConcluirGuiaProdutos" class="btn btn-primario btn-sm" style="background: #ea580c; border-color: #c2410c; font-size: 0.78rem; font-weight: 700;">
+              ✓ Entendi! Concluir Guia
+            </button>
+            <a href="/pedidos/novo" class="btn btn-secundario btn-sm" style="font-size: 0.78rem; font-weight: 700; color: #9a3412; border-color: #fed7aa; background: #fff;">
+              Ir para Pedidos →
+            </a>
+          </div>
+        </div>
+      </div>
+      <button type="button" id="btnFecharGuiaProdutosX" style="background: none; border: none; font-size: 1.15rem; color: #9a3412; cursor: pointer;" title="Fechar">✕</button>
+    </div>
+  </div>
+  <script>
+    (function() {
+      const banner = document.getElementById('guiaProdutosBanner');
+      const btnConcluir = document.getElementById('btnConcluirGuiaProdutos');
+      const btnX = document.getElementById('btnFecharGuiaProdutosX');
+      async function fechar() {
+        if (banner) banner.style.display = 'none';
+        try {
+          await fetch('/onboarding/produtos/concluir', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        } catch (_) {}
+      }
+      if (btnConcluir) btnConcluir.addEventListener('click', fechar);
+      if (btnX) btnX.addEventListener('click', fechar);
+    })();
+  </script>
 <% } %>
 
 <% if (typeof erro !== 'undefined' && erro) { %>
@@ -21,7 +70,12 @@
     </h1>
     <p style="color: var(--cor-texto-suave);">Partes 2 e 3 da planilha &bull; Calcule custos de ingredientes, embalagens, tempo e margem</p>
   </div>
-  <div style="display: flex; gap: 0.75rem;">
+  <div style="display: flex; gap: 0.75rem; align-items: center;">
+    <form method="POST" action="/onboarding/produtos/reiniciar" style="margin: 0;">
+      <button type="submit" class="btn btn-secundario btn-sm" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;" title="Ver explicações desta etapa">
+        ❓ Como Funciona?
+      </button>
+    </form>
     <a href="/produtos" class="btn btn-secundario">← Voltar aos Produtos</a>
     <% if (modo === 'editar') { %>
       <form method="POST" action="/produtos/<%= produto.id %>/excluir" style="margin: 0;" onsubmit="return confirm('Deseja realmente excluir este produto?');">

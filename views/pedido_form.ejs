@@ -40,12 +40,64 @@
 </style>
 
 <div style="max-width: 1000px; margin: 0 auto;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem;">
+  
+  <% if (typeof onboardingGuias !== 'undefined' && onboardingGuias.pedidos === 'pendente') { %>
+    <div id="guiaPedidosBanner" class="cartao" style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1.5px solid #fed7aa; margin-bottom: 1.25rem; padding: 1.15rem 1.35rem; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.08);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
+        <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+          <span style="font-size: 1.8rem; line-height: 1;">🛍️</span>
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.25rem;">
+              <strong style="font-size: 1rem; color: #7c2d12;">Passo 4 do Onboarding: Comercial & Vendas</strong>
+              <span style="background: #ea580c; color: #fff; font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.45rem; border-radius: 999px;">Guia Rápido</span>
+            </div>
+            <p style="font-size: 0.84rem; color: #9a3412; margin: 0 0 0.65rem 0; line-height: 1.45;">
+              Conecte suas receitas diretamente aos seus clientes! Selecione os produtos fabricados, adicione extras/toppers personalizados se houver, defina a data de entrega e o valor do sinal. 
+              Ao salvar, você poderá <strong>enviar uma proposta visual completa direto para o WhatsApp do cliente</strong> com apenas 1 clique!
+            </p>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" id="btnConcluirGuiaPedidos" class="btn btn-primario btn-sm" style="background: #ea580c; border-color: #c2410c; font-size: 0.78rem; font-weight: 700;">
+                ✓ Entendi! Concluir Guia
+              </button>
+              <a href="/" class="btn btn-secundario btn-sm" style="font-size: 0.78rem; font-weight: 700; color: #9a3412; border-color: #fed7aa; background: #fff;">
+                Voltar ao Início
+              </a>
+            </div>
+          </div>
+        </div>
+        <button type="button" id="btnFecharGuiaPedidosX" style="background: none; border: none; font-size: 1.15rem; color: #9a3412; cursor: pointer;" title="Fechar">✕</button>
+      </div>
+    </div>
+    <script>
+      (function() {
+        const banner = document.getElementById('guiaPedidosBanner');
+        const btnConcluir = document.getElementById('btnConcluirGuiaPedidos');
+        const btnX = document.getElementById('btnFecharGuiaPedidosX');
+        async function fechar() {
+          if (banner) banner.style.display = 'none';
+          try {
+            await fetch('/onboarding/pedidos/concluir', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+          } catch (_) {}
+        }
+        if (btnConcluir) btnConcluir.addEventListener('click', fechar);
+        if (btnX) btnX.addEventListener('click', fechar);
+      })();
+    </script>
+  <% } %>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.15rem; flex-wrap: wrap; gap: 0.75rem;">
     <div>
       <h2><%= pedido ? ('✏️ Editar Pedido #' + pedido.id) : '➕ Novo Pedido / Orçamento' %></h2>
       <p class="subtitulo" style="margin-bottom: 0;">Conecte as receitas da fábrica ao seu cliente com cálculo automático</p>
     </div>
-    <a href="/pedidos" class="btn btn-secundario btn-sm">← Voltar para Pedidos</a>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <form method="POST" action="/onboarding/pedidos/reiniciar" style="margin: 0;">
+        <button type="submit" class="btn btn-secundario btn-sm" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;" title="Ver explicações desta etapa">
+          ❓ Como Funciona?
+        </button>
+      </form>
+      <a href="/pedidos" class="btn btn-secundario btn-sm">← Voltar para Pedidos</a>
+    </div>
   </div>
 
   <form method="POST" action="<%= pedido ? ('/pedidos/' + pedido.id + '/editar') : '/pedidos' %>" id="formPedido">
