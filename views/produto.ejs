@@ -149,10 +149,15 @@
       </div>
 
       <!-- 2. Ingredientes (Item A) -->
-      <div class="cartao">
-        <div class="cartao-titulo" style="margin-bottom: 0.35rem;">
-          <span>🥣 2. Ingredientes (Item A)</span>
-          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+      <div class="cartao" id="cartao-ingredientes">
+        <div class="cartao-titulo" style="margin-bottom: 0.35rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span>🥣 2. Ingredientes (Item A)</span>
+            <span id="badge-contador-ingredientes" style="background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.76rem; font-weight: 800;">
+              <%= ingredientes ? ingredientes.length : 1 %> <%= (ingredientes && ingredientes.length === 1) ? 'item' : 'itens' %>
+            </span>
+          </div>
+          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
             <a href="/produtos/modelo-excel" class="btn btn-secundario btn-sm" title="Baixar planilha de exemplo Excel">
               📥 Modelo
             </a>
@@ -162,111 +167,164 @@
             <button type="button" class="btn btn-secundario btn-sm" id="btn-add-ingrediente">
               ➕ Adicionar Linha
             </button>
+            <button type="button" class="btn btn-secundario btn-sm" id="btn-toggle-lista-ingredientes" style="font-weight: 700; color: var(--cor-primaria);" title="Recolher ou exibir tabela de ingredientes">
+              <span id="icone-toggle-ingredientes">👁️</span> <span id="texto-toggle-ingredientes">Esconder Lista</span>
+            </button>
           </div>
         </div>
         <input type="file" id="input-arquivo-excel" accept=".xlsx, .xls, .csv" style="display: none;">
-        <div style="font-size: 0.78rem; color: var(--cor-texto-suave); margin-bottom: 0.75rem;">
-          💡 Pesquise no catálogo para vincular o insumo. Os campos com 🔒 são preenchidos automaticamente.
+
+        <!-- Resumo Compacto quando Oculto (Clique para Exibir) -->
+        <div id="resumo-compacto-ingredientes" style="display: none; cursor: pointer; background: #fffaf5; border: 1.5px dashed #fed7aa; border-radius: 10px; padding: 0.85rem 1.15rem; margin-top: 0.5rem; margin-bottom: 0.5rem; justify-content: space-between; align-items: center; transition: all 0.2s ease;" title="Clique aqui para exibir a lista completa de ingredientes">
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <span style="font-size: 1.4rem;">🥣</span>
+            <div>
+              <div style="font-size: 0.88rem; color: #7c2d12; font-weight: 700;">
+                <span id="resumo-qtd-ingredientes"><%= ingredientes ? ingredientes.length : 1 %> itens</span> cadastrados nesta receita
+              </div>
+              <span style="font-size: 0.78rem; color: #ea580c; font-weight: 600;">👉 Clique para exibir e editar a lista</span>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-size: 0.75rem; color: var(--cor-texto-suave); display: block;">Total Ingredientes (A):</span>
+            <strong style="font-size: 1.05rem; color: var(--cor-primaria);" id="resumo-total-a-compacto">R$ 0,00</strong>
+          </div>
         </div>
 
-        <div class="tabela-container">
-          <table id="tabela-ingredientes">
-            <thead>
-              <tr>
-                <th style="width: 35%;">Ingrediente (Catálogo)</th>
-                <th style="width: 16%;">Qtd Usada</th>
-                <th style="width: 15%;">Preço Pacote 🔒</th>
-                <th style="width: 15%;">Qtd Pacote 🔒</th>
-                <th style="width: 14%; text-align: right;">Custo Receita</th>
-                <th style="width: 36px; text-align: center;"></th>
-              </tr>
-            </thead>
-            <tbody id="corpo-ingredientes">
-              <% if (ingredientes && ingredientes.length > 0) { %>
-                <% ingredientes.forEach((ing) => { %>
+        <!-- Container da Tabela de Ingredientes -->
+        <div id="container-tabela-ingredientes">
+          <div style="font-size: 0.78rem; color: var(--cor-texto-suave); margin-bottom: 0.75rem;">
+            💡 Pesquise no catálogo para vincular o insumo. Os campos com 🔒 são preenchidos automaticamente. Pressione <strong>Enter</strong> na quantidade para abrir uma nova linha.
+          </div>
+
+          <div class="tabela-container">
+            <table id="tabela-ingredientes">
+              <thead>
+                <tr>
+                  <th style="width: 35%;">Ingrediente (Catálogo)</th>
+                  <th style="width: 16%;">Qtd Usada</th>
+                  <th style="width: 15%;">Preço Pacote 🔒</th>
+                  <th style="width: 15%;">Qtd Pacote 🔒</th>
+                  <th style="width: 14%; text-align: right;">Custo Receita</th>
+                  <th style="width: 36px; text-align: center;"></th>
+                </tr>
+              </thead>
+              <tbody id="corpo-ingredientes">
+                <% if (ingredientes && ingredientes.length > 0) { %>
+                  <% ingredientes.forEach((ing) => { %>
+                    <tr class="linha-ingrediente">
+                      <td>
+                        <div class="busca-ingrediente-wrapper">
+                          <input type="text" name="ing_nome" class="ing-nome-input" value="<%= ing.nome %>" placeholder="🔍 Digite para pesquisar..." required autocomplete="off">
+                          <div class="dropdown-sugestoes-ingrediente" style="display: none;"></div>
+                        </div>
+                      </td>
+                      <td><input type="number" name="ing_qtd_usada" class="ing-qtd-usada recalc-trigger" value="<%= ing.qtd_usada %>" step="any" min="0" placeholder="Ex: 395" required></td>
+                      <td><input type="number" name="ing_preco_pacote" class="ing-preco-pacote recalc-trigger campo-bloqueado" value="<%= ing.preco_pacote %>" step="0.01" min="0" placeholder="Catálogo" readonly title="Valor obtido do catálogo" required></td>
+                      <td><input type="number" name="ing_qtd_pacote" class="ing-qtd-pacote recalc-trigger campo-bloqueado" value="<%= ing.qtd_pacote %>" step="any" min="0.001" placeholder="Catálogo" readonly title="Tamanho do pacote obtido do catálogo" required></td>
+                      <td style="text-align: right; font-weight: 700; font-size: 0.88rem;" class="ing-custo-calculado">R$ 0,00</td>
+                      <td style="text-align: center;"><button type="button" class="btn-icone-tabela" onclick="removerLinha(this)" title="Remover item">✕</button></td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <!-- Linha inicial modelo para novos produtos -->
                   <tr class="linha-ingrediente">
                     <td>
                       <div class="busca-ingrediente-wrapper">
-                        <input type="text" name="ing_nome" class="ing-nome-input" value="<%= ing.nome %>" placeholder="🔍 Digite para pesquisar..." required autocomplete="off">
+                        <input type="text" name="ing_nome" class="ing-nome-input" placeholder="🔍 Digite para pesquisar..." required autocomplete="off">
                         <div class="dropdown-sugestoes-ingrediente" style="display: none;"></div>
                       </div>
                     </td>
-                    <td><input type="number" name="ing_qtd_usada" class="ing-qtd-usada recalc-trigger" value="<%= ing.qtd_usada %>" step="any" min="0" placeholder="Ex: 395" required></td>
-                    <td><input type="number" name="ing_preco_pacote" class="ing-preco-pacote recalc-trigger campo-bloqueado" value="<%= ing.preco_pacote %>" step="0.01" min="0" placeholder="Catálogo" readonly title="Valor obtido do catálogo" required></td>
-                    <td><input type="number" name="ing_qtd_pacote" class="ing-qtd-pacote recalc-trigger campo-bloqueado" value="<%= ing.qtd_pacote %>" step="any" min="0.001" placeholder="Catálogo" readonly title="Tamanho do pacote obtido do catálogo" required></td>
+                    <td><input type="number" name="ing_qtd_usada" class="ing-qtd-usada recalc-trigger" step="any" min="0" placeholder="Ex: 395" required></td>
+                    <td><input type="number" name="ing_preco_pacote" class="ing-preco-pacote recalc-trigger campo-bloqueado" step="0.01" min="0" placeholder="Catálogo" readonly title="Valor obtido do catálogo" required></td>
+                    <td><input type="number" name="ing_qtd_pacote" class="ing-qtd-pacote recalc-trigger campo-bloqueado" step="any" min="0.001" placeholder="Catálogo" readonly title="Tamanho obtido do catálogo" required></td>
                     <td style="text-align: right; font-weight: 700; font-size: 0.88rem;" class="ing-custo-calculado">R$ 0,00</td>
                     <td style="text-align: center;"><button type="button" class="btn-icone-tabela" onclick="removerLinha(this)" title="Remover item">✕</button></td>
                   </tr>
-                <% }); %>
-              <% } else { %>
-                <!-- Linha inicial modelo para novos produtos -->
-                <tr class="linha-ingrediente">
-                  <td>
-                    <div class="busca-ingrediente-wrapper">
-                      <input type="text" name="ing_nome" class="ing-nome-input" placeholder="🔍 Digite para pesquisar..." required autocomplete="off">
-                      <div class="dropdown-sugestoes-ingrediente" style="display: none;"></div>
-                    </div>
-                  </td>
-                  <td><input type="number" name="ing_qtd_usada" class="ing-qtd-usada recalc-trigger" step="any" min="0" placeholder="Ex: 395" required></td>
-                  <td><input type="number" name="ing_preco_pacote" class="ing-preco-pacote recalc-trigger campo-bloqueado" step="0.01" min="0" placeholder="Catálogo" readonly title="Valor obtido do catálogo" required></td>
-                  <td><input type="number" name="ing_qtd_pacote" class="ing-qtd-pacote recalc-trigger campo-bloqueado" step="any" min="0.001" placeholder="Catálogo" readonly title="Tamanho obtido do catálogo" required></td>
-                  <td style="text-align: right; font-weight: 700; font-size: 0.88rem;" class="ing-custo-calculado">R$ 0,00</td>
-                  <td style="text-align: center;"><button type="button" class="btn-icone-tabela" onclick="removerLinha(this)" title="Remover item">✕</button></td>
+                <% } %>
+              </tbody>
+              <tfoot>
+                <tr style="background-color: #faf5f3; font-weight: 700;">
+                  <td colspan="4" style="text-align: right; font-size: 0.85rem;">Total de Ingredientes (A):</td>
+                  <td style="text-align: right; color: var(--cor-primaria); font-size: 0.95rem;" id="display-total-a">R$ 0,00</td>
+                  <td></td>
                 </tr>
-              <% } %>
-            </tbody>
-            <tfoot>
-              <tr style="background-color: #faf5f3; font-weight: 700;">
-                <td colspan="4" style="text-align: right; font-size: 0.85rem;">Total de Ingredientes (A):</td>
-                <td style="text-align: right; color: var(--cor-primaria); font-size: 0.95rem;" id="display-total-a">R$ 0,00</td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
+              </tfoot>
+            </table>
+          </div>
         </div>
       </div>
 
       <!-- 3. Embalagens e Complementos (Item B) -->
-      <div class="cartao">
-        <div class="cartao-titulo">
-          <span>🎁 3. Embalagens e Complementos (Item B)</span>
-          <button type="button" class="btn btn-secundario btn-sm" id="btn-add-complemento">➕ Adicionar Embalagem</button>
+      <div class="cartao" id="cartao-complementos">
+        <div class="cartao-titulo" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span>🎁 3. Embalagens e Complementos (Item B)</span>
+            <span id="badge-contador-complementos" style="background: #fdf2f8; color: #be185d; border: 1px solid #fbcfe8; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.76rem; font-weight: 800;">
+              <%= complementos ? complementos.length : 1 %> <%= (complementos && complementos.length === 1) ? 'item' : 'itens' %>
+            </span>
+          </div>
+          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+            <button type="button" class="btn btn-secundario btn-sm" id="btn-add-complemento">➕ Adicionar Embalagem</button>
+            <button type="button" class="btn btn-secundario btn-sm" id="btn-toggle-lista-complementos" style="font-weight: 700; color: var(--cor-primaria);" title="Recolher ou exibir tabela de complementos">
+              <span id="icone-toggle-complementos">👁️</span> <span id="texto-toggle-complementos">Esconder Lista</span>
+            </button>
+          </div>
         </div>
 
-        <div class="tabela-container">
-          <table id="tabela-complementos">
-            <thead>
-              <tr>
-                <th style="width: 68%;">Item (Caixas, Forminhas, Fitas, Sacolas, Tags...)</th>
-                <th style="width: 25%; text-align: right;">Custo no Lote (R$)</th>
-                <th style="width: 36px; text-align: center;"></th>
-              </tr>
-            </thead>
-            <tbody id="corpo-complementos">
-              <% if (complementos && complementos.length > 0) { %>
-                <% complementos.forEach((comp) => { %>
+        <!-- Resumo Compacto de Complementos (Clique para Exibir) -->
+        <div id="resumo-compacto-complementos" style="display: none; cursor: pointer; background: #fdf2f8; border: 1.5px dashed #fbcfe8; border-radius: 10px; padding: 0.85rem 1.15rem; margin-top: 0.5rem; margin-bottom: 0.5rem; justify-content: space-between; align-items: center; transition: all 0.2s ease;" title="Clique aqui para exibir a lista completa de embalagens">
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <span style="font-size: 1.4rem;">🎁</span>
+            <div>
+              <div style="font-size: 0.88rem; color: #9d174d; font-weight: 700;">
+                <span id="resumo-qtd-complementos"><%= complementos ? complementos.length : 1 %> itens</span> de embalagens e complementos
+              </div>
+              <span style="font-size: 0.78rem; color: #be185d; font-weight: 600;">👉 Clique para exibir e editar a lista</span>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-size: 0.75rem; color: var(--cor-texto-suave); display: block;">Total Embalagens (B):</span>
+            <strong style="font-size: 1.05rem; color: var(--cor-primaria);" id="resumo-total-b-compacto">R$ 0,00</strong>
+          </div>
+        </div>
+
+        <div id="container-tabela-complementos">
+          <div class="tabela-container">
+            <table id="tabela-complementos">
+              <thead>
+                <tr>
+                  <th style="width: 68%;">Item (Caixas, Forminhas, Fitas, Sacolas, Tags...)</th>
+                  <th style="width: 25%; text-align: right;">Custo no Lote (R$)</th>
+                  <th style="width: 36px; text-align: center;"></th>
+                </tr>
+              </thead>
+              <tbody id="corpo-complementos">
+                <% if (complementos && complementos.length > 0) { %>
+                  <% complementos.forEach((comp) => { %>
+                    <tr class="linha-complemento">
+                      <td><input type="text" name="comp_nome" value="<%= comp.nome %>" placeholder="Ex: Forminhas 4 pétalas (30 un)" required></td>
+                      <td><input type="number" name="comp_custo" class="comp-custo recalc-trigger" value="<%= comp.custo_lote %>" step="0.01" min="0" placeholder="0.00" style="text-align: right;" required></td>
+                      <td style="text-align: center;"><button type="button" class="btn-icone-tabela" onclick="removerLinha(this)" title="Remover item">✕</button></td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
                   <tr class="linha-complemento">
-                    <td><input type="text" name="comp_nome" value="<%= comp.nome %>" placeholder="Ex: Forminhas 4 pétalas (30 un)" required></td>
-                    <td><input type="number" name="comp_custo" class="comp-custo recalc-trigger" value="<%= comp.custo_lote %>" step="0.01" min="0" placeholder="0.00" style="text-align: right;" required></td>
+                    <td><input type="text" name="comp_nome" placeholder="Ex: Forminhas e embalagem do lote"></td>
+                    <td><input type="number" name="comp_custo" class="comp-custo recalc-trigger" step="0.01" min="0" placeholder="0.00" style="text-align: right;"></td>
                     <td style="text-align: center;"><button type="button" class="btn-icone-tabela" onclick="removerLinha(this)" title="Remover item">✕</button></td>
                   </tr>
-                <% }); %>
-              <% } else { %>
-                <tr class="linha-complemento">
-                  <td><input type="text" name="comp_nome" placeholder="Ex: Forminhas e embalagem do lote"></td>
-                  <td><input type="number" name="comp_custo" class="comp-custo recalc-trigger" step="0.01" min="0" placeholder="0.00" style="text-align: right;"></td>
-                  <td style="text-align: center;"><button type="button" class="btn-icone-tabela" onclick="removerLinha(this)" title="Remover item">✕</button></td>
+                <% } %>
+              </tbody>
+              <tfoot>
+                <tr style="background-color: #faf5f3; font-weight: 700;">
+                  <td style="text-align: right; font-size: 0.85rem;">Total de Embalagens / Complementos (B):</td>
+                  <td style="text-align: right; color: var(--cor-primaria); font-size: 0.95rem;" id="display-total-b">R$ 0,00</td>
+                  <td></td>
                 </tr>
-              <% } %>
-            </tbody>
-            <tfoot>
-              <tr style="background-color: #faf5f3; font-weight: 700;">
-                <td style="text-align: right; font-size: 0.85rem;">Total de Embalagens / Complementos (B):</td>
-                <td style="text-align: right; color: var(--cor-primaria); font-size: 0.95rem;" id="display-total-b">R$ 0,00</td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
+              </tfoot>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -389,6 +447,21 @@
 
     document.getElementById('display-total-b').textContent = formatarMoeda(totalB);
     document.getElementById('comp-b').textContent = formatarMoeda(totalB);
+
+    // Atualizar Contadores e Resumos Compactos (Seções 2 e 3)
+    const badgeIng = document.getElementById('badge-contador-ingredientes');
+    const resumoQtdIng = document.getElementById('resumo-qtd-ingredientes');
+    const resumoTotA = document.getElementById('resumo-total-a-compacto');
+    if (badgeIng) badgeIng.textContent = `${linhasIng.length} ${linhasIng.length === 1 ? 'item' : 'itens'}`;
+    if (resumoQtdIng) resumoQtdIng.textContent = `${linhasIng.length} ${linhasIng.length === 1 ? 'item' : 'itens'}`;
+    if (resumoTotA) resumoTotA.textContent = formatarMoeda(totalA);
+
+    const badgeComp = document.getElementById('badge-contador-complementos');
+    const resumoQtdComp = document.getElementById('resumo-qtd-complementos');
+    const resumoTotB = document.getElementById('resumo-total-b-compacto');
+    if (badgeComp) badgeComp.textContent = `${linhasComp.length} ${linhasComp.length === 1 ? 'item' : 'itens'}`;
+    if (resumoQtdComp) resumoQtdComp.textContent = `${linhasComp.length} ${linhasComp.length === 1 ? 'item' : 'itens'}`;
+    if (resumoTotB) resumoTotB.textContent = formatarMoeda(totalB);
 
     // 3. Custo Fixo Alocado (C)
     const elHorasParte = document.getElementById('tempo_horas_parte');
@@ -651,8 +724,75 @@
     }
   });
 
-  // Adicionar ingrediente dinamicamente
-  document.getElementById('btn-add-ingrediente').addEventListener('click', () => {
+  // Controle de Exibir / Esconder Lista de Ingredientes (Seção 2)
+  function toggleListaIngredientes(forcarExibir) {
+    const container = document.getElementById('container-tabela-ingredientes');
+    const resumo = document.getElementById('resumo-compacto-ingredientes');
+    const btnTexto = document.getElementById('texto-toggle-ingredientes');
+    const btnIcone = document.getElementById('icone-toggle-ingredientes');
+    if (!container || !resumo) return;
+
+    const estaOculto = container.style.display === 'none';
+    const deveExibir = (forcarExibir !== undefined) ? forcarExibir : estaOculto;
+
+    if (deveExibir) {
+      container.style.display = 'block';
+      resumo.style.display = 'none';
+      if (btnTexto) btnTexto.textContent = 'Esconder Lista';
+      if (btnIcone) btnIcone.textContent = '👁️';
+    } else {
+      container.style.display = 'none';
+      resumo.style.display = 'flex';
+      if (btnTexto) btnTexto.textContent = 'Exibir Lista';
+      if (btnIcone) btnIcone.textContent = '📋';
+    }
+  }
+
+  const btnToggleIng = document.getElementById('btn-toggle-lista-ingredientes');
+  if (btnToggleIng) {
+    btnToggleIng.addEventListener('click', () => toggleListaIngredientes());
+  }
+  const cardResumoIng = document.getElementById('resumo-compacto-ingredientes');
+  if (cardResumoIng) {
+    cardResumoIng.addEventListener('click', () => toggleListaIngredientes(true));
+  }
+
+  // Controle de Exibir / Esconder Lista de Complementos (Seção 3)
+  function toggleListaComplementos(forcarExibir) {
+    const container = document.getElementById('container-tabela-complementos');
+    const resumo = document.getElementById('resumo-compacto-complementos');
+    const btnTexto = document.getElementById('texto-toggle-complementos');
+    const btnIcone = document.getElementById('icone-toggle-complementos');
+    if (!container || !resumo) return;
+
+    const estaOculto = container.style.display === 'none';
+    const deveExibir = (forcarExibir !== undefined) ? forcarExibir : estaOculto;
+
+    if (deveExibir) {
+      container.style.display = 'block';
+      resumo.style.display = 'none';
+      if (btnTexto) btnTexto.textContent = 'Esconder Lista';
+      if (btnIcone) btnIcone.textContent = '👁️';
+    } else {
+      container.style.display = 'none';
+      resumo.style.display = 'flex';
+      if (btnTexto) btnTexto.textContent = 'Exibir Lista';
+      if (btnIcone) btnIcone.textContent = '📋';
+    }
+  }
+
+  const btnToggleComp = document.getElementById('btn-toggle-lista-complementos');
+  if (btnToggleComp) {
+    btnToggleComp.addEventListener('click', () => toggleListaComplementos());
+  }
+  const cardResumoComp = document.getElementById('resumo-compacto-complementos');
+  if (cardResumoComp) {
+    cardResumoComp.addEventListener('click', () => toggleListaComplementos(true));
+  }
+
+  // Adicionar ingrediente dinamicamente (com foco automático e expansão)
+  function adicionarNovaLinhaIngrediente() {
+    toggleListaIngredientes(true);
     const tbody = document.getElementById('corpo-ingredientes');
     const tr = document.createElement('tr');
     tr.className = 'linha-ingrediente';
@@ -674,10 +814,28 @@
     inicializarBuscaInput(novoInput);
     novoInput.focus();
     recalcularTudo();
-  });
+    return tr;
+  }
 
-  // Adicionar complemento dinamicamente
-  document.getElementById('btn-add-complemento').addEventListener('click', () => {
+  const btnAddIng = document.getElementById('btn-add-ingrediente');
+  if (btnAddIng) {
+    btnAddIng.addEventListener('click', adicionarNovaLinhaIngrediente);
+  }
+
+  // Tecla Enter no campo de quantidade de ingrediente para adicionar nova linha rapidamente
+  const tabelaIngredientes = document.getElementById('tabela-ingredientes');
+  if (tabelaIngredientes) {
+    tabelaIngredientes.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.classList.contains('ing-qtd-usada')) {
+        e.preventDefault();
+        adicionarNovaLinhaIngrediente();
+      }
+    });
+  }
+
+  // Adicionar complemento dinamicamente (com foco automático e expansão)
+  function adicionarNovaLinhaComplemento() {
+    toggleListaComplementos(true);
     const tbody = document.getElementById('corpo-complementos');
     const tr = document.createElement('tr');
     tr.className = 'linha-complemento';
@@ -687,8 +845,27 @@
       <td style="text-align: center;"><button type="button" class="btn-icone-tabela" onclick="removerLinha(this)" title="Remover item">✕</button></td>
     `;
     tbody.appendChild(tr);
+    const inputNomeComp = tr.querySelector('input[name="comp_nome"]');
+    if (inputNomeComp) inputNomeComp.focus();
     recalcularTudo();
-  });
+    return tr;
+  }
+
+  const btnAddComp = document.getElementById('btn-add-complemento');
+  if (btnAddComp) {
+    btnAddComp.addEventListener('click', adicionarNovaLinhaComplemento);
+  }
+
+  // Tecla Enter no custo de embalagem para adicionar nova linha rapidamente
+  const tabelaComplementos = document.getElementById('tabela-complementos');
+  if (tabelaComplementos) {
+    tabelaComplementos.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.classList.contains('comp-custo')) {
+        e.preventDefault();
+        adicionarNovaLinhaComplemento();
+      }
+    });
+  }
 
   function removerLinha(btn) {
     const tr = btn.closest('tr');
@@ -831,6 +1008,7 @@
             inicializarBuscaInput(tr.querySelector('.ing-nome-input'));
           });
 
+          toggleListaIngredientes(true);
           recalcularTudo();
           alert('✅ ' + ingredientesValidos.length + ' ingrediente(s) importado(s) com sucesso da planilha!');
         } catch (err) {
