@@ -1,5 +1,48 @@
 <%- include('partials/topo') %>
 
+<style>
+  /* Remoção completa do frame e da barra de rolagem na lista de ingredientes e complementos */
+  .layout-produto .tabela-container {
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    background: transparent !important;
+    width: 100% !important;
+  }
+  .layout-produto table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+  }
+  .layout-produto table th {
+    padding: 0.45rem 0.35rem !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0.2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .layout-produto table td {
+    padding: 0.35rem 0.35rem !important;
+    vertical-align: middle !important;
+  }
+  .layout-produto table input[type="text"],
+  .layout-produto table input[type="number"] {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    height: 32px !important;
+    padding: 0.25rem 0.4rem !important;
+    font-size: 0.82rem !important;
+    border-radius: 5px !important;
+  }
+  .layout-produto table input::placeholder {
+    font-size: 0.78rem !important;
+    color: #94a3b8 !important;
+  }
+</style>
+
 <% if (typeof sucesso !== 'undefined' && sucesso) { %>
   <div class="alerta alerta-sucesso" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
     <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -197,16 +240,16 @@
             💡 Pesquise no catálogo para vincular o insumo. Os campos com 🔒 são preenchidos automaticamente. Pressione <strong>Enter</strong> na quantidade para abrir uma nova linha.
           </div>
 
-          <div class="tabela-container">
-            <table id="tabela-ingredientes">
+          <div class="tabela-container" style="overflow: visible; border: none; background: transparent;">
+            <table id="tabela-ingredientes" style="width: 100%; table-layout: fixed;">
               <thead>
                 <tr>
-                  <th style="width: 35%;">Ingrediente (Catálogo)</th>
-                  <th style="width: 16%;">Qtd Usada</th>
-                  <th style="width: 15%;">Preço Pacote 🔒</th>
-                  <th style="width: 15%;">Qtd Pacote 🔒</th>
-                  <th style="width: 14%; text-align: right;">Custo Receita</th>
-                  <th style="width: 36px; text-align: center;"></th>
+                  <th style="width: 36%;">Ingrediente (Catálogo)</th>
+                  <th style="width: 15%;">Qtd Usada</th>
+                  <th style="width: 16%;">Preço Pct 🔒</th>
+                  <th style="width: 16%;">Qtd Pct 🔒</th>
+                  <th style="width: 13%; text-align: right;">Custo</th>
+                  <th style="width: 32px; text-align: center;"></th>
                 </tr>
               </thead>
               <tbody id="corpo-ingredientes">
@@ -219,10 +262,10 @@
                           <div class="dropdown-sugestoes-ingrediente" style="display: none;"></div>
                         </div>
                       </td>
-                      <td><input type="number" name="ing_qtd_usada" class="ing-qtd-usada recalc-trigger" value="<%= ing.qtd_usada %>" step="any" min="0" placeholder="Ex: 395" required></td>
-                      <td><input type="number" name="ing_preco_pacote" class="ing-preco-pacote recalc-trigger campo-bloqueado" value="<%= ing.preco_pacote %>" step="0.01" min="0" placeholder="Catálogo" readonly title="Valor obtido do catálogo" required></td>
-                      <td><input type="number" name="ing_qtd_pacote" class="ing-qtd-pacote recalc-trigger campo-bloqueado" value="<%= ing.qtd_pacote %>" step="any" min="0.001" placeholder="Catálogo" readonly title="Tamanho do pacote obtido do catálogo" required></td>
-                      <td style="text-align: right; font-weight: 700; font-size: 0.88rem;" class="ing-custo-calculado">R$ 0,00</td>
+                      <td><input type="number" name="ing_qtd_usada" class="ing-qtd-usada recalc-trigger" value="<%= ing.qtd_usada %>" step="any" min="0" placeholder="Ex: 395" required style="text-align: right;"></td>
+                      <td><input type="number" name="ing_preco_pacote" class="ing-preco-pacote recalc-trigger campo-bloqueado" value="<%= ing.preco_pacote %>" step="0.01" min="0" placeholder="Catálogo" readonly title="Valor obtido do catálogo" required style="text-align: right;"></td>
+                      <td><input type="number" name="ing_qtd_pacote" class="ing-qtd-pacote recalc-trigger campo-bloqueado" value="<%= ing.qtd_pacote %>" step="any" min="0.001" placeholder="Catálogo" readonly title="Tamanho do pacote obtido do catálogo" required style="text-align: right;"></td>
+                      <td style="text-align: right; font-weight: 700; font-size: 0.88rem; white-space: nowrap;" class="ing-custo-calculado">R$ 0,00</td>
                       <td style="text-align: center;"><button type="button" class="btn-icone-tabela" onclick="removerLinha(this)" title="Remover item">✕</button></td>
                     </tr>
                   <% }); %>
@@ -235,10 +278,10 @@
                         <div class="dropdown-sugestoes-ingrediente" style="display: none;"></div>
                       </div>
                     </td>
-                    <td><input type="number" name="ing_qtd_usada" class="ing-qtd-usada recalc-trigger" step="any" min="0" placeholder="Ex: 395" required></td>
-                    <td><input type="number" name="ing_preco_pacote" class="ing-preco-pacote recalc-trigger campo-bloqueado" step="0.01" min="0" placeholder="Catálogo" readonly title="Valor obtido do catálogo" required></td>
-                    <td><input type="number" name="ing_qtd_pacote" class="ing-qtd-pacote recalc-trigger campo-bloqueado" step="any" min="0.001" placeholder="Catálogo" readonly title="Tamanho obtido do catálogo" required></td>
-                    <td style="text-align: right; font-weight: 700; font-size: 0.88rem;" class="ing-custo-calculado">R$ 0,00</td>
+                    <td><input type="number" name="ing_qtd_usada" class="ing-qtd-usada recalc-trigger" step="any" min="0" placeholder="Ex: 395" required style="text-align: right;"></td>
+                    <td><input type="number" name="ing_preco_pacote" class="ing-preco-pacote recalc-trigger campo-bloqueado" step="0.01" min="0" placeholder="Catálogo" readonly title="Valor obtido do catálogo" required style="text-align: right;"></td>
+                    <td><input type="number" name="ing_qtd_pacote" class="ing-qtd-pacote recalc-trigger campo-bloqueado" step="any" min="0.001" placeholder="Catálogo" readonly title="Tamanho obtido do catálogo" required style="text-align: right;"></td>
+                    <td style="text-align: right; font-weight: 700; font-size: 0.88rem; white-space: nowrap;" class="ing-custo-calculado">R$ 0,00</td>
                     <td style="text-align: center;"><button type="button" class="btn-icone-tabela" onclick="removerLinha(this)" title="Remover item">✕</button></td>
                   </tr>
                 <% } %>
@@ -246,7 +289,7 @@
               <tfoot>
                 <tr style="background-color: #faf5f3; font-weight: 700;">
                   <td colspan="4" style="text-align: right; font-size: 0.85rem;">Total de Ingredientes (A):</td>
-                  <td style="text-align: right; color: var(--cor-primaria); font-size: 0.95rem;" id="display-total-a">R$ 0,00</td>
+                  <td style="text-align: right; color: var(--cor-primaria); font-size: 0.95rem; white-space: nowrap;" id="display-total-a">R$ 0,00</td>
                   <td></td>
                 </tr>
               </tfoot>
@@ -290,13 +333,13 @@
         </div>
 
         <div id="container-tabela-complementos">
-          <div class="tabela-container">
-            <table id="tabela-complementos">
+          <div class="tabela-container" style="overflow: visible; border: none; background: transparent;">
+            <table id="tabela-complementos" style="width: 100%; table-layout: fixed;">
               <thead>
                 <tr>
-                  <th style="width: 68%;">Item (Caixas, Forminhas, Fitas, Sacolas, Tags...)</th>
-                  <th style="width: 25%; text-align: right;">Custo no Lote (R$)</th>
-                  <th style="width: 36px; text-align: center;"></th>
+                  <th style="width: 66%;">Item (Caixas, Forminhas, Fitas, Sacolas, Tags...)</th>
+                  <th style="width: 30%; text-align: right;">Custo no Lote (R$)</th>
+                  <th style="width: 32px; text-align: center;"></th>
                 </tr>
               </thead>
               <tbody id="corpo-complementos">
@@ -319,7 +362,7 @@
               <tfoot>
                 <tr style="background-color: #faf5f3; font-weight: 700;">
                   <td style="text-align: right; font-size: 0.85rem;">Total de Embalagens / Complementos (B):</td>
-                  <td style="text-align: right; color: var(--cor-primaria); font-size: 0.95rem;" id="display-total-b">R$ 0,00</td>
+                  <td style="text-align: right; color: var(--cor-primaria); font-size: 0.95rem; white-space: nowrap;" id="display-total-b">R$ 0,00</td>
                   <td></td>
                 </tr>
               </tfoot>
@@ -803,10 +846,10 @@
           <div class="dropdown-sugestoes-ingrediente" style="display: none;"></div>
         </div>
       </td>
-      <td><input type="number" name="ing_qtd_usada" class="ing-qtd-usada recalc-trigger" step="any" min="0" placeholder="Ex: 50" required></td>
-      <td><input type="number" name="ing_preco_pacote" class="ing-preco-pacote recalc-trigger campo-bloqueado" step="0.01" min="0" placeholder="Catálogo" readonly title="Valor obtido do catálogo" required></td>
-      <td><input type="number" name="ing_qtd_pacote" class="ing-qtd-pacote recalc-trigger campo-bloqueado" step="any" min="0.001" placeholder="Catálogo" readonly title="Tamanho obtido do catálogo" required></td>
-      <td style="text-align: right; font-weight: 700; font-size: 0.88rem;" class="ing-custo-calculado">R$ 0,00</td>
+      <td><input type="number" name="ing_qtd_usada" class="ing-qtd-usada recalc-trigger" step="any" min="0" placeholder="Ex: 50" required style="text-align: right;"></td>
+      <td><input type="number" name="ing_preco_pacote" class="ing-preco-pacote recalc-trigger campo-bloqueado" step="0.01" min="0" placeholder="Catálogo" readonly title="Valor obtido do catálogo" required style="text-align: right;"></td>
+      <td><input type="number" name="ing_qtd_pacote" class="ing-qtd-pacote recalc-trigger campo-bloqueado" step="any" min="0.001" placeholder="Catálogo" readonly title="Tamanho obtido do catálogo" required style="text-align: right;"></td>
+      <td style="text-align: right; font-weight: 700; font-size: 0.88rem; white-space: nowrap;" class="ing-custo-calculado">R$ 0,00</td>
       <td style="text-align: center;"><button type="button" class="btn-icone-tabela" onclick="removerLinha(this)" title="Remover item">✕</button></td>
     `;
     tbody.appendChild(tr);
@@ -998,10 +1041,10 @@
                   <div class="dropdown-sugestoes-ingrediente" style="display: none;"></div>
                 </div>
               </td>
-              <td><input type="number" name="ing_qtd_usada" class="ing-qtd-usada recalc-trigger" value="${item.qtdUsada}" step="any" min="0" placeholder="Ex: 395 (g/ml/un)" required></td>
-              <td><input type="number" name="ing_preco_pacote" class="ing-preco-pacote recalc-trigger campo-bloqueado" value="${item.precoPacote.toFixed(2)}" step="0.01" min="0" placeholder="0.00" readonly title="Valor obtido do catálogo ou planilha" required></td>
-              <td><input type="number" name="ing_qtd_pacote" class="ing-qtd-pacote recalc-trigger campo-bloqueado" value="${item.qtdPacote}" step="any" min="0.001" placeholder="Embalagem" readonly title="Tamanho obtido do catálogo ou planilha" required></td>
-              <td style="text-align: right; font-weight: 600;" class="ing-custo-calculado">R$ 0,00</td>
+              <td><input type="number" name="ing_qtd_usada" class="ing-qtd-usada recalc-trigger" value="${item.qtdUsada}" step="any" min="0" placeholder="Ex: 395 (g/ml/un)" required style="text-align: right;"></td>
+              <td><input type="number" name="ing_preco_pacote" class="ing-preco-pacote recalc-trigger campo-bloqueado" value="${item.precoPacote.toFixed(2)}" step="0.01" min="0" placeholder="0.00" readonly title="Valor obtido do catálogo ou planilha" required style="text-align: right;"></td>
+              <td><input type="number" name="ing_qtd_pacote" class="ing-qtd-pacote recalc-trigger campo-bloqueado" value="${item.qtdPacote}" step="any" min="0.001" placeholder="Embalagem" readonly title="Tamanho obtido do catálogo ou planilha" required style="text-align: right;"></td>
+              <td style="text-align: right; font-weight: 700; font-size: 0.88rem; white-space: nowrap;" class="ing-custo-calculado">R$ 0,00</td>
               <td style="text-align: center;"><button type="button" class="btn btn-perigo btn-sm" onclick="removerLinha(this)">✕</button></td>
             `;
             tbody.appendChild(tr);
